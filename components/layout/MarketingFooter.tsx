@@ -8,7 +8,7 @@ const footerLinks = {
     { name: "All Exams",         href: "/exams"       },
     { name: "All Test Series",   href: "/series/all"  },
     { name: "All PYQ Papers",    href: "/pyq/all"     },
-    { name: "Nurture Library",   href: "/blog"     },
+    { name: "Nurture Library",   href: "/library"     },
     { name: "All Courses",       href: "/courses/all" },
     { name: "Mentorship",        href: "/mentorship"  },
   ],

@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, ArrowRight } from "lucide-react";
+import { Search, ArrowRight, FileText, BookOpen, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ── Exam taxonomy ── */
@@ -189,8 +189,8 @@ export default function MegaMenu({ show, onMouseEnter, onMouseLeave }: MegaMenuP
             <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
 
               {/* Top bar: search */}
-              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-gray-200 focus-within:border-blue-400 focus-within:shadow-sm transition-all">
+              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between gap-4">
+                <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-gray-200 focus-within:border-blue-400 focus-within:shadow-sm transition-all">
                   <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   <input
                     ref={searchInputRef}
@@ -206,6 +206,24 @@ export default function MegaMenu({ show, onMouseEnter, onMouseLeave }: MegaMenuP
                       </svg>
                     </button>
                   )}
+                </div>
+
+                {/* Quick links */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {[
+                    { label: "Courses",              href: "/courses/all",    icon: FileText,  color: "text-blue-600 bg-blue-50 hover:bg-blue-100"     },
+                    { label: "Study Material",       href: "/library",        icon: BookOpen,  color: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100" },
+                    { label: "Previous Year Papers", href: "/pyq/all",        icon: Zap,       color: "text-amber-600 bg-amber-50 hover:bg-amber-100"   },
+                  ].map(({ label, href, icon: Icon, color }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${color}`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {label}
+                    </Link>
+                  ))}
                 </div>
               </div>
 

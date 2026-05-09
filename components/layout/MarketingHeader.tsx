@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LogIn, LayoutDashboard, LogOut, Smartphone, ChevronDown,
-  Search, Library, X,
+  Search, Library, X, Zap, Newspaper, BookMarked,
   User, FileText, TrendingUp, CreditCard,
   GraduationCap, Users, Mail, BarChart3,
   Home, MoreHorizontal,
@@ -21,6 +21,13 @@ const PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=com.kvebrk.
 const examsNav = [
   { name: "Browse Exams", href: "/exams",      icon: GraduationCap, desc: "Explore exams by category" },
   { name: "Test Series",  href: "/series/all", icon: BarChart3,     desc: "Full mock test series"     },
+];
+
+const learnNav = [
+  { name: "Current News",    href: "/library?tab=news",    icon: Newspaper,  desc: "Daily current affairs digest"       },
+  { name: "Daily Quiz",      href: "/daily-quiz",          icon: Zap,        desc: "5-question daily practice set"      },
+  { name: "Nurture Library", href: "/library",             icon: Library,    desc: "Full study library & notes"         },
+  { name: "Books & Magazine",href: "/library?tab=books",   icon: BookMarked, desc: "Recommended books & magazines"      },
 ];
 
 const moreNav = [
@@ -137,7 +144,7 @@ export default function MarketingHeader() {
   const handleLogout = async () => { await logout(); router.push("/"); };
 
   const isExamsActive = pathname === "/exams" || pathname.startsWith("/exams/");
-  const isLibraryActive = pathname.startsWith("/blog");
+  const isLibraryActive = pathname.startsWith("/blog") || pathname.startsWith("/library");
   const isMoreActive  = moreNav.some((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
 
   const toggleMobileTab = (tab: typeof mobileTab) =>
@@ -521,8 +528,6 @@ export default function MarketingHeader() {
               <MobileNavGrid items={examsNav} accent="blue" />
             </motion.div>
           )}
-
-
 
           {mobileTab === "more" && (
             <motion.div
