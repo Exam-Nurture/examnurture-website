@@ -19,11 +19,13 @@ export function getToken(): string | null {
 }
 
 export function setToken(token: string) {
-  document.cookie = `${TOKEN_COOKIE}=${encodeURIComponent(token)}; path=/; max-age=${15 * 60}; SameSite=Lax`;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${TOKEN_COOKIE}=${encodeURIComponent(token)}; path=/; max-age=${15 * 60}; SameSite=Lax${secure}`;
 }
 
 export function clearToken() {
-  document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0; SameSite=Lax${secure}`;
 }
 
 /* ── Core fetch wrapper ─────────────────────────── */
@@ -289,15 +291,30 @@ export async function apiGetTestSeries(params?: { examId?: string; page?: number
   return apiFetch(`/test-series${s ? `?${s}` : ""}`);
 }
 
+export async function apiGetTest(testId: string) {
+  return apiFetch(`/tests/${testId}`);
+}
+
+export async function apiStartAttempt(testId: string) {
+  return apiFetch(`/attempts/start`, {
+    method: "POST",
+    body: JSON.stringify({ testId }),
+  });
+}
+
 export async function apiSubmitAttempt(
   testId: string,
   answers: Record<string, number>,
   timeTakenSec: number,
 ) {
-  return apiFetch(`/attempts/${testId}/submit`, {
+  return apiFetch(`/attempts/submit`, {
     method: "POST",
     body: JSON.stringify({ testId, answers, timeTakenSec }),
   });
+}
+
+export async function apiGetAttemptResult(attemptId: string) {
+  return apiFetch(`/attempts/${attemptId}/result`);
 }
 
 /* ── PYQ Papers ─────────────────────────────────── */
@@ -310,6 +327,10 @@ export async function apiGetPYQPapers(params?: { examId?: string; year?: number;
   if (params?.limit) qs.set("limit", String(params.limit));
   const s = qs.toString();
   return apiFetch(`/pyq${s ? `?${s}` : ""}`);
+}
+
+export async function apiGetPYQPaperById(paperId: string) {
+  return apiFetch(`/pyq/${paperId}`);
 }
 
 export async function apiStartPYQAttempt(paperId: string) {
@@ -384,6 +405,7 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   limit: number;
+  pages?: number;
 }
 
 function buildQS(params: Record<string, string | number | boolean | undefined>) {
@@ -546,7 +568,7 @@ export interface AdminPYQPaper {
   totalQs: number; durationMin: number; pdfUrl?: string; type: string;
   hasSolutions: boolean; tierRequired: number; isActive: boolean;
 }
-export async function apiAdminGetPYQ(params?: { page?: number; examId?: string }) {
+export async function apiAdminGetPYQ(params?: { page?: number; limit?: number; examId?: string }) {
   return apiFetch<PaginatedResponse<AdminPYQPaper>>(`/admin/pyq${buildQS(params ?? {})}`);
 }
 export async function apiAdminCreatePYQ(body: Partial<AdminPYQPaper>) {
@@ -559,13 +581,17 @@ export async function apiAdminDeletePYQ(id: string) {
   return apiFetch(`/admin/pyq/${id}`, { method: "DELETE" });
 }
 
+export async function apiAdminCreatePYQBulk(body: { paper: Partial<AdminPYQPaper>; questions: Record<string, unknown>[] }) {
+  return apiFetch("/admin/pyq-bulk", { method: "POST", body: JSON.stringify(body) });
+}
+
 // Study Materials
 export interface AdminStudyMaterial {
   id: string; examId: string; subject: string; title: string; description?: string;
   buyLink?: string; language: string; pageCount: number; coverUrl?: string;
   tierRequired: number; isActive: boolean; isFeatured: boolean;
 }
-export async function apiAdminGetStudyMaterials(params?: { page?: number; examId?: string }) {
+export async function apiAdminGetStudyMaterials(params?: { page?: number; limit?: number; examId?: string }) {
   return apiFetch<PaginatedResponse<AdminStudyMaterial>>(`/admin/study-materials${buildQS(params ?? {})}`);
 }
 export async function apiAdminCreateStudyMaterial(body: Partial<AdminStudyMaterial>) {
@@ -585,7 +611,7 @@ export interface AdminMentorship {
   mentorName: string; mentorTitle?: string; courseDurationWeeks: number;
   tierRequired: number; isActive: boolean; isFeatured: boolean;
 }
-export async function apiAdminGetMentorship(params?: { page?: number }) {
+export async function apiAdminGetMentorship(params?: { page?: number; limit?: number }) {
   return apiFetch<PaginatedResponse<AdminMentorship>>(`/admin/mentorship${buildQS(params ?? {})}`);
 }
 export async function apiAdminCreateMentorship(body: Partial<AdminMentorship>) {
@@ -640,6 +666,16 @@ export async function apiAdminDeleteTeamMember(id: string) {
 
 /* ── Public contact form ────────────────────────── */
 
+export async function apiGetCourses(params?: { featured?: boolean }) {
+  const qs = params?.featured ? "?featured=true" : "";
+  return apiFetch<any[]>(`/courses${qs}`);
+}
+
+export async function apiGetMentorshipPrograms(params?: { featured?: boolean }) {
+  const qs = params?.featured ? "?featured=true" : "";
+  return apiFetch<any[]>(`/mentorship-programs${qs}`);
+}
+
 export async function apiSubmitContact(body: {
   name: string;
   email: string;
@@ -680,4 +716,399 @@ export async function apiAdminGetSubscriptions(params?: { page?: number }) {
 }
 export async function apiAdminGetPayments(params?: { page?: number }) {
   return apiFetch<PaginatedResponse<unknown>>(`/admin/payments${buildQS(params ?? {})}`);
+}
+
+// ── Subscription v2 ──────────────────────────────────────────────────────────
+
+export type ContentType = 'TEST_SERIES' | 'PYQ' | 'STUDY_MATERIAL' | 'MENTORSHIP' | 'COURSE';
+
+export interface TierContent {
+  id: string;
+  tierId: number;
+  contentType: ContentType;
+  contentId: string;
+  addedAt: string;
+  contentTitle?: string;
+}
+
+export interface TierDefinition {
+  id: number;
+  name: string;
+  eligibility: string;
+  description: string;
+  monthlyPaise: number;
+  yearlyPaise: number;
+  isActive: boolean;
+  contents: TierContent[];
+  _count?: { contents: number; subscriptions: number };
+}
+
+export interface TierSubscriptionRecord {
+  id: string;
+  tierId: number;
+  tierName: string;
+  billingCycle: 'MONTHLY' | 'YEARLY';
+  expiresAt: string;
+  status: string;
+}
+
+export interface IndividualSubRecord {
+  contentId: string;
+  expiresAt: string;
+  subscriptionId: string;
+}
+
+export interface StudentAccessMap {
+  individual: Partial<Record<ContentType, IndividualSubRecord[]>>;
+  activeTierSubscriptions: TierSubscriptionRecord[];
+}
+
+export interface TierCheckoutResponse {
+  razorpayOrderId: string;
+  amount: number;
+  currency: string;
+  keyId: string | null;
+  tierId: number;
+  tierName: string;
+  billingCycle: string;
+}
+
+export interface IndividualCheckoutResponse {
+  razorpayOrderId: string;
+  amount: number;
+  currency: string;
+  keyId: string | null;
+  contentType: ContentType;
+  contentId: string;
+  contentTitle: string;
+  durationDays: number;
+}
+
+// Tier checkout (new flow)
+export async function apiTierCheckout(
+  tierId: number,
+  billingCycle: 'MONTHLY' | 'YEARLY',
+): Promise<TierCheckoutResponse> {
+  return apiFetch('/subscription/tier/checkout', {
+    method: 'POST',
+    body: JSON.stringify({ tierId, billingCycle }),
+  });
+}
+
+export async function apiTierVerify(data: {
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+  tierId: number;
+  billingCycle: 'MONTHLY' | 'YEARLY';
+}): Promise<{ success: boolean }> {
+  return apiFetch('/subscription/tier/verify', { method: 'POST', body: JSON.stringify(data) });
+}
+
+// Individual purchase
+export async function apiIndividualCheckout(data: {
+  contentType: ContentType;
+  contentId: string;
+  durationDays?: number;
+}): Promise<IndividualCheckoutResponse> {
+  return apiFetch('/subscription/individual/checkout', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function apiIndividualVerify(data: {
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+  contentType: ContentType;
+  contentId: string;
+  durationDays?: number;
+}): Promise<{ success: boolean }> {
+  return apiFetch('/subscription/individual/verify', { method: 'POST', body: JSON.stringify(data) });
+}
+
+// Access map
+export async function apiGetAccessMap(): Promise<StudentAccessMap> {
+  return apiFetch('/subscription/access-map');
+}
+
+// Tier definitions (public)
+export async function apiGetTierDefinitions(): Promise<TierDefinition[]> {
+  return apiFetch('/tiers');
+}
+
+export async function apiGetTierDefinition(id: number, withDetails = false): Promise<TierDefinition> {
+  return apiFetch(`/tiers/${id}${withDetails ? '?withDetails=true' : ''}`);
+}
+
+// ── Admin — Tier Management ──────────────────────────────────────────────────
+
+export async function apiAdminGetTierDefinitions() {
+  return apiFetch<TierDefinition[]>('/admin/tier-definitions');
+}
+export async function apiAdminCreateTierDefinition(body: Partial<TierDefinition>) {
+  return apiFetch<TierDefinition>('/admin/tier-definitions', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+export async function apiAdminUpdateTierDefinition(id: number, body: Partial<TierDefinition>) {
+  return apiFetch<TierDefinition>(`/admin/tier-definitions/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+export async function apiAdminDeleteTierDefinition(id: number) {
+  return apiFetch(`/admin/tier-definitions/${id}`, { method: 'DELETE' });
+}
+
+export async function apiAdminGetTierContents(tierId: number) {
+  return apiFetch<TierContent[]>(`/admin/tier-definitions/${tierId}/contents`);
+}
+export async function apiAdminAddTierContent(
+  tierId: number,
+  body: { contentType: ContentType; contentId: string },
+) {
+  return apiFetch<TierContent>(`/admin/tier-definitions/${tierId}/contents`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+export async function apiAdminRemoveTierContent(tierId: number, contentRecordId: string) {
+  return apiFetch(`/admin/tier-definitions/${tierId}/contents/${contentRecordId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function apiAdminGetTierSubscriptions(params?: { page?: number; status?: string }) {
+  return apiFetch<PaginatedResponse<unknown>>(`/admin/tier-subscriptions${buildQS(params ?? {})}`);
+}
+export async function apiAdminGetIndividualSubscriptions(params?: { page?: number }) {
+  return apiFetch<PaginatedResponse<unknown>>(`/admin/individual-subscriptions${buildQS(params ?? {})}`);
+}
+
+// ── Order & Payment System ────────────────────────────────────────────────────
+
+export interface PriceBreakdown {
+  baseAmountPaise: number;
+  discountPaise: number;
+  gstPaise: number;
+  finalAmountPaise: number;
+  couponCode?: string;
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  idempotencyKey: string;
+  contentType: string;
+  contentId: string;
+  billingCycle?: string;
+  durationDays?: number;
+  couponCode?: string;
+  baseAmountPaise: number;
+  discountPaise: number;
+  gstPaise: number;
+  finalAmountPaise: number;
+  currency: string;
+  status: string;
+  razorpayOrderId?: string;
+  createdAt: string;
+  invoices?: Invoice[];
+}
+
+export interface Entitlement {
+  id: string;
+  userId: string;
+  orderId?: string;
+  contentType: string;
+  contentId: string;
+  source: string;
+  status: string;
+  startsAt: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  orderId: string;
+  userId: string;
+  amountPaise: number;
+  gstPaise: number;
+  totalPaise: number;
+  pdfUrl?: string;
+  createdAt: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  type: 'FLAT' | 'PERCENT';
+  value: number;
+  maxUses?: number;
+  maxUsesPerUser: number;
+  usedCount: number;
+  validFrom: string;
+  validUntil?: string;
+  applicableTo?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CouponValidation {
+  valid: boolean;
+  reason?: string;
+  discountPaise?: number;
+  couponId?: string;
+}
+
+export interface CreateOrderResponse {
+  orderId: string;
+  razorpayOrderId: string;
+  keyId: string;
+  breakdown: PriceBreakdown;
+  isExisting: boolean;
+}
+
+// Create an order (idempotent via idempotencyKey)
+export async function apiCreateOrder(data: {
+  contentType: string;
+  contentId: string;
+  billingCycle?: string;
+  durationDays?: number;
+  couponCode?: string;
+  idempotencyKey: string;
+}): Promise<CreateOrderResponse> {
+  return apiFetch('/orders', { method: 'POST', body: JSON.stringify(data) });
+}
+
+// Preview price without creating order
+export async function apiPreviewPrice(data: {
+  contentType: string;
+  contentId: string;
+  billingCycle?: string;
+  couponCode?: string;
+}): Promise<{ breakdown: PriceBreakdown }> {
+  return apiFetch('/orders/preview', { method: 'POST', body: JSON.stringify(data) });
+}
+
+// Validate coupon
+export async function apiValidateCoupon(data: {
+  code: string;
+  contentType: string;
+  contentId: string;
+  baseAmountPaise: number;
+}): Promise<CouponValidation> {
+  return apiFetch('/orders/coupon/validate', { method: 'POST', body: JSON.stringify(data) });
+}
+
+// Verify payment and activate entitlement
+export async function apiVerifyOrder(data: {
+  orderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+  method?: string;
+}): Promise<{ success: boolean }> {
+  return apiFetch('/orders/verify', { method: 'POST', body: JSON.stringify(data) });
+}
+
+// List user orders
+export async function apiGetOrders(params?: { page?: number; limit?: number }): Promise<{
+  items: Order[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}> {
+  return apiFetch(`/orders${buildQS(params ?? {})}`);
+}
+
+// Get single order
+export async function apiGetOrder(orderId: string): Promise<{ order: Order }> {
+  return apiFetch(`/orders/${orderId}`);
+}
+
+// Get user entitlements
+export async function apiGetEntitlements(): Promise<{ entitlements: Entitlement[] }> {
+  return apiFetch('/orders/entitlements');
+}
+
+// Get user invoices
+export async function apiGetInvoices(): Promise<{ invoices: Invoice[] }> {
+  return apiFetch('/orders/invoices');
+}
+
+// Get single invoice
+export async function apiGetInvoice(invoiceNumber: string): Promise<{ invoice: Invoice }> {
+  return apiFetch(`/orders/invoices/${invoiceNumber}`);
+}
+
+// ── Admin — Orders ────────────────────────────────────────────────────────────
+
+export async function apiAdminGetOrders(params?: { page?: number; status?: string }) {
+  return apiFetch<PaginatedResponse<Order>>(`/admin/orders${buildQS(params ?? {})}`);
+}
+
+export async function apiAdminGetOrder(id: string) {
+  return apiFetch<{ order: Order }>(`/admin/orders/${id}`);
+}
+
+export async function apiAdminInitiateRefund(orderId: string, data: {
+  amountPaise?: number;
+  reason?: string;
+}) {
+  return apiFetch(`/admin/orders/${orderId}/refund`, { method: 'POST', body: JSON.stringify(data) });
+}
+
+// ── Admin — Coupons ───────────────────────────────────────────────────────────
+
+export async function apiAdminGetCoupons(params?: { page?: number }) {
+  return apiFetch<PaginatedResponse<Coupon>>(`/admin/coupons${buildQS(params ?? {})}`);
+}
+
+export async function apiAdminCreateCoupon(data: {
+  code: string;
+  type: 'FLAT' | 'PERCENT';
+  value: number;
+  maxUses?: number;
+  maxUsesPerUser?: number;
+  validFrom?: string;
+  validUntil?: string;
+  applicableTo?: string[];
+}) {
+  return apiFetch<{ coupon: Coupon }>('/admin/coupons', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function apiAdminUpdateCoupon(id: string, data: {
+  isActive?: boolean;
+  maxUses?: number | null;
+  validUntil?: string | null;
+}) {
+  return apiFetch<{ coupon: Coupon }>(`/admin/coupons/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+}
+
+export async function apiAdminDeleteCoupon(id: string) {
+  return apiFetch(`/admin/coupons/${id}`, { method: 'DELETE' });
+}
+
+// ── Admin — Entitlements ──────────────────────────────────────────────────────
+
+export async function apiAdminGetEntitlements(params?: { page?: number; userId?: string }) {
+  return apiFetch<PaginatedResponse<Entitlement>>(`/admin/entitlements${buildQS(params ?? {})}`);
+}
+
+export async function apiAdminGrantEntitlement(data: {
+  userId: string;
+  contentType: string;
+  contentId: string;
+  durationDays: number;
+}) {
+  return apiFetch('/admin/entitlements/grant', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function apiAdminRevokeEntitlement(id: string) {
+  return apiFetch(`/admin/entitlements/${id}`, { method: 'DELETE' });
 }

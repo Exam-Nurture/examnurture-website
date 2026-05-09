@@ -35,7 +35,7 @@ export default function QuickActions() {
 
         {/* Daily Quiz — streak CTA */}
         <Link
-          href="/daily-quiz"
+          href="/dashboard/daily-quiz"
           className="flex items-center gap-3.5 px-4 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-md"
           style={{ background: "var(--amber-soft)", border: "1px solid var(--amber)" }}
         >
@@ -63,7 +63,7 @@ export default function QuickActions() {
 
         {/* Latest PYQ — secondary */}
         <Link
-          href="/pyq"
+          href="/dashboard/pyq"
           className="flex items-center gap-3.5 px-4 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-md"
           style={{ background: "var(--bg)", border: "1px solid var(--line)", boxShadow: "var(--shadow-xs)" }}
         >

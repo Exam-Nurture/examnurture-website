@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { apiGetProfile, apiLogin, apiRegister, apiLogout, apiGoogleAuth, clearToken, type UserProfile } from "./api";
 
 declare const google: any;
@@ -23,6 +24,7 @@ function hasAuthCookie(): boolean {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const hasInitializedGoogle = useRef(false);
@@ -72,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(true);
             try {
               await loginWithGoogle(response.credential);
-              window.location.reload(); // Refresh to update middleware state
+              router.push('/dashboard');
             } catch (err) {
               console.error("Google Auth Error:", err);
             } finally {

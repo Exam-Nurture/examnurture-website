@@ -2,17 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 const PROTECTED = [
   "/dashboard",
-  "/series",
-  "/tests",
-  "/pyq",
-  "/guides",
-  "/daily-quiz",
-  "/plans",
-  "/analytics",
-  "/schedule",
-  "/library",
-  "/mentorship",
-  "/profile",
   "/exam",
   "/results",
 ];

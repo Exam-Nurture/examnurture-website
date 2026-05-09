@@ -23,7 +23,7 @@ export default function RecentTests() {
           <div className="text-[14px] font-semibold" style={{ color: "var(--ink-1)" }}>Recent Tests</div>
           <div className="text-[11px] mt-0.5" style={{ color: "var(--ink-4)" }}>Your last 3 attempts</div>
         </div>
-        <a href="/series" className="text-[11px] font-semibold hover:underline" style={{ color: "var(--blue)" }}>
+        <a href="/dashboard/series" className="text-[11px] font-semibold hover:underline" style={{ color: "var(--blue)" }}>
           See all →
         </a>
       </div>

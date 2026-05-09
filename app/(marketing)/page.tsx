@@ -86,8 +86,8 @@ function MeshBackground() {
             colorInterpolationFilters="sRGB">
             <feTurbulence
               type="fractalNoise"
-              baseFrequency="0.68"
-              numOctaves="4"
+              baseFrequency="0.65"
+              numOctaves="2"
               stitchTiles="stitch"
             />
             <feColorMatrix type="saturate" values="0" />
@@ -117,7 +117,7 @@ const features = [
     desc: "CBT-style exams with real exam interface, auto-timer, and question palette — just like the actual test.",
     color: "from-blue-500 to-blue-600",
     bg: "bg-blue-50",
-    href: "/series",
+    href: "/dashboard/series",
   },
   {
     icon: BookOpen,
@@ -125,7 +125,7 @@ const features = [
     desc: "Thousands of PYQ papers with detailed solutions across JPSC, Banking, SSC, Railway, and more.",
     color: "from-emerald-500 to-emerald-600",
     bg: "bg-emerald-50",
-    href: "/pyq",
+    href: "/dashboard/pyq",
   },
   {
     icon: BarChart3,
@@ -133,7 +133,7 @@ const features = [
     desc: "Detailed performance breakdown — weak areas, accuracy trends, percentile ranking, and improvement tips.",
     color: "from-purple-500 to-purple-600",
     bg: "bg-purple-50",
-    href: "/analytics",
+    href: "/dashboard/analytics",
   },
   {
     icon: Target,
@@ -141,7 +141,7 @@ const features = [
     desc: "Structured study materials, notes, and topic-wise resources curated by expert faculties.",
     color: "from-amber-500 to-amber-600",
     bg: "bg-amber-50",
-    href: "/library",
+    href: "/blog",
   },
 
   {
@@ -150,19 +150,27 @@ const features = [
     desc: "Syllabus, eligibility, exam pattern, admit card dates — everything in one place per exam.",
     color: "from-cyan-500 to-cyan-600",
     bg: "bg-cyan-50",
-    href: "/guides",
+    href: "/dashboard/guides",
+  },
+  {
+    icon: Users,
+    title: "Mentorship Support",
+    desc: "Guided preparation plans, expert support, and focused direction when your study path needs clarity.",
+    color: "from-rose-500 to-rose-600",
+    bg: "bg-rose-50",
+    href: "/dashboard/mentorship-guidance",
   },
 ];
 
 const examCategories = [
-  { name: "JPSC Prelims", tag: "State PSC", color: "bg-blue-100 text-blue-700" },
-  { name: "SBI PO", tag: "Banking", color: "bg-emerald-100 text-emerald-700" },
-  { name: "IBPS PO", tag: "Banking", color: "bg-emerald-100 text-emerald-700" },
-  { name: "SSC CGL", tag: "SSC", color: "bg-purple-100 text-purple-700" },
-  { name: "Railway NTPC", tag: "Railway", color: "bg-amber-100 text-amber-700" },
-  { name: "Daroga SI", tag: "Police", color: "bg-rose-100 text-rose-700" },
-  { name: "RBI Grade B", tag: "Banking", color: "bg-emerald-100 text-emerald-700" },
-  { name: "UET", tag: "Engineering", color: "bg-cyan-100 text-cyan-700" },
+  { name: "JPSC Prelims", tag: "State PSC", color: "bg-blue-100 text-blue-700", slug: "jpsc-prelims" },
+  { name: "SBI PO", tag: "Banking", color: "bg-emerald-100 text-emerald-700", slug: "sbi-po" },
+  { name: "IBPS PO", tag: "Banking", color: "bg-emerald-100 text-emerald-700", slug: "ibps-po" },
+  { name: "SSC CGL", tag: "SSC", color: "bg-purple-100 text-purple-700", slug: "ssc-cgl" },
+  { name: "Railway NTPC", tag: "Railway", color: "bg-amber-100 text-amber-700", slug: "rrb-ntpc" },
+  { name: "Daroga SI", tag: "Police", color: "bg-rose-100 text-rose-700", slug: "up-si" },
+  { name: "RBI Grade B", tag: "Banking", color: "bg-emerald-100 text-emerald-700", slug: "rbi-grade-b" },
+  { name: "UET", tag: "Engineering", color: "bg-cyan-100 text-cyan-700", slug: null },
 ];
 
 const testimonials = [
@@ -217,7 +225,7 @@ function useStats(): { stats: PlatformStats | null; loading: boolean } {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`${API_URL}/public/stats`);
+        const res = await fetch(`${API_URL}/stats`);
         if (!res.ok) throw new Error("Failed to fetch stats");
         const data = await res.json();
         setStats(data);
@@ -422,20 +430,20 @@ function HeroSection({ onLogin, stats, loading }: { onLogin: () => void; stats: 
 ══════════════════════════════════════════════ */
 function FeaturesSection() {
   return (
-    <section className="py-20 lg:py-28 bg-gray-50 border-t border-gray-100">
+    <section className="py-20 lg:py-24 bg-white border-t border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
           variants={fadeUp}
-          className="text-center mb-16"
+          className="text-center mb-12"
         >
-          <p className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">Everything You Need</p>
-          <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+          <p className="text-xs font-bold text-blue-600 uppercase tracking-[0.18em] mb-3">Everything You Need</p>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-950 mb-4">
             One Platform. Complete Prep.
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
             Every tool designed to help you prepare smarter and score higher.
           </p>
         </motion.div>
@@ -445,23 +453,23 @@ function FeaturesSection() {
           whileInView="visible"
           viewport={{ once: true }}
           variants={stagger}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5"
         >
           {features.map((f) => {
             const Icon = f.icon;
             return (
               <motion.div key={f.title} variants={fadeUp}>
                 <Link href={f.href} className="group block h-full">
-                  <div className="h-full bg-white rounded-2xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-50 transition-all duration-300">
-                    <div className={`w-12 h-12 rounded-xl ${f.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                      <div className={`w-6 h-6 bg-gradient-to-br ${f.color} rounded-lg flex items-center justify-center`}>
-                        <Icon className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+                  <div className="h-full min-h-[218px] rounded-lg border border-gray-200 bg-gray-50/70 p-6 text-center shadow-sm shadow-gray-200/40 transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:bg-white hover:shadow-lg hover:shadow-blue-100/50">
+                    <div className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-lg ${f.bg} transition-transform duration-300 group-hover:scale-105`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br ${f.color}`}>
+                        <Icon className="h-4 w-4 text-white" strokeWidth={2.4} />
                       </div>
                     </div>
-                    <h3 className="text-base font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{f.title}</h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
-                    <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Explore <ChevronRight className="w-4 h-4" />
+                    <h3 className="mb-2 text-lg font-bold text-gray-950 transition-colors group-hover:text-blue-600">{f.title}</h3>
+                    <p className="mx-auto max-w-[24rem] text-sm leading-6 text-gray-600">{f.desc}</p>
+                    <div className="mt-5 flex items-center justify-center gap-1 text-sm font-semibold text-blue-600 opacity-0 transition-opacity group-hover:opacity-100">
+                      Explore <ChevronRight className="h-4 w-4" />
                     </div>
                   </div>
                 </Link>
@@ -504,7 +512,7 @@ function ExamCategoriesSection() {
         >
           {examCategories.map((exam) => (
             <motion.div key={exam.name} variants={fadeUp}>
-              <Link href="/series">
+              <Link href={exam.slug ? `/exams/${exam.slug}` : "/exams"}>
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${exam.color}`}>{exam.tag}</span>
                   <span className="text-sm font-semibold text-gray-800">{exam.name}</span>
@@ -516,7 +524,7 @@ function ExamCategoriesSection() {
         </motion.div>
 
         <div className="text-center">
-          <Link href="/series">
+          <Link href="/dashboard/series">
             <button className="px-8 py-4 border-2 border-blue-500 text-blue-600 hover:bg-blue-50 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 mx-auto">
               Browse All Tests
               <ArrowRight className="w-4 h-4" />
@@ -619,7 +627,7 @@ function TestimonialsSection() {
                     <Star key={s} className="w-4 h-4 text-amber-400 fill-amber-400" />
                   ))}
                 </div>
-                <p className="text-sm text-gray-600 leading-relaxed mb-6">"{t.text}"</p>
+                <p className="text-sm text-gray-600 leading-relaxed mb-6">&quot;{t.text}&quot;</p>
                 <div className="flex items-center gap-3">
                   <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br ${t.color}`}>
                     {t.initials}
@@ -643,6 +651,13 @@ function TestimonialsSection() {
 ══════════════════════════════════════════════ */
 function CTASection({ stats, loading }: { stats: PlatformStats | null; loading: boolean }) {
   const { user } = useAuth();
+  const promptGoogleSignIn = () => {
+    const google = (window as Window & {
+      google?: { accounts?: { id?: { prompt?: () => void } } };
+    }).google;
+
+    google?.accounts?.id?.prompt?.();
+  };
 
   return (
     <section className="py-20 lg:py-28 bg-white border-t border-gray-100">
@@ -685,14 +700,14 @@ function CTASection({ stats, loading }: { stats: PlatformStats | null; loading: 
             ) : (
               <>
                 <button
-                  onClick={() => (window as any).google?.accounts.id.prompt()}
+                  onClick={promptGoogleSignIn}
                   className="px-10 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl hover:shadow-blue-500/25 text-base flex items-center gap-2 mx-auto sm:mx-0"
                 >
                   Get Started Free
                   <ArrowRight className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={() => (window as any).google?.accounts.id.prompt()}
+                  onClick={promptGoogleSignIn}
                   className="px-10 py-4 border-2 border-gray-200 text-gray-700 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl font-bold transition-all text-base mx-auto sm:mx-0"
                 >
                   Sign In
@@ -720,7 +735,7 @@ export default function LandingPage() {
       <svg className="pointer-events-none fixed inset-0 w-full h-full z-0" style={{ opacity: 0.018 }} aria-hidden="true">
         <defs>
           <filter id="en-page-grain">
-            <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" stitchTiles="stitch" />
             <feColorMatrix type="saturate" values="0" />
           </filter>
         </defs>

@@ -15,7 +15,7 @@ import MegaMenu from "@/components/layout/MegaMenu";
 const FREE_ITEMS = [
   {
     label: "Free Test Series",
-    href:  "/series?filter=free",
+    href:  "/dashboard/series?filter=free",
     icon:  ClipboardList,
     desc:  "Full mock tests at zero cost",
     color: "text-blue-600",
@@ -23,7 +23,7 @@ const FREE_ITEMS = [
   },
   {
     label: "Free Previous Year Papers",
-    href:  "/pyq?filter=free",
+    href:  "/dashboard/pyq?filter=free",
     icon:  FileText,
     desc:  "Solved PYQs, completely free",
     color: "text-violet-600",
@@ -31,7 +31,7 @@ const FREE_ITEMS = [
   },
   {
     label: "Free Courses",
-    href:  "/series?filter=free",
+    href:  "/dashboard/series?filter=free",
     icon:  BookOpen,
     desc:  "Structured courses, no paywall",
     color: "text-emerald-600",
@@ -39,7 +39,7 @@ const FREE_ITEMS = [
   },
   {
     label: "Free Study Material",
-    href:  "/library?filter=free",
+    href:  "/blog?filter=free",
     icon:  Library,
     desc:  "Notes, PDFs & topic resources",
     color: "text-amber-600",
@@ -49,26 +49,26 @@ const FREE_ITEMS = [
 
 const NAV_BEFORE_EXAMS = [
   { href: "/dashboard", label: "Dashboard"   },
-  { href: "/series",    label: "Test Series" },
+  { href: "/dashboard/series",    label: "Test Series" },
 ];
 
 const NAV_AFTER_EXAMS = [
-  { href: "/pyq",        label: "Previous Year Papers" },
-  { href: "/mentorship", label: "Mentorship"           },
+  { href: "/dashboard/pyq",        label: "Previous Year Papers" },
+  { href: "/dashboard/mentorship-guidance", label: "Mentorship"           },
 ];
 
 /** Map routes → human-readable page titles for breadcrumb */
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard":  "Dashboard",
-  "/series":     "Test Series",
-  "/pyq":        "Previous Year Papers",
-  "/mentorship": "Mentorship",
-  "/analytics":  "Analytics",
-  "/schedule":   "Schedule",
+  "/dashboard/series":     "Test Series",
+  "/dashboard/pyq":        "Previous Year Papers",
+  "/dashboard/mentorship-guidance": "Mentorship",
+  "/dashboard/analytics":  "Analytics",
+  "/dashboard/schedule":   "Schedule",
   "/exams":      "Browse Exams",
-  "/library":    "Nurture Library",
-  "/plans":      "Upgrade Plan",
-  "/profile":    "My Profile",
+  "/blog":    "Nurture Library",
+  "/dashboard/plans":      "Upgrade Plan",
+  "/dashboard/profile":    "My Profile",
 };
 
 function getPageTitle(pathname: string): string {
@@ -321,7 +321,7 @@ export default function Topbar({ hideSidebarItems = false }: { hideSidebarItems?
               className="absolute right-0 top-full mt-2 w-48 rounded-xl shadow-lg overflow-hidden z-50"
               style={{ background: "var(--card)", border: "1px solid var(--line-soft)" }}
             >
-              <Link href="/profile" onClick={() => setShowMenu(false)}
+              <Link href="/dashboard/profile" onClick={() => setShowMenu(false)}
                 className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--ink-2)] hover:bg-[var(--bg)] transition-colors"
               >
                 My Profile

@@ -7,10 +7,10 @@ import { Home, GraduationCap, BookOpen, FileText, Users } from "lucide-react";
 
 const ITEMS = [
   { href: "/dashboard",  label: "Dashboard",  icon: Home          },
-  { href: "/series",     label: "Exams",      icon: GraduationCap },
-  { href: "/pyq",        label: "PYQ",        icon: FileText      },
-  { href: "/mentorship", label: "Mentorship", icon: Users         },
-  { href: "/profile",    label: "Profile",    icon: BookOpen      },
+  { href: "/dashboard/series",     label: "Exams",      icon: GraduationCap },
+  { href: "/dashboard/pyq",        label: "PYQ",        icon: FileText      },
+  { href: "/dashboard/mentorship-guidance", label: "Mentorship", icon: Users         },
+  { href: "/dashboard/profile",    label: "Profile",    icon: BookOpen      },
 ];
 
 export default function MobileNav() {

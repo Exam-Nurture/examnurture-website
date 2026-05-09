@@ -82,7 +82,7 @@ export default function TestSeriesCards() {
           <div className="text-sm font-semibold" style={{ color: "var(--ink-1)" }}>My Test Series</div>
           <div className="text-xs mt-1" style={{ color: "var(--ink-4)" }}>2 active series</div>
         </div>
-        <Link href="/series" className="text-xs font-semibold hover:underline" style={{ color: "var(--blue)" }}>
+        <Link href="/dashboard/series" className="text-xs font-semibold hover:underline" style={{ color: "var(--blue)" }}>
           Browse all →
         </Link>
       </div>
@@ -94,7 +94,7 @@ export default function TestSeriesCards() {
           done={4} total={20} daysLeft={63}
           tint="var(--violet)"
           nextTest="Full Mock #05"
-          href="/series"
+          href="/dashboard/series"
         />
         <SeriesCard
           title="IBPS PO 2025 — Complete Pack"
@@ -102,7 +102,7 @@ export default function TestSeriesCards() {
           done={8} total={25} daysLeft={118}
           tint="var(--blue)"
           nextTest="Quantitative Aptitude — DI Special"
-          href="/series"
+          href="/dashboard/series"
         />
       </div>
     </div>

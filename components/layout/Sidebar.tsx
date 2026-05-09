@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, BookOpen, FileText, Users,
   BarChart3, CalendarDays, Library, Menu,
-  User, Zap, GraduationCap, ChevronDown, ChevronRight,
+  User, Zap, GraduationCap, PlayCircle, BookMarked
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -14,16 +14,18 @@ import { useAuth } from "@/lib/auth-context";
 const NAV_ITEMS = [
   { href: "/dashboard",  label: "Dashboard",           icon: LayoutDashboard },
   { href: "/exams",      label: "Browse Exams",        icon: GraduationCap   },
-  { href: "/series",     label: "Test Series",         icon: BookOpen        },
-  { href: "/pyq",        label: "Previous Year Papers",icon: FileText        },
-  { href: "/library",    label: "Nurture Library",     icon: Library         },
-  { href: "/analytics",  label: "Analytics",           icon: BarChart3       },
-  { href: "/mentorship", label: "Mentorship",          icon: Users           },
-  { href: "/schedule",   label: "Schedule",            icon: CalendarDays    },
+  { href: "/dashboard/series",     label: "Test Series",         icon: BookOpen        },
+  { href: "/dashboard/pyq",        label: "Previous Year Papers",icon: FileText        },
+  { href: "/blog",    label: "Blog",                icon: Library         },
+  { href: "/dashboard/my-blog", label: "My Library",          icon: BookMarked      },
+  { href: "/dashboard/courses",    label: "Video Courses",       icon: PlayCircle      },
+  { href: "/dashboard/analytics",  label: "Analytics",           icon: BarChart3       },
+  { href: "/dashboard/mentorship-guidance", label: "Mentorship", icon: Users           },
+  { href: "/dashboard/schedule",   label: "Schedule",            icon: CalendarDays    },
 ];
 
 const BOTTOM_ITEMS = [
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/dashboard/profile", label: "Profile", icon: User },
 ];
 
 const SIDEBAR_KEY     = "en_sidebar_collapsed";
@@ -146,7 +148,7 @@ export default function Sidebar() {
             <NavItem key={item.href} {...item} />
           ))}
           {!collapsed && !user?.subscription && (
-            <Link href="/plans"
+            <Link href="/dashboard/plans"
               className="mt-2 flex items-center gap-2 px-3 py-2.5 rounded-[10px] transition-all"
               style={{ background: "linear-gradient(135deg, var(--blue), var(--cyan))" }}>
               <Zap size={14} className="text-white shrink-0" />

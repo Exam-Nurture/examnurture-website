@@ -4,27 +4,29 @@ import Link from "next/link";
 import { Mail } from "lucide-react";
 
 const footerLinks = {
-  platform: [
-    { name: "All Courses", href: "/courses" },
-    { name: "Test Series", href: "/series" },
-    { name: "PYQ Papers", href: "/pyq" },
-    { name: "Nurture Library", href: "/library" }
+  explore: [
+    { name: "All Exams",         href: "/exams"       },
+    { name: "All Test Series",   href: "/series/all"  },
+    { name: "All PYQ Papers",    href: "/pyq/all"     },
+    { name: "Nurture Library",   href: "/blog"     },
+    { name: "All Courses",       href: "/courses/all" },
+    { name: "Mentorship",        href: "/mentorship"  },
   ],
   account: [
-    { name: "Dashboard", href: "/dashboard" },
-    { name: "Analytics", href: "/analytics" },
-    { name: "Subscription Plans", href: "/plans" },
-    { name: "Daily Quiz", href: "/daily-quiz" },
+    { name: "Dashboard",         href: "/dashboard"   },
+    { name: "My Library",        href: "/dashboard/my-blog"  },
+    { name: "Analytics",         href: "/dashboard/analytics"   },
+    { name: "Subscription Plans",href: "/dashboard/plans"       },
   ],
   company: [
-    { name: "About Us", href: "/about" },
-    { name: "Contact", href: "/contact" },
-    { name: "Careers", href: "/careers" },
+    { name: "About Us",          href: "/about"       },
+    { name: "Contact",           href: "/contact"     },
+    { name: "Careers",           href: "/careers"     },
   ],
   legal: [
-    { name: "Privacy Policy", href: "/privacy" },
-    { name: "Terms of Service", href: "/terms" },
-    { name: "Refund Policy", href: "/refund" },
+    { name: "Privacy Policy",    href: "/privacy"     },
+    { name: "Terms of Service",  href: "/terms"       },
+    { name: "Refund Policy",     href: "/refund"      },
   ],
 };
 
@@ -111,11 +113,11 @@ export default function MarketingFooter() {
             </div>
           </div>
 
-          {/* Platform */}
+          {/* Explore */}
           <div>
-            <h3 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Platform</h3>
+            <h3 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Explore</h3>
             <ul className="space-y-2.5">
-              {footerLinks.platform.map((item) => (
+              {footerLinks.explore.map((item) => (
                 <li key={item.name}>
                   <Link href={item.href} className="text-sm text-gray-400 hover:text-white transition-colors">
                     {item.name}
