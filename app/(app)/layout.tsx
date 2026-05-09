@@ -1,8 +1,14 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/layout/Topbar";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  if (!cookieStore.get("en_token")?.value) {
+    redirect("/");
+  }
   return (
     <div className="min-h-screen flex" style={{ background: "var(--bg)" }}>
       {/* Collapsible sidebar — desktop only */}

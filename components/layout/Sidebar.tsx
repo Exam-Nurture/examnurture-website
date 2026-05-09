@@ -20,7 +20,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/my-blog", label: "My Library",          icon: BookMarked      },
   { href: "/dashboard/courses",    label: "Video Courses",       icon: PlayCircle      },
   { href: "/dashboard/analytics",  label: "Analytics",           icon: BarChart3       },
-  { href: "/dashboard/mentorship-guidance", label: "Mentorship", icon: Users           },
+  { href: "/dashboard/mentorship", label: "Mentorship", icon: Users           },
   { href: "/dashboard/schedule",   label: "Schedule",            icon: CalendarDays    },
 ];
 

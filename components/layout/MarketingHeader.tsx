@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LogIn, LayoutDashboard, LogOut, Smartphone, ChevronDown,
-  Search, Library, X, Zap, Newspaper, BookMarked,
+  Search, Library, X,
   User, FileText, TrendingUp, CreditCard,
   GraduationCap, Users, Mail, BarChart3,
   Home, MoreHorizontal,
@@ -21,13 +21,6 @@ const PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=com.kvebrk.
 const examsNav = [
   { name: "Browse Exams", href: "/exams",      icon: GraduationCap, desc: "Explore exams by category" },
   { name: "Test Series",  href: "/series/all", icon: BarChart3,     desc: "Full mock test series"     },
-];
-
-const learnNav = [
-  { name: "Current News",    href: "/blog?tab=news",    icon: Newspaper,  desc: "Daily current affairs digest"       },
-  { name: "Daily Quiz",      href: "/dashboard/daily-quiz",          icon: Zap,        desc: "5-question daily practice set"      },
-  { name: "Blog",            href: "/blog",             icon: Library,    desc: "Concepts, formulas & exam strategies" },
-  { name: "Books & Magazine",href: "/blog?tab=books",   icon: BookMarked, desc: "Recommended books & magazines"      },
 ];
 
 const moreNav = [

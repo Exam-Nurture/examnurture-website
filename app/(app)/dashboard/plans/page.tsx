@@ -593,7 +593,7 @@ function IndividualPurchaseSection() {
       color: "#4F7BF7",
       colorSoft: "#EEF2FF",
       description: "Buy specific test series for your target exam. Lifetime access — not tied to any tier.",
-      href: "/test-series",
+      href: "/dashboard/series",
     },
     {
       type: "COURSE",
@@ -620,7 +620,7 @@ function IndividualPurchaseSection() {
       color: "#0D9488",
       colorSoft: "#F0FDFA",
       description: "Buy premium study notes, books, and PDFs for your exam preparation.",
-      href: "/study-material",
+      href: "/dashboard/guides",
     },
   ];
 

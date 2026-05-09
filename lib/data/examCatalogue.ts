@@ -31,6 +31,14 @@ export type CatalogueBoard = {
   exams: CatalogueExam[];
 };
 
+export type ExamDate = {
+  label: string;
+  date: string;
+  status: "upcoming" | "ongoing" | "completed";
+};
+
+export type ExamFAQ = { q: string; a: string };
+
 export type CatalogueExam = {
   id: string;         // unique slug, used in /exams/[slug]
   boardId: string;
@@ -50,6 +58,18 @@ export type CatalogueExam = {
   syllabusUrl?: string;
   /** matching boardId in examData.ts for cross-referencing content */
   legacyBoardId?: string;
+  /* ── Rich hub fields ── */
+  description?: string;
+  conductingBody?: string;
+  frequency?: string;
+  mode?: string;
+  languages?: string[];
+  stages?: string[];
+  difficulty?: string;
+  selectionRatio?: string;
+  vacancyTrend?: string;
+  importantDates?: ExamDate[];
+  faqs?: ExamFAQ[];
 };
 
 /* ═══════════════════════════════════════════════
@@ -128,6 +148,29 @@ export const BOARDS: CatalogueBoard[] = [
         courseCount: 1,
         popular: true,
         legacyBoardId: "ssc-upper",
+        description: "SSC CGL (Combined Graduate Level) is one of India's most competitive exams conducted by the Staff Selection Commission for recruiting graduates into Group B and Group C posts across central government ministries and departments.",
+        conductingBody: "Staff Selection Commission",
+        frequency: "Annual",
+        mode: "Online (CBT)",
+        languages: ["Hindi", "English"],
+        stages: ["Tier I (Objective)", "Tier II (Objective + Descriptive)", "Document Verification"],
+        difficulty: "Moderate–High",
+        selectionRatio: "1:50",
+        vacancyTrend: "14,582 posts in 2024",
+        importantDates: [
+          { label: "Notification", date: "Apr 2025", status: "completed" },
+          { label: "Application Window", date: "Apr–May 2025", status: "completed" },
+          { label: "Admit Card", date: "Jul 2025", status: "upcoming" },
+          { label: "Tier I Exam", date: "Aug 2025", status: "upcoming" },
+          { label: "Tier II Exam", date: "Nov 2025", status: "upcoming" },
+          { label: "Final Result", date: "Mar 2026", status: "upcoming" },
+        ],
+        faqs: [
+          { q: "What is SSC CGL eligibility?", a: "A Bachelor's degree from a recognized university is required. Age limit is 18–32 years (varies by post)." },
+          { q: "How many attempts are allowed?", a: "There is no limit on the number of attempts as long as you meet the age criteria." },
+          { q: "What is the SSC CGL salary?", a: "SSC CGL selected candidates earn ₹25,500–₹1,51,100 per month depending on the post and grade pay." },
+          { q: "Is there negative marking?", a: "Yes, 0.50 marks are deducted for each wrong answer in Tier I and Tier II." },
+        ],
       },
       {
         id: "ssc-chsl",
@@ -205,6 +248,24 @@ export const BOARDS: CatalogueBoard[] = [
         courseCount: 0,
         popular: true,
         legacyBoardId: "railway-ntpc",
+        description: "RRB NTPC recruits for Non-Technical Popular Categories posts in Indian Railways including Station Master, Goods Guard, Commercial Apprentice, and Clerk positions.",
+        conductingBody: "Railway Recruitment Board",
+        frequency: "Every 2–3 years",
+        mode: "Online (CBT)",
+        languages: ["Hindi", "English", "Regional"],
+        stages: ["CBT 1", "CBT 2", "Typing / CBAT", "Document Verification"],
+        difficulty: "Moderate",
+        selectionRatio: "1:100",
+        vacancyTrend: "11,558 posts in 2024",
+        importantDates: [
+          { label: "Notification", date: "Jun 2025", status: "upcoming" },
+          { label: "Application", date: "Jul–Aug 2025", status: "upcoming" },
+          { label: "CBT 1 Exam", date: "Oct 2025", status: "upcoming" },
+        ],
+        faqs: [
+          { q: "What is the RRB NTPC age limit?", a: "18–33 years for Graduate posts, with relaxation for reserved categories." },
+          { q: "Is there negative marking?", a: "Yes, 1/3rd of marks allotted for each wrong answer." },
+        ],
       },
       {
         id: "rrb-group-d",
@@ -251,6 +312,24 @@ export const BOARDS: CatalogueBoard[] = [
         courseCount: 1,
         popular: true,
         legacyBoardId: "banking-po",
+        description: "The IBPS PO exam is conducted by the Institute of Banking Personnel Selection to recruit Probationary Officers (PO) and Management Trainees (MT) in participating public sector banks across India.",
+        conductingBody: "Institute of Banking Personnel Selection",
+        frequency: "Annual",
+        mode: "Online (CBT)",
+        languages: ["Hindi", "English"],
+        stages: ["Prelims", "Mains", "Interview"],
+        difficulty: "Moderate–High",
+        selectionRatio: "1:45",
+        vacancyTrend: "3000+ posts in 2024",
+        importantDates: [
+          { label: "Notification", date: "Aug 2025", status: "upcoming" },
+          { label: "Prelims Exam", date: "Oct 2025", status: "upcoming" },
+          { label: "Mains Exam", date: "Nov 2025", status: "upcoming" },
+        ],
+        faqs: [
+          { q: "What is the age limit for IBPS PO?", a: "The minimum age is 20 years and the maximum is 30 years, with relaxations for reserved categories." },
+          { q: "Are there negative marks?", a: "Yes, 0.25 marks are deducted for every wrong answer in both Prelims and Mains." },
+        ],
       },
       {
         id: "sbi-po",
@@ -370,6 +449,24 @@ export const BOARDS: CatalogueBoard[] = [
         courseCount: 2,
         popular: true,
         legacyBoardId: "state-psc",
+        description: "Jharkhand Public Service Commission (JPSC) conducts the Combined Civil Services Examination for recruitment to various administrative posts like Deputy Collector, DSP, and other state civil services in Jharkhand.",
+        conductingBody: "Jharkhand Public Service Commission",
+        frequency: "Annual/Biennial",
+        mode: "Offline (OMR)",
+        languages: ["Hindi", "English"],
+        stages: ["Prelims", "Mains", "Interview"],
+        difficulty: "Moderate–High",
+        selectionRatio: "1:300",
+        vacancyTrend: "342 posts in 2024",
+        importantDates: [
+          { label: "Notification", date: "Jan 2025", status: "completed" },
+          { label: "Prelims Exam", date: "Jun 2025", status: "upcoming" },
+          { label: "Mains Exam", date: "Oct 2025", status: "upcoming" },
+        ],
+        faqs: [
+          { q: "Is knowledge of Jharkhand's history necessary?", a: "Yes, Paper II of the JPSC Prelims is entirely dedicated to the history, geography, economy, and culture of Jharkhand." },
+          { q: "Is there negative marking in JPSC Prelims?", a: "No, there is currently no negative marking in the JPSC Preliminary examination." },
+        ],
       },
       {
         id: "jpsc-mains",
@@ -496,6 +593,22 @@ export const BOARDS: CatalogueBoard[] = [
         courseCount: 1,
         popular: true,
         legacyBoardId: "state-psc",
+        description: "The Bihar Public Service Commission (BPSC) Civil Services Examination is conducted for recruitment to multiple state administration posts, including Sub-Divisional Magistrate (SDM) and Deputy Superintendent of Police (DSP).",
+        conductingBody: "Bihar Public Service Commission",
+        frequency: "Annual",
+        mode: "Offline (OMR)",
+        languages: ["Hindi", "English"],
+        stages: ["Prelims", "Mains", "Interview"],
+        difficulty: "High",
+        selectionRatio: "1:400",
+        vacancyTrend: "342 posts (69th BPSC)",
+        importantDates: [
+          { label: "Notification", date: "May 2025", status: "upcoming" },
+          { label: "Prelims Exam", date: "Jul 2025", status: "upcoming" },
+        ],
+        faqs: [
+          { q: "Is negative marking applicable?", a: "Yes, negative marking has been introduced in the BPSC Prelims recently." },
+        ],
       },
       {
         id: "bpsc-tre",
@@ -607,6 +720,22 @@ export const BOARDS: CatalogueBoard[] = [
         courseCount: 1,
         popular: true,
         legacyBoardId: "state-psc",
+        description: "The UPPSC Provincial Civil Services (PCS) exam is conducted to recruit candidates for senior state government administrative posts in Uttar Pradesh.",
+        conductingBody: "Uttar Pradesh Public Service Commission",
+        frequency: "Annual",
+        mode: "Offline (OMR)",
+        languages: ["Hindi", "English"],
+        stages: ["Prelims", "Mains", "Interview"],
+        difficulty: "High",
+        selectionRatio: "1:350",
+        vacancyTrend: "253 posts in 2024",
+        importantDates: [
+          { label: "Notification", date: "Jan 2025", status: "completed" },
+          { label: "Prelims Exam", date: "Aug 2025", status: "upcoming" },
+        ],
+        faqs: [
+          { q: "What is the age limit for UPPSC PCS?", a: "The minimum age is 21 years and the maximum is 40 years, with relaxations for reserved categories." },
+        ],
       },
     ],
   },

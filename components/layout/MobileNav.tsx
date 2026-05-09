@@ -9,7 +9,7 @@ const ITEMS = [
   { href: "/dashboard",  label: "Dashboard",  icon: Home          },
   { href: "/dashboard/series",     label: "Exams",      icon: GraduationCap },
   { href: "/dashboard/pyq",        label: "PYQ",        icon: FileText      },
-  { href: "/dashboard/mentorship-guidance", label: "Mentorship", icon: Users         },
+  { href: "/dashboard/mentorship", label: "Mentorship", icon: Users         },
   { href: "/dashboard/profile",    label: "Profile",    icon: BookOpen      },
 ];
 

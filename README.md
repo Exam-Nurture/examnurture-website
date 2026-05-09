@@ -1,5 +1,13 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+
+## Recent Updates (2026-05-09)
+
+- **Advanced Exam Discovery**: Implemented a high-performance, slide-out drawer interface for States and Examination Boards filters.
+- **Responsive Dark Mode**: Full-site support for dark/light themes with Tailwind CSS, optimized for mobile and desktop.
+- **Role System Sync**: Integrated the new `superadmin` and `student` role hierarchy for unified authentication across the platform.
+- **Performance**: Optimized dashboard rendering and improved error handling for 401/403 responses.
+
 ## Getting Started
 
 First, run the development server:

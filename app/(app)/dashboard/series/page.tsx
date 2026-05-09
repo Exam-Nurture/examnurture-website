@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Clock, FileText, Users, Star, Zap, CheckCircle2, ArrowRight } from "lucide-react";
+import { Clock, FileText, Users, Star, Zap, CheckCircle2, ArrowRight, ShoppingCart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiGetTestSeries } from "@/lib/api";
 
@@ -153,13 +153,24 @@ function SeriesCard({ series: s }: { series: any }) {
 
       <div className="flex-1" />
 
-      <Link
-        href={`/dashboard/series/${s.id}`}
-        className="mt-2 flex items-center justify-center gap-1.5 py-2.5 rounded-[10px] text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98]"
-        style={{ background: tint }}
-      >
-        View Tests →
-      </Link>
+      <div className="mt-2 flex flex-col gap-2">
+        <Link
+          href={`/dashboard/series/${s.id}`}
+          className="flex items-center justify-center gap-1.5 py-2.5 rounded-[10px] text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98]"
+          style={{ background: tint }}
+        >
+          View Tests →
+        </Link>
+        {s.isPaid && (
+          <Link
+            href={`/dashboard/checkout/${encodeURIComponent(`TEST_SERIES:${s.id}`)}`}
+            className="flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-[12px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
+            style={{ background: "#FFF3E0", color: "#F97316", border: "1px solid #FED7AA" }}
+          >
+            <ShoppingCart size={12} /> Buy to Unlock
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

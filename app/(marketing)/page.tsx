@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import AuthModal from "@/components/auth/AuthModal";
@@ -19,6 +19,9 @@ import {
   Target,
   Calendar,
   TrendingUp,
+  GraduationCap,
+  Landmark,
+  MapPin,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -158,7 +161,7 @@ const features = [
     desc: "Guided preparation plans, expert support, and focused direction when your study path needs clarity.",
     color: "from-rose-500 to-rose-600",
     bg: "bg-rose-50",
-    href: "/dashboard/mentorship-guidance",
+    href: "/mentorship",
   },
 ];
 
@@ -248,32 +251,22 @@ function HeroSection({ onLogin, stats, loading }: { onLogin: () => void; stats: 
   const { user, loading: authLoading } = useAuth();
 
   const format = (val: number | undefined, isUsers = false) => {
-    if (val === undefined || val === null) return "NA";
-    if (isUsers) return val.toLocaleString(); // Show total exact count for users
-    if (val >= 1000) return `${(val / 1000).toFixed(0)}K+`;
-    return `${val}+`;
+    if (val === undefined || val === null) return "—";
+    if (isUsers && val >= 1000) return `${(val / 1000).toFixed(1)}K`;
+    return val.toLocaleString();
   };
 
-  const statItems = [
-    { value: format(stats?.examBoards), label: "Exam Boards" },
-    { value: format(stats?.exams), label: "Exams" },
-    { value: format(stats?.states), label: "States" },
-    { value: format(stats?.courses), label: "Courses" },
-    { value: format(stats?.languages), label: "Language" },
-    { value: format(stats?.testSeries), label: "TestSeries" },
-    { value: format(stats?.pyqPapers), label: "PYQ Papers" },
-    { value: format(stats?.users, true), label: "Users" },
-  ];
+  const statItems = [];
 
   return (
     <section className="relative overflow-hidden bg-white">
       <MeshBackground />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-20 lg:py-32">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
 
           {/* Left */}
-          <div className="text-center lg:text-left">
+          <div className="text-center lg:text-left lg:pt-10">
             <motion.h1
               initial={{ opacity: 1, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
@@ -329,99 +322,148 @@ function HeroSection({ onLogin, stats, loading }: { onLogin: () => void; stats: 
               )}
             </motion.div>
 
-            {/* Aesthetic Stats Grid — 4x2 (4-4 layout) */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-              className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 lg:pr-10"
-            >
-              {statItems.map((s) => (
-                <div key={s.label} className="relative overflow-hidden bg-white/55 backdrop-blur-lg border border-white/80 shadow-[0_2px_12px_-4px_rgba(59,130,246,0.12)] rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center group hover:border-blue-200/70 hover:bg-white/70 hover:shadow-md transition-all duration-300">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-transparent to-cyan-50/80 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative z-10 text-xl sm:text-2xl font-extrabold text-gray-800 group-hover:text-blue-700 transition-colors duration-300">
-                    {loading ? <span className="animate-pulse text-gray-300">—</span> : s.value}
-                  </div>
-                  <div className="relative z-10 text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1.5 text-center group-hover:text-blue-600/80 transition-colors duration-300">
-                    {s.label}
-                  </div>
-                </div>
-              ))}
-            </motion.div>
           </div>
 
-          {/* Right — feature preview cards */}
+          {/* Right — Compact Stats Panel */}
           <motion.div
-            initial={{ opacity: 1, x: 20 }}
+            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            className="relative hidden lg:block"
+            transition={{ delay: 0.15, duration: 0.5 }}
+            className="relative mt-12 lg:mt-0 flex items-center justify-center lg:justify-end"
           >
-            <div className="relative grid grid-cols-2 gap-4">
-              {/* Dashboard preview card */}
-              <div className="col-span-2 rounded-2xl border border-white/70 bg-white/80 backdrop-blur-md shadow-xl shadow-blue-100/40 p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-700">Progress</span>
+            <div className="w-full max-w-md rounded-[2.5rem] border border-white/80 bg-white/40 p-6 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/60">
+              {/* Panel header */}
+              <div className="mb-5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="relative h-2.5 w-2.5">
+                    <div className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <div className="relative h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                  </div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Live Platform Stats</p>
                 </div>
-                <div className="space-y-3">
-                  {/* PYQs Attended */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-gray-500 font-medium">PYQs Attended</span>
-                      <span className="font-bold text-blue-600">48 / 60</span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full" style={{ width: "80%" }} />
-                    </div>
-                  </div>
-                  {/* Test Series Attended */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-gray-500 font-medium">Test Series Attended</span>
-                      <span className="font-bold text-violet-600">14 / 20</span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-violet-500 to-purple-400 rounded-full" style={{ width: "70%" }} />
-                    </div>
-                  </div>
-                  {/* Daily Streak */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-gray-500 font-medium">Daily Streak</span>
-                      <span className="font-bold text-amber-600">🔥 12 day max</span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full" style={{ width: "60%" }} />
-                    </div>
-                  </div>
-                </div>
+                <div className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">24h Update</div>
               </div>
 
-              {/* Mini stat cards */}
-              <div className="rounded-2xl border border-white/70 bg-white/80 backdrop-blur-md shadow-lg shadow-blue-100/30 p-4 flex flex-col gap-1">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center mb-1">
-                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+              {/* Free PYQ highlight — Premium Card */}
+              <Link href="/pyq/all" className="group mb-5 block">
+                <div className="relative overflow-hidden rounded-3xl bg-slate-950 p-5 transition-all duration-500 hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)] hover:-translate-y-1">
+                  {/* Premium animated background elements */}
+                  <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-blue-600/20 blur-3xl transition-all duration-500 group-hover:bg-blue-600/30" />
+                  <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-emerald-600/20 blur-3xl transition-all duration-500 group-hover:bg-emerald-600/30" />
+
+                  {/* FREE badge — Glass style */}
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur-md">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-white/90">Curated PYQ Library</span>
+                  </div>
+
+                  <h3 className="text-xl font-bold leading-tight text-white mb-1.5">Previous Year Papers</h3>
+                  <p className="text-xs font-medium text-slate-400 leading-relaxed mb-4">Access 10,000+ real exam papers with detailed step-by-step solutions.</p>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white transition-colors group-hover:bg-blue-500">
+                        <FileText className="h-4 w-4" />
+                      </div>
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white transition-colors group-hover:bg-emerald-500">
+                        <BookOpen className="h-4 w-4" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-white transition-all duration-300 group-hover:gap-2.5">
+                      Attempt Now <ArrowRight className="h-3.5 w-3.5 text-blue-400" />
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xl font-bold text-gray-900">87%</div>
-                <div className="text-xs text-gray-500">Avg. Score</div>
-                <div className="text-xs text-emerald-600 font-medium">↑ +12% this week</div>
+              </Link>
+
+              {/* Stat Grid — 2 columns */}
+              <div className="grid grid-cols-2 gap-3">
+                <StatCard icon={Landmark} label="Exam Boards" rawValue={stats?.examBoards} color="blue" />
+                <StatCard icon={MapPin} label="States" rawValue={stats?.states} color="rose" />
+                <StatCard icon={GraduationCap} label="Exams" rawValue={stats?.exams} color="violet" />
+                <StatCard icon={BookOpen} label="Test Series" rawValue={stats?.testSeries} color="emerald" />
+                <StatCard icon={FileText} label="PYQ Papers" rawValue={stats?.pyqPapers} color="cyan" />
+                <StatCard icon={Users} label="Learners" rawValue={stats?.users} color="amber" isUsers />
               </div>
-
-              <div className="rounded-2xl border border-white/70 bg-white/80 backdrop-blur-md shadow-lg shadow-blue-100/30 p-4 flex flex-col gap-1">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center mb-1">
-                  <Clock className="w-4 h-4 text-blue-600" />
-                </div>
-                <div className="text-xl font-bold text-gray-900">24</div>
-                <div className="text-xs text-gray-500">Tests Done</div>
-                <div className="text-xs text-blue-600 font-medium">🔥 7-day streak</div>
-              </div>
-
-
             </div>
           </motion.div>
         </div>
       </div>
     </section>
+  );
+}
+
+/* ── Count-up hook ── */
+function useCountUp(target: number | undefined, duration = 1200) {
+  const [count, setCount] = useState(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (target === undefined || target === null) return;
+    const start = performance.now();
+    const from = 0;
+    const to = target;
+
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(from + (to - from) * eased));
+      if (progress < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [target, duration]);
+
+  return count;
+}
+
+function StatCard({ icon: Icon, label, rawValue, color = "blue", isUsers = false }: {
+  icon: React.ElementType;
+  label: string;
+  rawValue: number | undefined;
+  color?: "blue" | "emerald" | "violet" | "amber" | "rose" | "cyan";
+  isUsers?: boolean;
+}) {
+  const count = useCountUp(rawValue);
+
+  const display = rawValue === undefined || rawValue === null
+    ? "—"
+    : isUsers && count >= 1000
+      ? `${(count / 1000).toFixed(1)}K+`
+      : isUsers
+        ? `${count}+`
+        : count.toLocaleString();
+
+  const styles = {
+    blue: "hover:bg-blue-600 hover:border-blue-600 text-blue-600",
+    emerald: "hover:bg-emerald-600 hover:border-emerald-600 text-emerald-600",
+    violet: "hover:bg-violet-600 hover:border-violet-600 text-violet-600",
+    amber: "hover:bg-amber-600 hover:border-amber-600 text-amber-600",
+    rose: "hover:bg-rose-600 hover:border-rose-600 text-rose-600",
+    cyan: "hover:bg-cyan-600 hover:border-cyan-600 text-cyan-600",
+  };
+
+  return (
+    <motion.div
+      whileHover={{ y: -5 }}
+      className={`group relative flex flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white p-4 text-center transition-all duration-300 ${styles[color]} hover:shadow-2xl hover:shadow-current/10`}
+    >
+      <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 transition-all duration-500 group-hover:rotate-[15deg] group-hover:bg-white/20 group-hover:text-white shadow-sm">
+        <Icon className="h-4.5 w-4.5" />
+      </div>
+
+      <motion.div
+        initial={false}
+        whileHover={{ rotateX: 10, rotateY: 10, perspective: 1000 }}
+        transition={{ type: "spring", stiffness: 300, damping: 15 }}
+      >
+        <p className="mb-0.5 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors duration-300 group-hover:text-white/70">{label}</p>
+        <p className="text-xl font-black tabular-nums text-slate-900 transition-colors duration-300 group-hover:text-white">{display}</p>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -524,68 +566,13 @@ function ExamCategoriesSection() {
         </motion.div>
 
         <div className="text-center">
-          <Link href="/dashboard/series">
+          <Link href="/exams">
             <button className="px-8 py-4 border-2 border-blue-500 text-blue-600 hover:bg-blue-50 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 mx-auto">
-              Browse All Tests
+              Browse All Exams
               <ArrowRight className="w-4 h-4" />
             </button>
           </Link>
         </div>
-      </div>
-    </section>
-  );
-}
-
-/* ══════════════════════════════════════════════
-   HOW IT WORKS
-══════════════════════════════════════════════ */
-function HowItWorksSection() {
-  const steps = [
-    { num: "01", icon: Users, title: "Create Your Account", desc: "Sign up free in seconds with Google or email. No credit card required." },
-    { num: "02", icon: Zap, title: "Practice & Improve", desc: "Take mock tests, review solutions, and let AI analytics guide your weak areas." },
-    { num: "03", icon: Trophy, title: "Crack the Exam", desc: "Track your progress, improve your accuracy, and walk in confident on exam day." },
-  ];
-
-  return (
-    <section className="py-20 lg:py-28 bg-gradient-to-b from-blue-600 to-blue-700">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="text-center mb-16"
-        >
-          <p className="text-sm font-semibold text-blue-200 uppercase tracking-wider mb-3">Simple Process</p>
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4">How It Works</h2>
-          <p className="text-lg text-blue-100 max-w-2xl mx-auto">Four steps from sign-up to success.</p>
-        </motion.div>
-
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={stagger}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {steps.map((step) => {
-            const Icon = step.icon;
-            return (
-              <motion.div key={step.num} variants={fadeUp}>
-                <div className="relative bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 text-center h-full">
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-white text-blue-600 text-xs font-bold px-3 py-1 rounded-full shadow">{step.num}</span>
-                  </div>
-                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-4 mt-2">
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-base font-bold text-white mb-2">{step.title}</h3>
-                  <p className="text-sm text-blue-100 leading-relaxed">{step.desc}</p>
-                </div>
-              </motion.div>
-            );
-          })}
-        </motion.div>
       </div>
     </section>
   );
@@ -745,7 +732,6 @@ export default function LandingPage() {
       <HeroSection onLogin={openLogin} stats={stats} loading={loading} />
       <FeaturesSection />
       <ExamCategoriesSection />
-      <HowItWorksSection />
       <TestimonialsSection />
       <CTASection stats={stats} loading={loading} />
     </div>

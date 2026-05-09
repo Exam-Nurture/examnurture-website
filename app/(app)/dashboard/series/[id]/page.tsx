@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  ChevronLeft, Clock, FileText, Lock, Play, 
-  CheckCircle2, AlertCircle, Info, Calendar
+import {
+  ChevronLeft, Clock, FileText, Lock, Play,
+  CheckCircle2, AlertCircle, Info, Calendar, ShoppingCart
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
@@ -101,6 +101,28 @@ export default function SeriesDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Unlock Banner — shown for paid series */}
+      {series.isPaid && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-2xl border-2"
+          style={{ background: "#FFF7ED", borderColor: "#FDBA74" }}>
+          <div className="flex-1">
+            <p className="text-sm font-bold" style={{ color: "#92400E" }}>
+              This is a premium series
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "#B45309" }}>
+              Purchase once and get lifetime access to all {series.tests?.length || 0} tests — access doesn't expire when a tier ends.
+            </p>
+          </div>
+          <Link
+            href={`/dashboard/checkout/${encodeURIComponent(`TEST_SERIES:${id}`)}`}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shrink-0 transition-all hover:brightness-110 active:scale-[0.98]"
+            style={{ background: "#F97316" }}
+          >
+            <ShoppingCart size={14} /> Unlock Series
+          </Link>
+        </div>
+      )}
 
       {/* Tests List */}
       <section>

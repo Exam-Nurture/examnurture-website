@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { BookOpen, FileText, ChevronDown, ChevronUp, CheckCircle2, ExternalLink, Zap } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, FileText, ChevronDown, ChevronUp, CheckCircle2, ExternalLink, Zap, Lock, ShoppingCart } from "lucide-react";
 import { EXAM_BOARDS } from "@/lib/data/examData";
 
 /**
@@ -333,6 +334,38 @@ export default function GuidesPage() {
           </div>
         </div>
       </div>
+
+      {/* Unlock Banner — shown when guide has locked topics */}
+      {guide.levels.some(l => l.topics.some(t => t.status === "locked")) && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-2xl border"
+          style={{ background: "#F5F3FF", borderColor: "#C4B5FD" }}>
+          <Lock size={18} style={{ color: "#7C3AED", flexShrink: 0 }} />
+          <div className="flex-1">
+            <p className="text-sm font-bold" style={{ color: "#4C1D95" }}>
+              Some topics are locked
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "#6D28D9" }}>
+              Upgrade your plan or buy this study guide individually to unlock all topics.
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Link
+              href="/dashboard/plans"
+              className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:brightness-110"
+              style={{ background: "#EDE9FE", color: "#7C3AED" }}
+            >
+              View Plans
+            </Link>
+            <Link
+              href={`/dashboard/checkout/${encodeURIComponent(`STUDY_MATERIAL:${guide.id}`)}`}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:brightness-110"
+              style={{ background: "#7C3AED" }}
+            >
+              <ShoppingCart size={12} /> Buy Guide
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Level-by-level curriculum */}
       <div className="flex flex-col gap-3">

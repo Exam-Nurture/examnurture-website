@@ -474,9 +474,6 @@ function HeroSection({ filters, stats, onSearch, onQuickExam }: {
       <div className="absolute right-8 top-20 h-40 w-40 rounded-full border border-amber-200/70 bg-amber-100/30 blur-sm dark:border-amber-400/20 dark:bg-amber-400/10" />
       <div className="mx-auto grid max-w-[1440px] gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8 lg:py-16">
         <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/75 px-3 py-1.5 text-xs font-black uppercase tracking-[0.22em] text-blue-700 shadow-sm backdrop-blur dark:border-blue-400/20 dark:bg-white/10 dark:text-blue-200">
-            <Sparkles className="h-3.5 w-3.5" /> Master PYQ Discovery
-          </div>
           <h1 className="mt-5 max-w-4xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl lg:text-7xl dark:text-white">
             Previous Year Question Papers
           </h1>
@@ -494,28 +491,12 @@ function HeroSection({ filters, stats, onSearch, onQuickExam }: {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.1 }} className="relative">
-          <Card glass className="relative overflow-hidden rounded-[28px] border border-white/80 bg-white/80 p-5 shadow-2xl shadow-blue-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-white/10">
-            <div className="grid grid-cols-2 gap-3">
-              <HeroStat icon={FileText} label="Total PYQs" value={`${Math.max(stats.total, 18)}+`} />
-              <HeroStat icon={Activity} label="Total attempts" value={`${Math.round(stats.attempts / 1000)}k+`} />
-              <HeroStat icon={GraduationCap} label="Exams covered" value={`${Math.max(stats.exams, 8)}+`} />
-              <HeroStat icon={Trophy} label="Success rate" value={`${stats.successRate}%`} />
-            </div>
-            <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-600 p-4 text-white shadow-xl shadow-blue-600/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">Live trend</p>
-                  <p className="mt-1 text-lg font-black">SSC CGL 2024 papers are peaking</p>
-                </div>
-                <TrendingUp className="h-9 w-9" />
-              </div>
-              <div className="mt-4 grid grid-cols-12 items-end gap-1.5">
-                {[35, 42, 58, 51, 66, 74, 62, 82, 78, 90, 86, 96].map((height, idx) => (
-                  <div key={idx} className="rounded-t bg-white/75" style={{ height }} />
-                ))}
-              </div>
-            </div>
-          </Card>
+          <div className="grid grid-cols-2 gap-4">
+            <HeroStat icon={FileText} label="Total PYQs" value={`${Math.max(stats.total, 18)}+`} color="blue" />
+            <HeroStat icon={Activity} label="Total attempts" value={`${Math.round(stats.attempts / 1000)}k+`} color="emerald" />
+            <HeroStat icon={GraduationCap} label="Exams covered" value={`${Math.max(stats.exams, 8)}+`} color="violet" />
+            <HeroStat icon={Trophy} label="Success rate" value={`${stats.successRate}%`} color="amber" />
+          </div>
         </motion.div>
       </div>
     </section>
@@ -537,12 +518,38 @@ function SearchBar({ value, onChange }: { value: string; onChange: (value: strin
   );
 }
 
-function HeroStat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+function HeroStat({ icon: Icon, label, value, color = "blue" }: { icon: React.ElementType; label: string; value: string; color?: "blue" | "emerald" | "violet" | "amber" }) {
+  const colorStyles = {
+    blue: "from-blue-500/10 to-cyan-500/5 border-blue-200/60 shadow-blue-900/5 dark:from-blue-500/10 dark:to-cyan-500/5 dark:border-blue-400/20",
+    emerald: "from-emerald-500/10 to-teal-500/5 border-emerald-200/60 shadow-emerald-900/5 dark:from-emerald-500/10 dark:to-teal-500/5 dark:border-emerald-400/20",
+    violet: "from-violet-500/10 to-purple-500/5 border-violet-200/60 shadow-violet-900/5 dark:from-violet-500/10 dark:to-purple-500/5 dark:border-violet-400/20",
+    amber: "from-amber-500/10 to-orange-500/5 border-amber-200/60 shadow-amber-900/5 dark:from-amber-500/10 dark:to-orange-500/5 dark:border-amber-400/20",
+  };
+  
+  const iconBgStyles = {
+    blue: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/30",
+    emerald: "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/30",
+    violet: "bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-violet-500/30",
+    amber: "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-500/30",
+  };
+
   return (
-    <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm dark:border-white/10 dark:bg-white/10">
-      <Icon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-      <p className="mt-3 text-2xl font-black">{value}</p>
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
+    <div className={`group relative overflow-hidden rounded-[28px] border bg-gradient-to-br bg-white/60 p-6 shadow-xl backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl dark:bg-slate-900/50 ${colorStyles[color]}`}>
+      <div className="relative z-10">
+        <div className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3 ${iconBgStyles[color]}`}>
+          <Icon className="h-6 w-6" />
+        </div>
+        <p className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+          {value}
+        </p>
+        <p className="mt-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+          {label}
+        </p>
+      </div>
+      
+      {/* Decorative flair */}
+      <div className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/60 blur-3xl transition-all duration-500 group-hover:bg-white/80 dark:bg-white/5" />
+      <div className="pointer-events-none absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/40 blur-2xl transition-all duration-500 group-hover:bg-white/60 dark:bg-white/5" />
     </div>
   );
 }
