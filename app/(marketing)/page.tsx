@@ -60,9 +60,9 @@ function MeshBackground() {
             /* bottom-right indigo whisper */
             "radial-gradient(ellipse 30% 25% at 98%  98%, rgba(99,102,241,0.07)  0%, transparent 40%)",
             /* center white bloom (keeps text readable) */
-            "radial-gradient(ellipse 55% 55% at 50%  50%, rgba(255,255,255,0.55) 0%, transparent 70%)",
-            /* base tint — pure white */
-            "#ffffff",
+            "radial-gradient(ellipse 55% 55% at 50%  50%, var(--bg) 0%, transparent 70%)",
+            /* base tint */
+            "var(--bg)",
           ].join(", "),
         }}
       />
@@ -264,7 +264,7 @@ function HeroSection({ onLogin, stats, loading }: { onLogin: () => void; stats: 
   const statItems = [];
 
   return (
-    <section className="relative overflow-hidden bg-white">
+    <section className="relative overflow-hidden bg-[var(--bg)]">
       <MeshBackground />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-20 lg:py-32">
@@ -276,7 +276,7 @@ function HeroSection({ onLogin, stats, loading }: { onLogin: () => void; stats: 
               initial={{ opacity: 1, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.05 }}
-              className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-gray-900"
+              className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-[var(--ink-1)]"
             >
               Master Your
               <span className="block bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent">
@@ -288,7 +288,7 @@ function HeroSection({ onLogin, stats, loading }: { onLogin: () => void; stats: 
               initial={{ opacity: 1, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="text-lg text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed"
+              className="text-lg text-[var(--ink-2)] mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed"
             >
               Full-length mock tests, PYQ papers, and AI analytics — everything you need to crack
               <span className="font-semibold text-blue-600"> JPSC, Banking, SSC, Railway</span> and more.
@@ -319,7 +319,7 @@ function HeroSection({ onLogin, stats, loading }: { onLogin: () => void; stats: 
                     <ArrowRight className="w-5 h-5" />
                   </button>
                   <Link href="/exams">
-                    <button className="w-full sm:w-auto px-8 py-4 border-2 border-gray-200 text-gray-700 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl font-semibold transition-all flex items-center justify-center gap-2">
+                    <button className="w-full sm:w-auto px-8 py-4 border-2 border-[var(--line-soft)] text-[var(--ink-2)] hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-xl font-semibold transition-all flex items-center justify-center gap-2">
                       Browse Exams
                     </button>
                   </Link>
@@ -336,7 +336,7 @@ function HeroSection({ onLogin, stats, loading }: { onLogin: () => void; stats: 
             transition={{ delay: 0.15, duration: 0.5 }}
             className="relative mt-12 lg:mt-0 flex items-center justify-center lg:justify-end"
           >
-            <div className="w-full max-w-md rounded-[2.5rem] border border-white/80 bg-white/40 p-6 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/60">
+            <div className="w-full max-w-md rounded-[2.5rem] border border-[var(--line-soft)] bg-[var(--card)]/40 p-6 shadow-xl backdrop-blur-2xl dark:bg-slate-900/60">
               {/* Panel header */}
               <div className="mb-5 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -344,14 +344,14 @@ function HeroSection({ onLogin, stats, loading }: { onLogin: () => void; stats: 
                     <div className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-75" />
                     <div className="relative h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                   </div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Live Platform Stats</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--ink-4)]">Live Platform Stats</p>
                 </div>
-                <div className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">24h Update</div>
+                <div className="rounded-full bg-[var(--line-soft)] px-2 py-1 text-[10px] font-bold text-[var(--ink-3)]">24h Update</div>
               </div>
 
               {/* Free PYQ highlight — Premium Card */}
               <Link href="/pyq/all" className="group mb-5 block">
-                <div className="relative overflow-hidden rounded-3xl bg-slate-950 p-5 transition-all duration-500 hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)] hover:-translate-y-1">
+                <div className="relative overflow-hidden rounded-3xl bg-slate-950 dark:bg-slate-900 p-5 transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 border border-white/5">
                   {/* Premium animated background elements */}
                   <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-blue-600/20 blur-3xl transition-all duration-500 group-hover:bg-blue-600/30" />
                   <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-emerald-600/20 blur-3xl transition-all duration-500 group-hover:bg-emerald-600/30" />
@@ -454,9 +454,9 @@ function StatCard({ icon: Icon, label, rawValue, color = "blue", isUsers = false
   return (
     <motion.div
       whileHover={{ y: -5 }}
-      className={`group relative flex flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white p-4 text-center transition-all duration-300 ${styles[color]} hover:shadow-2xl hover:shadow-current/10`}
+      className={`group relative flex flex-col items-center justify-center rounded-3xl border border-[var(--line-soft)] bg-[var(--card)] p-4 text-center transition-all duration-300 ${styles[color]} hover:shadow-2xl hover:shadow-current/10`}
     >
-      <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 transition-all duration-500 group-hover:rotate-[15deg] group-hover:bg-white/20 group-hover:text-white shadow-sm">
+      <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--bg)] transition-all duration-500 group-hover:rotate-[15deg] group-hover:bg-white/20 group-hover:text-white shadow-sm">
         <Icon className="h-4.5 w-4.5" />
       </div>
 
@@ -465,8 +465,8 @@ function StatCard({ icon: Icon, label, rawValue, color = "blue", isUsers = false
         whileHover={{ rotateX: 10, rotateY: 10, perspective: 1000 }}
         transition={{ type: "spring", stiffness: 300, damping: 15 }}
       >
-        <p className="mb-0.5 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors duration-300 group-hover:text-white/70">{label}</p>
-        <p className="text-xl font-black tabular-nums text-slate-900 transition-colors duration-300 group-hover:text-white">{display}</p>
+        <p className="mb-0.5 text-[10px] font-black uppercase tracking-widest text-[var(--ink-4)] transition-colors duration-300 group-hover:text-white/70">{label}</p>
+        <p className="text-xl font-black tabular-nums text-[var(--ink-1)] transition-colors duration-300 group-hover:text-white">{display}</p>
       </motion.div>
     </motion.div>
   );
@@ -477,7 +477,7 @@ function StatCard({ icon: Icon, label, rawValue, color = "blue", isUsers = false
 ══════════════════════════════════════════════ */
 function FeaturesSection() {
   return (
-    <section className="py-20 lg:py-24 bg-white border-t border-gray-100">
+    <section className="py-20 lg:py-24 bg-[var(--bg)] border-t border-[var(--line-soft)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
         <motion.div
           initial="hidden"
@@ -486,11 +486,11 @@ function FeaturesSection() {
           variants={fadeUp}
           className="text-center mb-12"
         >
-          <p className="text-xs font-bold text-blue-600 uppercase tracking-[0.18em] mb-3">Everything You Need</p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-950 mb-4">
+          <p className="text-sm font-bold text-blue-600 uppercase tracking-[0.18em] mb-3">Everything You Need</p>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--ink-1)] mb-4">
             One Platform. Complete Prep.
           </h2>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-[var(--ink-2)] max-w-2xl mx-auto">
             Every tool designed to help you prepare smarter and score higher.
           </p>
         </motion.div>
@@ -507,14 +507,14 @@ function FeaturesSection() {
             return (
               <motion.div key={f.title} variants={fadeUp}>
                 <Link href={f.href} className="group block h-full">
-                  <div className="h-full min-h-[218px] rounded-lg border border-gray-200 bg-gray-50/70 p-6 text-center shadow-sm shadow-gray-200/40 transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:bg-white hover:shadow-lg hover:shadow-blue-100/50">
+                  <div className="h-full min-h-[218px] rounded-lg border border-[var(--line-soft)] bg-[var(--bg)]/70 p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 dark:hover:border-blue-800 hover:bg-[var(--card)] hover:shadow-lg hover:shadow-blue-100/50 dark:hover:shadow-blue-900/20">
                     <div className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-lg ${f.bg} transition-transform duration-300 group-hover:scale-105`}>
                       <div className={`flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br ${f.color}`}>
                         <Icon className="h-4 w-4 text-white" strokeWidth={2.4} />
                       </div>
                     </div>
-                    <h3 className="mb-2 text-lg font-bold text-gray-950 transition-colors group-hover:text-blue-600">{f.title}</h3>
-                    <p className="mx-auto max-w-[24rem] text-sm leading-6 text-gray-600">{f.desc}</p>
+                    <h3 className="mb-2 text-lg font-bold text-[var(--ink-1)] transition-colors group-hover:text-blue-600">{f.title}</h3>
+                    <p className="mx-auto max-w-[24rem] text-sm leading-6 text-[var(--ink-2)]">{f.desc}</p>
                     <div className="mt-5 flex items-center justify-center gap-1 text-sm font-semibold text-blue-600 opacity-0 transition-opacity group-hover:opacity-100">
                       Explore <ChevronRight className="h-4 w-4" />
                     </div>
@@ -596,7 +596,7 @@ function ExamCategoriesSection() {
   }, [selectedExam]);
 
   return (
-    <section className="py-20 lg:py-28 bg-white border-t border-gray-100">
+    <section className="py-20 lg:py-28 bg-[var(--bg)] border-t border-[var(--line-soft)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
         <motion.div
           initial="hidden"
@@ -606,8 +606,8 @@ function ExamCategoriesSection() {
           className="text-center mb-16"
         >
           <p className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">Popular Exams</p>
-          <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Prepare for Any Exam</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-4xl lg:text-5xl font-bold text-[var(--ink-1)] mb-4">Prepare for Any Exam</h2>
+          <p className="text-lg text-[var(--ink-2)] max-w-2xl mx-auto">
             From state PSC to banking to central government — comprehensive coverage for all major competitive exams.
           </p>
         </motion.div>
@@ -618,7 +618,7 @@ function ExamCategoriesSection() {
           <div className="lg:col-span-1">
             <div className="max-h-[600px] overflow-y-auto sticky top-24" ref={sidebarContainerRef}>
               <div className="p-4">
-                <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-4 px-2">Popular Exams</h3>
+                <h3 className="text-sm font-bold text-[var(--ink-3)] uppercase tracking-wider mb-4 px-2">Popular Exams</h3>
                 <div className="space-y-2">
                   {examCategories.map((exam) => (
                     <button
@@ -633,7 +633,7 @@ function ExamCategoriesSection() {
                       className={`w-full text-left px-4 py-3 rounded-l-xl transition-all duration-200 ${
                         selectedExam.name === exam.name
                           ? "bg-blue-600 text-white border border-blue-600 border-r-0 shadow-md"
-                          : "hover:bg-gray-50 text-gray-800 bg-white border border-gray-200 hover:border-gray-300"
+                          : "hover:bg-blue-50 dark:hover:bg-blue-900/10 text-[var(--ink-1)] bg-[var(--card)] border border-[var(--line-soft)] hover:border-blue-200"
                       }`}
                     >
                       <div className="font-semibold text-sm">{exam.name}</div>
@@ -658,8 +658,8 @@ function ExamCategoriesSection() {
                 data-exam={exam.name}
                 className={`p-7 transition-all duration-300 border-l-0 ${
                   selectedExam.name === exam.name
-                    ? "bg-blue-50 border-2 border-blue-400 shadow-md"
-                    : "bg-white border border-gray-100 opacity-50"
+                    ? "bg-blue-50/50 dark:bg-blue-950/30 border-2 border-blue-400 shadow-md"
+                    : "bg-[var(--card)] border border-[var(--line-soft)] opacity-50"
                 } ${idx === 0 ? "rounded-tr-xl" : ""} ${idx === examCategories.length - 1 ? "rounded-br-xl" : ""}`}
               >
                 <motion.div
@@ -674,13 +674,13 @@ function ExamCategoriesSection() {
                         {exam.tag}
                       </span>
                       {exam.state && (
-                        <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+                        <span className="flex items-center gap-1 text-xs text-[var(--ink-3)] bg-[var(--bg)] px-2.5 py-1 rounded-full border border-[var(--line-soft)]">
                           <MapPin className="w-3 h-3" />
                           {exam.state}
                         </span>
                       )}
                       {exam.board && (
-                        <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+                        <span className="flex items-center gap-1 text-xs text-[var(--ink-3)] bg-[var(--bg)] px-2.5 py-1 rounded-full border border-[var(--line-soft)]">
                           <Building2 className="w-3 h-3" />
                           {exam.board}
                         </span>
@@ -688,29 +688,29 @@ function ExamCategoriesSection() {
                     </div>
                   </div>
 
-                  <h3 className="text-2xl font-bold text-gray-900 mb-1.5">{exam.name}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed max-w-xl mb-5">
+                  <h3 className="text-2xl font-bold text-[var(--ink-1)] mb-1.5">{exam.name}</h3>
+                  <p className="text-sm text-[var(--ink-3)] leading-relaxed max-w-xl mb-5">
                     {descriptions[exam.name] || "Comprehensive preparation with full-length test series, previous year papers, and expert study materials."}
                   </p>
 
                   {/* Stats row */}
                   <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="flex items-center gap-3 bg-white rounded-xl p-4 border border-blue-100 shadow-sm">
-                      <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <div className="flex items-center gap-3 bg-[var(--card)] rounded-xl p-4 border border-[var(--line-soft)] shadow-sm">
+                      <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
                         <ClipboardList className="w-4.5 h-4.5 text-blue-600" />
                       </div>
                       <div>
                         <div className="text-xl font-bold text-blue-600">{exam.numTests}+</div>
-                        <div className="text-xs text-gray-500">Practice Tests</div>
+                        <div className="text-xs text-[var(--ink-3)]">Practice Tests</div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 bg-white rounded-xl p-4 border border-emerald-100 shadow-sm">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                    <div className="flex items-center gap-3 bg-[var(--card)] rounded-xl p-4 border border-[var(--line-soft)] shadow-sm">
+                      <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
                         <ScrollText className="w-4.5 h-4.5 text-emerald-600" />
                       </div>
                       <div>
                         <div className="text-xl font-bold text-emerald-600">{exam.numPYQ}+</div>
-                        <div className="text-xs text-gray-500">PYQ Papers</div>
+                        <div className="text-xs text-[var(--ink-3)]">PYQ Papers</div>
                       </div>
                     </div>
                   </div>
@@ -724,7 +724,7 @@ function ExamCategoriesSection() {
                       </button>
                     </Link>
                     <Link href="/series/all" className="flex-1">
-                      <button className="w-full px-5 py-2.5 border-2 border-blue-600 text-blue-600 text-sm font-semibold rounded-xl hover:bg-blue-50 transition-all">
+                      <button className="w-full px-5 py-2.5 border-2 border-blue-600 text-blue-600 text-sm font-semibold rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all">
                         Start Tests
                       </button>
                     </Link>
@@ -738,7 +738,7 @@ function ExamCategoriesSection() {
         {/* Mobile: Horizontal tab + stacked scroll layout */}
         <div className="lg:hidden">
           {/* Sticky horizontal tab bar */}
-          <div className="sticky top-0 z-20 bg-white border-b border-gray-100 shadow-sm">
+          <div className="sticky top-0 z-20 bg-[var(--bg)]/90 backdrop-blur-md border-b border-[var(--line-soft)] shadow-sm">
             <div ref={mobileTabContainerRef} className="overflow-x-auto py-3 px-2">
               <div className="flex gap-2 min-w-min">
                 {examCategories.map((exam) => (
@@ -752,7 +752,7 @@ function ExamCategoriesSection() {
                     className={`px-4 py-2.5 rounded-xl whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
                       selectedExam.name === exam.name
                         ? "bg-blue-600 text-white border border-blue-600 shadow-md"
-                        : "bg-white border border-gray-200 text-gray-800 hover:border-gray-300"
+                        : "bg-[var(--card)] border border-[var(--line-soft)] text-[var(--ink-1)] hover:border-blue-200"
                     }`}
                   >
                     <div className="font-semibold text-sm">{exam.name}</div>
@@ -774,8 +774,8 @@ function ExamCategoriesSection() {
                 data-exam-mobile={exam.name}
                 className={`rounded-2xl border-2 p-5 transition-all duration-300 ${
                   selectedExam.name === exam.name
-                    ? "bg-blue-50 border-blue-400 shadow-md"
-                    : "bg-white border-gray-100"
+                    ? "bg-blue-50/50 dark:bg-blue-950/30 border-blue-400 shadow-md"
+                    : "bg-[var(--card)] border-[var(--line-soft)]"
                 }`}
               >
                 {/* Badges */}
@@ -784,42 +784,42 @@ function ExamCategoriesSection() {
                     {exam.tag}
                   </span>
                   {exam.state && (
-                    <span className="flex items-center gap-1 text-xs text-gray-500 bg-white border border-gray-200 px-2.5 py-1 rounded-full">
+                    <span className="flex items-center gap-1 text-xs text-[var(--ink-3)] bg-[var(--bg)] border border-[var(--line-soft)] px-2.5 py-1 rounded-full">
                       <MapPin className="w-3 h-3" />
                       {exam.state}
                     </span>
                   )}
                   {exam.board && (
-                    <span className="flex items-center gap-1 text-xs text-gray-500 bg-white border border-gray-200 px-2.5 py-1 rounded-full">
+                    <span className="flex items-center gap-1 text-xs text-[var(--ink-3)] bg-[var(--bg)] border border-[var(--line-soft)] px-2.5 py-1 rounded-full">
                       <Building2 className="w-3 h-3" />
                       {exam.board}
                     </span>
                   )}
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 mb-1.5">{exam.name}</h3>
-                <p className="text-gray-500 leading-relaxed mb-5 text-sm">
+                <h3 className="text-xl font-bold text-[var(--ink-1)] mb-1.5">{exam.name}</h3>
+                <p className="text-[var(--ink-3)] leading-relaxed mb-5 text-sm">
                   {descriptions[exam.name] || "Comprehensive preparation with full-length test series, previous year papers, and expert study materials."}
                 </p>
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-3 mb-5">
-                  <div className="flex items-center gap-3 bg-white rounded-xl p-3 border border-blue-100 shadow-sm">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-center gap-3 bg-[var(--card)] rounded-xl p-3 border border-[var(--line-soft)] shadow-sm">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
                       <ClipboardList className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
                       <div className="text-lg font-bold text-blue-600">{exam.numTests}+</div>
-                      <div className="text-xs text-gray-500">Practice Tests</div>
+                      <div className="text-xs text-[var(--ink-3)]">Practice Tests</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 bg-white rounded-xl p-3 border border-emerald-100 shadow-sm">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-center gap-3 bg-[var(--card)] rounded-xl p-3 border border-[var(--line-soft)] shadow-sm">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
                       <ScrollText className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div>
                       <div className="text-lg font-bold text-emerald-600">{exam.numPYQ}+</div>
-                      <div className="text-xs text-gray-500">PYQ Papers</div>
+                      <div className="text-xs text-[var(--ink-3)]">PYQ Papers</div>
                     </div>
                   </div>
                 </div>
@@ -833,7 +833,7 @@ function ExamCategoriesSection() {
                     </button>
                   </Link>
                   <Link href="/series/all" className="w-full">
-                    <button className="w-full px-6 py-3 border-2 border-blue-600 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all text-sm">
+                    <button className="w-full px-6 py-3 border-2 border-blue-600 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all text-sm">
                       Start Tests
                     </button>
                   </Link>
@@ -846,7 +846,7 @@ function ExamCategoriesSection() {
         {/* Browse All CTA */}
         <div className="text-center mt-12">
           <Link href="/exams">
-            <button className="px-8 py-4 border-2 border-blue-500 text-blue-600 hover:bg-blue-50 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 mx-auto">
+            <button className="px-8 py-4 border-2 border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 mx-auto">
               Browse All Exams
               <ArrowRight className="w-4 h-4" />
             </button>
@@ -862,7 +862,7 @@ function ExamCategoriesSection() {
 ══════════════════════════════════════════════ */
 function TestimonialsSection() {
   return (
-    <section className="py-20 lg:py-28 bg-gray-50 border-t border-gray-100">
+    <section className="py-20 lg:py-28 bg-[var(--bg)] border-t border-[var(--line-soft)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
         <motion.div
           initial="hidden"
@@ -872,8 +872,8 @@ function TestimonialsSection() {
           className="text-center mb-16"
         >
           <p className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">Student Success</p>
-          <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Toppers Trust ExamNurture</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-4xl lg:text-5xl font-bold text-[var(--ink-1)] mb-4">Toppers Trust ExamNurture</h2>
+          <p className="text-lg text-[var(--ink-2)] max-w-2xl mx-auto">
             Thousands of students have cracked their dream exams with our platform.
           </p>
         </motion.div>
@@ -887,20 +887,20 @@ function TestimonialsSection() {
         >
           {testimonials.map((t) => (
             <motion.div key={t.name} variants={fadeUp}>
-              <div className="h-full bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+              <div className="h-full bg-[var(--card)] rounded-2xl border border-[var(--line-soft)] p-6 shadow-sm">
                 <div className="flex items-center gap-1 mb-4">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star key={s} className="w-4 h-4 text-amber-400 fill-amber-400" />
                   ))}
                 </div>
-                <p className="text-sm text-gray-600 leading-relaxed mb-6">&quot;{t.text}&quot;</p>
+                <p className="text-sm text-[var(--ink-2)] leading-relaxed mb-6">&quot;{t.text}&quot;</p>
                 <div className="flex items-center gap-3">
                   <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br ${t.color}`}>
                     {t.initials}
                   </span>
                   <div>
-                    <div className="text-sm font-bold text-gray-900">{t.name}</div>
-                    <div className="text-xs text-gray-500">{t.role}</div>
+                    <div className="text-sm font-bold text-[var(--ink-1)]">{t.name}</div>
+                    <div className="text-xs text-[var(--ink-4)]">{t.role}</div>
                   </div>
                 </div>
               </div>
@@ -926,7 +926,7 @@ function CTASection({ stats, loading }: { stats: PlatformStats | null; loading: 
   };
 
   return (
-    <section className="py-20 lg:py-28 bg-white border-t border-gray-100">
+    <section className="py-20 lg:py-28 bg-[var(--bg)] border-t border-[var(--line-soft)]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 text-center">
         <motion.div
           initial="hidden"
@@ -934,21 +934,21 @@ function CTASection({ stats, loading }: { stats: PlatformStats | null; loading: 
           viewport={{ once: true }}
           variants={fadeUp}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 border border-blue-100 rounded-full mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-full mb-6">
             <Zap className="w-4 h-4 text-blue-600" />
             <span className="text-sm font-semibold text-blue-700">Free to Start</span>
           </div>
 
-          <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
             Ready to Start Preparing?
           </h2>
-          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
             Join {stats?.users !== undefined ? stats.users.toLocaleString() : (loading ? "..." : "NA")} students already preparing smarter. Get access to mock tests, PYQ papers and analytics — free.
           </p>
 
           <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-10">
             {planHighlights.map((item) => (
-              <li key={item} className="flex items-center gap-1.5 text-sm text-gray-700 font-medium">
+              <li key={item} className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium">
                 <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                 {item}
               </li>
@@ -974,7 +974,7 @@ function CTASection({ stats, loading }: { stats: PlatformStats | null; loading: 
                 </button>
                 <button
                   onClick={promptGoogleSignIn}
-                  className="px-10 py-4 border-2 border-gray-200 text-gray-700 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl font-bold transition-all text-base mx-auto sm:mx-0"
+                  className="px-10 py-4 border-2 border-[var(--line-soft)] text-[var(--ink-2)] hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-xl font-bold transition-all text-base mx-auto sm:mx-0"
                 >
                   Sign In
                 </button>
@@ -996,7 +996,7 @@ export default function LandingPage() {
   const { stats, loading } = useStats();
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="min-h-screen bg-[var(--bg)] relative">
       {/* Subtle page-wide grain overlay */}
       <svg className="pointer-events-none fixed inset-0 w-full h-full z-0" style={{ opacity: 0.018 }} aria-hidden="true">
         <defs>

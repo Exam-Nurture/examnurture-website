@@ -74,19 +74,19 @@ export default function MarketingFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer className="bg-[var(--bg)] border-t border-[var(--line-soft)] text-[var(--ink-3)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2.5 mb-4 hover:opacity-85 transition-opacity w-fit">
               <img src="/examnurture-logo.jpg" alt="ExamNurture" className="h-10 w-10 rounded-xl object-cover" />
-              <span className="font-bold text-[17px] tracking-tight text-white">
-                Exam<span className="text-cyan-400">Nurture</span>
+              <span className="font-bold text-[17px] tracking-tight text-[var(--ink-1)]">
+                Exam<span className="text-blue-600">Nurture</span>
               </span>
             </Link>
 
-            <p className="text-sm text-gray-400 leading-relaxed max-w-xs mb-6">
+            <p className="text-sm text-[var(--ink-4)] leading-relaxed max-w-xs mb-6">
               India's most comprehensive competitive exam preparation platform. Crack JPSC, Banking, SSC, Railway and more with AI-powered practice.
             </p>
 
@@ -98,7 +98,7 @@ export default function MarketingFooter() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="w-9 h-9 rounded-lg bg-gray-800 hover:bg-blue-600 flex items-center justify-center transition-colors text-gray-400 hover:text-white"
+                  className="w-9 h-9 rounded-lg bg-[var(--bg)] hover:bg-blue-600 border border-[var(--line-soft)] flex items-center justify-center transition-colors text-[var(--ink-4)] hover:text-white"
                 >
                   {svg}
                 </a>
@@ -106,7 +106,7 @@ export default function MarketingFooter() {
               <a
                 href="mailto:support@examnurture.com"
                 aria-label="Email"
-                className="w-9 h-9 rounded-lg bg-gray-800 hover:bg-blue-600 flex items-center justify-center transition-colors text-gray-400 hover:text-white"
+                className="w-9 h-9 rounded-lg bg-[var(--bg)] hover:bg-blue-600 border border-[var(--line-soft)] flex items-center justify-center transition-colors text-[var(--ink-4)] hover:text-white"
               >
                 <Mail className="w-4 h-4" />
               </a>
@@ -115,11 +115,11 @@ export default function MarketingFooter() {
 
           {/* Explore */}
           <div>
-            <h3 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Explore</h3>
+            <h3 className="text-[var(--ink-1)] font-semibold text-sm mb-4 uppercase tracking-wider">Explore</h3>
             <ul className="space-y-2.5">
               {footerLinks.explore.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm text-gray-400 hover:text-white transition-colors">
+                  <Link href={item.href} className="text-sm text-[var(--ink-4)] hover:text-blue-600 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -129,11 +129,11 @@ export default function MarketingFooter() {
 
           {/* Account */}
           <div>
-            <h3 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Account</h3>
+            <h3 className="text-[var(--ink-1)] font-semibold text-sm mb-4 uppercase tracking-wider">Account</h3>
             <ul className="space-y-2.5">
               {footerLinks.account.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm text-gray-400 hover:text-white transition-colors">
+                  <Link href={item.href} className="text-sm text-[var(--ink-4)] hover:text-blue-600 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -143,21 +143,21 @@ export default function MarketingFooter() {
 
           {/* Company + Legal */}
           <div>
-            <h3 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Company</h3>
+            <h3 className="text-[var(--ink-1)] font-semibold text-sm mb-4 uppercase tracking-wider">Company</h3>
             <ul className="space-y-2.5 mb-6">
               {footerLinks.company.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm text-gray-400 hover:text-white transition-colors">
+                  <Link href={item.href} className="text-sm text-[var(--ink-4)] hover:text-blue-600 transition-colors">
                     {item.name}
                   </Link>
                 </li>
               ))}
             </ul>
-            <h3 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Legal</h3>
+            <h3 className="text-[var(--ink-1)] font-semibold text-sm mb-4 uppercase tracking-wider">Legal</h3>
             <ul className="space-y-2.5">
               {footerLinks.legal.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm text-gray-400 hover:text-white transition-colors">
+                  <Link href={item.href} className="text-sm text-[var(--ink-4)] hover:text-blue-600 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -166,11 +166,11 @@ export default function MarketingFooter() {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">
+        <div className="border-t border-[var(--line-soft)] mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-[var(--ink-4)]">
             &copy; {currentYear} ExamNurture. All rights reserved.
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--ink-4)]">
             Built for India's competitive exam aspirants 🇮🇳
           </p>
         </div>

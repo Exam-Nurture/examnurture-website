@@ -75,7 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${inter.variable} ${sora.variable} ${jetbrainsMono.variable} h-full`}
       style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}
     >
-      <body className="min-h-full" suppressHydrationWarning>
+      <body className="min-h-full bg-[var(--bg)] text-[var(--ink-1)]" suppressHydrationWarning>
         <script dangerouslySetInnerHTML={{
           __html: `(function() {
             try {

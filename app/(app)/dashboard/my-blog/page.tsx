@@ -164,7 +164,7 @@ function EmptyState({
 }) {
   return (
     <div
-      className="flex flex-col items-center py-10 rounded-2xl border-2 border-dashed"
+      className="flex flex-col items-center py-10 rounded-2xl border-2 border-dashed text-center px-4"
       style={{ borderColor: "var(--line-soft)" }}
     >
       <span className="mb-3" style={{ color: "var(--ink-4)" }}>{icon}</span>
@@ -241,7 +241,7 @@ export default function MyLibraryPage() {
       </div>
 
       {/* ── Stats bar ── */}
-      <div className="grid grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
         {[
           {
             icon: <Check size={16} className="text-white" />,
@@ -417,9 +417,9 @@ export default function MyLibraryPage() {
                     {opts.slice(0, 4).map((opt: string, i: number) => (
                       <div
                         key={i}
-                        className={`flex items-start gap-2 text-[12px] px-3 py-2 rounded-lg ${
+                        className={`flex items-start gap-2 text-[12px] px-3 py-2 rounded-lg transition-colors ${
                           i === q.correctIndex
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
                             : ""
                         }`}
                         style={i !== q.correctIndex ? { color: "var(--ink-3)" } : {}}
@@ -448,11 +448,8 @@ export default function MyLibraryPage() {
 
       {/* ── Discover more ── */}
       <section
-        className="p-5 rounded-2xl flex items-center gap-4"
-        style={{
-          background: "linear-gradient(135deg, var(--blue-soft), rgba(139,92,246,0.06))",
-          border: "1px solid rgba(59,130,246,0.15)",
-        }}
+        className="p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-4 border border-blue-200 dark:border-blue-900/50"
+        style={{ background: "var(--blue-soft)" }}
       >
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -470,7 +467,7 @@ export default function MyLibraryPage() {
         </div>
         <Link
           href="/blog"
-          className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold text-white transition-all hover:brightness-110"
+          className="shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold text-white transition-all hover:brightness-110 w-full sm:w-auto"
           style={{ background: "var(--blue)" }}
         >
           Browse <ArrowRight size={13} />

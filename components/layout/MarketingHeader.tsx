@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import AuthModal from "@/components/auth/AuthModal";
 import MegaMenu from "@/components/layout/MegaMenu";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=com.kvebrk.rwwkrt";
 
@@ -167,7 +168,9 @@ export default function MarketingHeader() {
         <button
           type="button"
           className={`flex items-center gap-1 px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
-            isActive || show ? "text-blue-600 bg-blue-50/80" : "text-gray-700 hover:text-blue-600 hover:bg-blue-50/60"
+            isActive || show 
+              ? "text-blue-600 bg-blue-50/80 dark:bg-blue-900/20" 
+              : "text-[var(--ink-2)] hover:text-blue-600 hover:bg-blue-50/60 dark:hover:bg-blue-900/10"
           }`}
         >
           {trigger}
@@ -181,7 +184,7 @@ export default function MarketingHeader() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.97 }}
               transition={{ duration: 0.15, ease: "easeOut" as const }}
-              className={`absolute left-1/2 -translate-x-1/2 top-full mt-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100/80 overflow-hidden z-50 py-2 ${wide ? "w-72" : "w-64"}`}
+              className={`absolute left-1/2 -translate-x-1/2 top-full mt-2 bg-[var(--card)] backdrop-blur-xl rounded-2xl shadow-xl border border-[var(--line-soft)] overflow-hidden z-50 py-2 ${wide ? "w-72" : "w-64"}`}
             >
               {items.map((item) => {
                 const Icon = item.icon;
@@ -190,16 +193,16 @@ export default function MarketingHeader() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`flex items-start gap-3 px-4 py-3 group/item transition-colors ${active ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                    className={`flex items-start gap-3 px-4 py-3 group/item transition-colors ${active ? "bg-blue-50 dark:bg-blue-900/20" : "hover:bg-[var(--bg)]"}`}
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${
-                      active ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-500 group-hover/item:bg-blue-100 group-hover/item:text-blue-600"
+                      active ? "bg-blue-600 text-white" : "bg-[var(--bg)] text-[var(--ink-4)] group-hover/item:bg-blue-100 dark:group-hover/item:bg-blue-900/40 group-hover/item:text-blue-600"
                     }`}>
                       <Icon className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className={`text-sm font-semibold ${active ? "text-blue-600" : "text-gray-900"}`}>{item.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
+                      <p className={`text-sm font-semibold ${active ? "text-blue-600" : "text-[var(--ink-1)]"}`}>{item.name}</p>
+                      <p className="text-xs text-[var(--ink-4)] mt-0.5">{item.desc}</p>
                     </div>
                   </Link>
                 );
@@ -218,7 +221,9 @@ export default function MarketingHeader() {
       <Link
         href={href}
         className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
-          active ? "text-blue-600 bg-blue-50/80" : "text-gray-700 hover:text-blue-600 hover:bg-blue-50/60"
+          active 
+            ? "text-blue-600 bg-blue-50/80 dark:bg-blue-900/20" 
+            : "text-[var(--ink-2)] hover:text-blue-600 hover:bg-blue-50/60 dark:hover:bg-blue-900/10"
         }`}
       >
         {children}
@@ -239,8 +244,8 @@ export default function MarketingHeader() {
           const Icon = item.icon;
           const active = pathname.startsWith(item.href.split("?")[0]);
           const activeClasses = accent === "amber"
-            ? "bg-amber-50 text-amber-700 border-amber-200"
-            : "bg-blue-50 text-blue-700 border-blue-200";
+            ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+            : "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800";
           return (
             <Link
               key={item.href}
@@ -249,13 +254,13 @@ export default function MarketingHeader() {
               className={`flex items-center gap-2.5 px-3 py-3 rounded-xl border text-sm font-semibold transition-all ${
                 active
                   ? activeClasses
-                  : "bg-gray-50/80 text-gray-700 border-gray-100 hover:bg-gray-100"
+                  : "bg-[var(--bg)]/80 text-[var(--ink-2)] border-[var(--line-soft)] hover:bg-[var(--bg)]"
               }`}
             >
               <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
                 active
-                  ? accent === "amber" ? "bg-amber-100 text-amber-600" : "bg-blue-100 text-blue-600"
-                  : "bg-white text-gray-400 shadow-sm"
+                  ? accent === "amber" ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                  : "bg-[var(--card)] text-[var(--ink-4)] shadow-sm"
               }`}>
                 <Icon className="w-3.5 h-3.5" />
               </div>
@@ -279,12 +284,12 @@ export default function MarketingHeader() {
       <motion.header
         animate={{ y: isHidden ? -100 : 0 }}
         transition={{ duration: 0.3, ease: "easeInOut" as const }}
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        className="fixed top-0 left-0 right-0 z-50"
       >
         {/* Glass background */}
         <div className={`absolute inset-0 transition-all duration-500 ${
           isScrolled
-            ? "bg-white/85 backdrop-blur-xl border-b border-gray-200/60 shadow-lg shadow-gray-200/40"
+            ? "bg-[var(--glass)] backdrop-blur-2xl border-b border-[var(--line-soft)] shadow-lg shadow-black/10 dark:shadow-blue-950/20"
             : "bg-transparent"
         }`} />
 
@@ -297,7 +302,7 @@ export default function MarketingHeader() {
             <Link href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity flex-shrink-0">
               <img src="/examnurture-logo.jpg" alt="ExamNurture" className="h-9 w-9 rounded-xl object-cover shadow-sm" />
               <span className="font-bold text-[17px] tracking-tight hidden sm:block" style={{ fontFamily: "var(--font-sora, sans-serif)" }}>
-                <span className="text-gray-900">Exam</span>
+                <span className="text-[var(--ink-1)]">Exam</span>
                 <span className="text-blue-600">Nurture</span>
               </span>
             </Link>
@@ -307,7 +312,7 @@ export default function MarketingHeader() {
               <div className={`flex items-center gap-0.5 transition-all duration-500 ${
                 isScrolled
                   ? "px-0"
-                  : "px-4 py-2 rounded-full bg-gray-100/70 backdrop-blur-lg border border-gray-200/60 shadow-md shadow-gray-200/40"
+                  : "px-4 py-2 rounded-full bg-[var(--card)]/80 backdrop-blur-lg border border-[var(--line-soft)] shadow-md shadow-black/5"
               }`}>
 
                 <NavLink href="/">Home</NavLink>
@@ -337,6 +342,9 @@ export default function MarketingHeader() {
 
             {/* Right actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="hidden sm:block">
+                <ThemeToggle />
+              </div>
 
               {/* Expandable search — desktop */}
               <div className="relative hidden md:block">
@@ -347,7 +355,7 @@ export default function MarketingHeader() {
                       animate={{ width: 220, opacity: 1 }}
                       exit={{ width: 36, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/90 backdrop-blur-md border border-blue-200 shadow-md"
+                      className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--card)] backdrop-blur-md border border-blue-400 shadow-md"
                     >
                       <Search className="w-4 h-4 text-blue-500 flex-shrink-0" />
                       <input
@@ -355,17 +363,17 @@ export default function MarketingHeader() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search exams…"
-                        className="flex-1 text-sm outline-none bg-transparent text-gray-900 placeholder-gray-400 min-w-0"
+                        className="flex-1 text-sm outline-none bg-transparent text-[var(--ink-1)] placeholder-[var(--ink-4)] min-w-0"
                         onBlur={() => { if (!searchQuery) setShowSearch(false); }}
                       />
-                      {searchQuery && <button onClick={() => setSearchQuery("")}><X className="w-3.5 h-3.5 text-gray-400" /></button>}
+                      {searchQuery && <button onClick={() => setSearchQuery("")}><X className="w-3.5 h-3.5 text-[var(--ink-4)]" /></button>}
                     </motion.div>
                   ) : (
                     <motion.button key="closed"
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                       onClick={() => setShowSearch(true)}
                       title="Search (⌘K)"
-                      className="p-2 rounded-full text-gray-500 hover:text-blue-600 hover:bg-white/70 transition-all"
+                      className="p-2 rounded-full text-[var(--ink-3)] hover:text-blue-600 hover:bg-[var(--card)] transition-all"
                     >
                       <Search className="w-[18px] h-[18px]" />
                     </motion.button>
@@ -376,7 +384,7 @@ export default function MarketingHeader() {
               {/* Mobile search button */}
               <button
                 onClick={() => setShowSearch(s => !s)}
-                className="md:hidden p-2 rounded-full text-gray-600 hover:bg-white/70 backdrop-blur-sm transition-all"
+                className="md:hidden p-2 rounded-full text-[var(--ink-3)] hover:bg-[var(--bg)] transition-all"
                 aria-label="Search"
               >
                 <Search className="w-[18px] h-[18px]" />
@@ -392,12 +400,12 @@ export default function MarketingHeader() {
 
               {/* Auth — desktop only */}
               {loading ? (
-                <div className="w-20 h-9 rounded-full bg-gray-200/60 animate-pulse hidden md:block" />
+                <div className="w-20 h-9 rounded-full bg-[var(--bg)] animate-pulse hidden md:block" />
               ) : user ? (
                 <div className="relative hidden md:block">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-2 py-1 pl-1 pr-2.5 rounded-full transition-all hover:bg-white/80 border border-white/60 bg-white/40 backdrop-blur-sm shadow-sm"
+                    className="flex items-center gap-2 py-1 pl-1 pr-2.5 rounded-full transition-all hover:bg-[var(--bg)] border border-[var(--line-soft)] bg-[var(--bg)]/40 backdrop-blur-sm shadow-sm"
                   >
                     {user.avatarUrl ? (
                       <img src={user.avatarUrl} alt={displayName} className="w-7 h-7 rounded-full object-cover" />
@@ -406,8 +414,8 @@ export default function MarketingHeader() {
                         {initials}
                       </span>
                     )}
-                    <span className="text-[13px] font-semibold text-gray-900 hidden sm:block">{displayName.split(" ")[0]}</span>
-                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${showUserMenu ? "rotate-180" : ""}`} />
+                    <span className="text-[13px] font-semibold text-[var(--ink-1)] hidden sm:block">{displayName.split(" ")[0]}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-[var(--ink-4)] transition-transform ${showUserMenu ? "rotate-180" : ""}`} />
                   </button>
 
                   <AnimatePresence>
@@ -417,12 +425,11 @@ export default function MarketingHeader() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.97 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-2 w-56 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden py-2 z-50"
+                        className="absolute right-0 top-full mt-2 w-56 bg-[var(--card)] backdrop-blur-xl rounded-2xl shadow-2xl border border-[var(--line-soft)] overflow-hidden py-2 z-50"
                       >
-                        <div className="px-4 py-3 border-b border-gray-100 mb-1">
-                          <p className="text-sm font-bold text-gray-900 truncate">{displayName}</p>
-                          <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                          <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 uppercase tracking-wide">{planLabel}</span>
+                        <div className="px-4 py-3 border-b border-[var(--line-soft)] mb-1">
+                          <p className="text-sm font-bold text-[var(--ink-1)] truncate">{displayName}</p>
+                          <p className="text-[10px] text-[var(--ink-4)] uppercase tracking-wider font-bold mt-0.5">{planLabel} Plan</p>
                         </div>
                         {[
                           { icon: LayoutDashboard, label: "Dashboard",    href: "/dashboard" },
@@ -432,14 +439,14 @@ export default function MarketingHeader() {
                           { icon: User,            label: "Profile",      href: "/dashboard/profile"   },
                         ].map(({ icon: Icon, label, href }) => (
                           <Link key={href} href={href} onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--ink-2)] hover:bg-[var(--bg)] transition-colors"
                           >
-                            <Icon className="w-4 h-4 text-gray-400" />{label}
+                            <Icon className="w-4 h-4 text-[var(--ink-4)]" />{label}
                           </Link>
                         ))}
-                        <div className="border-t border-gray-100 mt-1 pt-1">
+                        <div className="border-t border-[var(--line-soft)] mt-1 pt-1">
                           <button onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                           >
                             <LogOut className="w-4 h-4" />Sign Out
                           </button>
@@ -451,7 +458,7 @@ export default function MarketingHeader() {
               ) : (
                 <div className="hidden md:flex items-center">
                   <button onClick={() => setShowAuthModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-gray-700 hover:text-blue-600 hover:bg-white/60 rounded-full transition-all"
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-[var(--ink-2)] hover:text-blue-600 hover:bg-[var(--bg)]/60 rounded-full transition-all"
                   >
                     <LogIn className="w-4 h-4" />Sign In
                   </button>
@@ -470,20 +477,20 @@ export default function MarketingHeader() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden overflow-hidden bg-white/95 backdrop-blur-xl border-t border-gray-100/80 px-4 py-3"
+              className="md:hidden overflow-hidden bg-[var(--bg)]/95 backdrop-blur-xl border-t border-[var(--line-soft)] px-4 py-3"
             >
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200">
-                <Search className="w-4 h-4 text-gray-400 shrink-0" />
+              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--line-soft)]">
+                <Search className="w-4 h-4 text-[var(--ink-4)] shrink-0" />
                 <input
                   autoFocus
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Search exams, tests, topics…"
-                  className="flex-1 text-sm outline-none bg-transparent text-gray-900 placeholder-gray-400"
+                  className="flex-1 text-sm outline-none bg-transparent text-[var(--ink-1)] placeholder-[var(--ink-4)]"
                 />
                 {searchQuery
-                  ? <button onClick={() => setSearchQuery("")}><X className="w-4 h-4 text-gray-400" /></button>
-                  : <button onClick={() => setShowSearch(false)}><X className="w-4 h-4 text-gray-400" /></button>
+                  ? <button onClick={() => setSearchQuery("")}><X className="w-4 h-4 text-[var(--ink-4)]" /></button>
+                  : <button onClick={() => setShowSearch(false)}><X className="w-4 h-4 text-[var(--ink-4)]" /></button>
                 }
               </div>
             </motion.div>
@@ -520,9 +527,9 @@ export default function MarketingHeader() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
               transition={{ duration: 0.22, ease: "easeOut" as const }}
-              className="mb-3 bg-white/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/60 p-4 pointer-events-auto"
+              className="mb-3 bg-[var(--card)]/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-[var(--line-soft)] p-4 pointer-events-auto"
             >
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <p className="text-[10px] font-bold text-[var(--ink-4)] uppercase tracking-widest mb-3 flex items-center gap-1.5">
                 <GraduationCap className="w-3 h-3" /> Exams
               </p>
               <MobileNavGrid items={examsNav} accent="blue" />
@@ -536,9 +543,9 @@ export default function MarketingHeader() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
               transition={{ duration: 0.22, ease: "easeOut" as const }}
-              className="mb-3 bg-white/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/60 p-4 pointer-events-auto"
+              className="mb-3 bg-[var(--card)]/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-[var(--line-soft)] p-4 pointer-events-auto"
             >
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <p className="text-[10px] font-bold text-[var(--ink-4)] uppercase tracking-widest mb-3 flex items-center gap-1.5">
                 <MoreHorizontal className="w-3 h-3" /> More
               </p>
               <MobileNavGrid items={moreNav} accent="blue" />
@@ -559,20 +566,20 @@ export default function MarketingHeader() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
               transition={{ duration: 0.22, ease: "easeOut" as const }}
-              className="mb-3 bg-white/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/60 p-4 pointer-events-auto"
+              className="mb-3 bg-[var(--card)]/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-[var(--line-soft)] p-4 pointer-events-auto"
             >
               {user ? (
                 <>
                   {/* User card */}
-                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 mb-3">
+                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-600/10 to-cyan-600/10 rounded-xl border border-blue-500/20 mb-3">
                     {user.avatarUrl ? (
                       <img src={user.avatarUrl} alt={displayName} className="w-10 h-10 rounded-xl object-cover" />
                     ) : (
                       <span className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm bg-gradient-to-br from-blue-600 to-cyan-500">{initials}</span>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-900 truncate">{displayName}</p>
-                      <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 uppercase tracking-wide">{planLabel}</span>
+                      <p className="text-sm font-bold text-[var(--ink-1)] truncate">{displayName}</p>
+                      <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600/20 text-blue-600 dark:text-blue-400 uppercase tracking-wide">{planLabel}</span>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 mb-3">
@@ -583,39 +590,41 @@ export default function MarketingHeader() {
                       { icon: User,            label: "Profile",   href: "/dashboard/profile"   },
                     ].map(({ icon: Icon, label, href }) => (
                       <Link key={href} href={href} onClick={() => setMobileTab(null)}
-                        className="flex items-center gap-2.5 px-3 py-3 rounded-xl border border-gray-100 bg-gray-50/80 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-all"
+                        className="flex items-center gap-2.5 px-3 py-3 rounded-xl border border-[var(--line-soft)] bg-[var(--bg)] text-sm font-semibold text-[var(--ink-2)] hover:bg-[var(--card)] transition-all"
                       >
-                        <div className="w-7 h-7 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
-                          <Icon className="w-3.5 h-3.5 text-gray-400" />
+                        <div className="w-7 h-7 rounded-lg bg-[var(--card)] shadow-sm flex items-center justify-center shrink-0">
+                          <Icon className="w-3.5 h-3.5 text-[var(--ink-4)]" />
                         </div>
                         {label}
                       </Link>
                     ))}
                   </div>
-                  <button onClick={() => { handleLogout(); setMobileTab(null); }}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-red-600 bg-red-50 border border-red-100"
+                  <button onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-600/10 text-red-600 text-sm font-bold border border-red-600/20"
                   >
                     <LogOut className="w-4 h-4" /> Sign Out
                   </button>
                 </>
               ) : (
-                <>
-                  <p className="text-sm text-gray-500 mb-3 text-center">Sign in to track your progress</p>
-                  <button
-                    onClick={() => { setMobileTab(null); setShowAuthModal(true); }}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/25"
+                <div className="p-2 space-y-3">
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-[var(--ink-1)]">Not Signed In</p>
+                    <p className="text-xs text-[var(--ink-4)] mt-1">Sign in to track your progress and access all tests</p>
+                  </div>
+                  <button onClick={() => setShowAuthModal(true)}
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/20"
                   >
-                    <LogIn className="w-4 h-4" /> Sign In
+                    <LogIn className="w-4 h-4" /> Sign In / Sign Up
                   </button>
-                </>
+                </div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ── The floating bottom tab bar ── */}
-        <div className="relative pointer-events-auto bg-white/75 backdrop-blur-2xl border border-white/60 shadow-2xl shadow-black/10 rounded-2xl px-2 py-1.5 flex items-center justify-around">
-
+        {/* ── Mobile Navigation Bar ── */}
+        <div className="bg-[var(--glass)] backdrop-blur-2xl border border-[var(--line-soft)] rounded-[24px] shadow-2xl flex items-center justify-around p-1.5 ring-1 ring-black/5 pointer-events-auto">
+          
           {/* Home */}
           <Link
             href="/"
@@ -623,11 +632,11 @@ export default function MarketingHeader() {
             className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all"
           >
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-              pathname === "/" ? "bg-blue-600 text-white shadow-md shadow-blue-500/30" : "text-gray-500"
+              pathname === "/" ? "bg-blue-600 text-white shadow-md shadow-blue-500/30" : "text-[var(--ink-4)]"
             }`}>
               <Home className="w-4 h-4" />
             </div>
-            <span className={`text-[10px] font-semibold ${pathname === "/" ? "text-blue-600" : "text-gray-400"}`}>Home</span>
+            <span className={`text-[10px] font-semibold ${pathname === "/" ? "text-blue-600" : "text-[var(--ink-4)]"}`}>Home</span>
           </Link>
 
           {/* Exams */}
@@ -638,12 +647,12 @@ export default function MarketingHeader() {
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
               mobileTab === "exams" || (mobileTab === null && isExamsActive)
                 ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
-                : "text-gray-500"
+                : "text-[var(--ink-4)]"
             }`}>
               <GraduationCap className="w-4 h-4" />
             </div>
             <span className={`text-[10px] font-semibold ${
-              mobileTab === "exams" || (mobileTab === null && isExamsActive) ? "text-blue-600" : "text-gray-400"
+              mobileTab === "exams" || (mobileTab === null && isExamsActive) ? "text-blue-600" : "text-[var(--ink-4)]"
             }`}>Exams</span>
           </button>
 
@@ -654,12 +663,12 @@ export default function MarketingHeader() {
             className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all"
           >
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-              isLibraryActive ? "bg-blue-600 text-white shadow-md shadow-blue-500/30" : "text-gray-500"
+              isLibraryActive ? "bg-blue-600 text-white shadow-md shadow-blue-500/30" : "text-[var(--ink-4)]"
             }`}>
               <Library className="w-4 h-4" />
             </div>
             <span className={`text-[10px] font-semibold ${
-              isLibraryActive ? "text-blue-600" : "text-gray-400"
+              isLibraryActive ? "text-blue-600" : "text-[var(--ink-4)]"
             }`}>Blog</span>
           </Link>
 
@@ -671,12 +680,12 @@ export default function MarketingHeader() {
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
               mobileTab === "more" || (mobileTab === null && isMoreActive)
                 ? "bg-slate-700 text-white shadow-md shadow-slate-700/30"
-                : "text-gray-500"
+                : "text-[var(--ink-4)]"
             }`}>
               <MoreHorizontal className="w-4 h-4" />
             </div>
             <span className={`text-[10px] font-semibold ${
-              mobileTab === "more" || (mobileTab === null && isMoreActive) ? "text-slate-700" : "text-gray-400"
+              mobileTab === "more" || (mobileTab === null && isMoreActive) ? "text-slate-700" : "text-[var(--ink-4)]"
             }`}>More</span>
           </button>
 
@@ -698,13 +707,13 @@ export default function MarketingHeader() {
                 </span>
               ) : (
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                  mobileTab === "account" ? "bg-blue-600 text-white" : "text-gray-500"
+                  mobileTab === "account" ? "bg-blue-600 text-white" : "text-[var(--ink-4)]"
                 }`}>
                   <User className="w-4 h-4" />
                 </div>
               )}
             </div>
-            <span className={`text-[10px] font-semibold ${mobileTab === "account" ? "text-blue-600" : "text-gray-400"}`}>
+            <span className={`text-[10px] font-semibold ${mobileTab === "account" ? "text-blue-600" : "text-[var(--ink-4)]"}`}>
               {user ? displayName.split(" ")[0] || "Me" : "Sign In"}
             </span>
           </button>

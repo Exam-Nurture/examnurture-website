@@ -36,8 +36,9 @@
     --bg: #F8FAFC;
     --card: #FFFFFF;
     --glass: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(226, 232, 240, 0.6);
 
-    /* ── Shadows (soft, no hard borders) ── */
+    /* ── Shadows ── */
     --shadow-xs: 0 1px 2px rgba(15,23,42,.03);
     --shadow-sm: 0 1px 3px rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.02);
     --shadow:    0 2px 8px -2px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.03);
@@ -56,24 +57,24 @@
     /* ── Primary ── */
     --blue: #3B82F6;
     --blue-ink: #60A5FA;
-    --blue-soft: rgba(59, 130, 246, 0.15);
+    --blue-soft: rgba(59, 130, 246, 0.12);
     --cyan: #22D3EE;
     --cyan-ink: #67E8F9;
-    --cyan-soft: rgba(34, 211, 238, 0.15);
+    --cyan-soft: rgba(34, 211, 238, 0.12);
 
     /* ── Semantic ── */
     --green: #34D399;
-    --green-soft: rgba(52, 211, 153, 0.15);
+    --green-soft: rgba(52, 211, 153, 0.12);
     --red: #F87171;
-    --red-soft: rgba(248, 113, 113, 0.15);
+    --red-soft: rgba(248, 113, 113, 0.12);
     --amber: #FBBF24;
-    --amber-soft: rgba(251, 191, 36, 0.15);
+    --amber-soft: rgba(251, 191, 36, 0.12);
     --violet: #A78BFA;
     --violet-ink: #C4B5FD;
-    --violet-soft: rgba(167, 139, 250, 0.15);
+    --violet-soft: rgba(167, 139, 250, 0.12);
     --indigo: #818CF8;
     --indigo-ink: #A5B4FC;
-    --indigo-soft: rgba(129, 140, 248, 0.15);
+    --indigo-soft: rgba(129, 140, 248, 0.12);
 
     /* ── Ink (text) ── */
     --ink-1: #F8FAFC;
@@ -87,6 +88,7 @@
     --bg: #0B1120;
     --card: #0F172A;
     --glass: rgba(15, 23, 42, 0.7);
+    --glass-border: rgba(51, 65, 85, 0.5);
 
     /* ── Shadows for dark mode ── */
     --shadow-xs: 0 1px 2px rgba(0,0,0,.3);
@@ -107,9 +109,14 @@
     background: var(--bg);
     color: var(--ink-1);
     line-height: 1.55;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  * { box-sizing: border-box; }
+  * { 
+    box-sizing: border-box;
+    transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  }
+
   button { cursor: pointer; border: none; background: none; color: inherit; font-family: inherit; }
   a { color: inherit; text-decoration: none; }
   input, select, textarea { font-family: inherit; background: transparent; }
@@ -121,7 +128,7 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--line-soft);
-  transition: box-shadow 200ms ease, transform 200ms ease, border-color 200ms ease;
+  transition: box-shadow 200ms ease, transform 200ms ease, border-color 200ms ease, background-color 200ms ease;
 }
 .card:hover {
   box-shadow: var(--shadow-md);
@@ -137,12 +144,12 @@
   background: var(--glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--line-soft);
+  border: 1px solid var(--glass-border);
 }
 
 /* ====== Mesh Gradients ====== */
 .mesh-gradient {
-  background-color: var(--blue-soft);
+  background-color: var(--bg);
   background-image: 
     radial-gradient(at 40% 20%, var(--cyan-soft) 0px, transparent 50%),
     radial-gradient(at 80% 0%, var(--blue-soft) 0px, transparent 50%),
@@ -150,11 +157,11 @@
 }
 
 .dark .mesh-gradient {
-  background-color: #0d162b;
+  background-color: var(--bg);
   background-image: 
-    radial-gradient(at 40% 20%, rgba(34, 211, 238, 0.15) 0px, transparent 50%),
-    radial-gradient(at 80% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, rgba(34, 211, 238, 0.1) 0px, transparent 50%);
+    radial-gradient(at 40% 20%, rgba(34, 211, 238, 0.1) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(34, 211, 238, 0.08) 0px, transparent 50%);
 }
 
 /* ====== Animations ====== */
@@ -313,17 +320,4 @@
   border: none;
   border-top: 1px solid var(--line);
   margin: 2em 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .blog-content { color: #CBD5E1; }
-  .blog-content h1,.blog-content h2,.blog-content h3,
-  .blog-content h4,.blog-content h5,.blog-content h6 { color: #F1F5F9; }
-  .blog-content strong { color: #F1F5F9; }
-  .blog-content blockquote { background: rgba(59,130,246,0.07); color: #94A3B8; }
-  .blog-content code { background: #1E293B; border-color: #334155; color: #E2E8F0; }
-  .blog-content th { background: #1E293B; color: #F1F5F9; border-color: #334155; }
-  .blog-content td { border-color: #1E293B; color: #CBD5E1; }
-  .blog-content tr:nth-child(even) { background: rgba(255,255,255,0.02); }
-  .blog-content h2 { border-color: #334155; }
 }
