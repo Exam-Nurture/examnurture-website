@@ -7,34 +7,62 @@ import {
   Check, Clock, Flame, TrendingUp, Zap, RotateCcw, RefreshCw,
   Target, Hash,
 } from "lucide-react";
-import { apiGetBookmarks } from "@/lib/api";
-import { ARTICLES, TYPE_META, DIFF_COLOR, type Article } from "@/app/(marketing)/blog/data";
+import { apiGetBookmarks, apiGetBlogs, type PublicBlogPost } from "@/lib/api";
 
-/* ─── Gradients per type ─── */
-const COVER_GRADIENTS: Record<Article["type"], string> = {
-  Concept:  "linear-gradient(135deg,#1E40AF 0%,#0891B2 100%)",
-  Formula:  "linear-gradient(135deg,#6D28D9 0%,#BE185D 100%)",
-  Revision: "linear-gradient(135deg,#92400E 0%,#D97706 100%)",
-  Strategy: "linear-gradient(135deg,#065F46 0%,#059669 100%)",
+/* ── Category config ── */
+const CATEGORIES = [
+  { key: "All",            label: "All Posts",       color: "#3B82F6" },
+  { key: "General",        label: "General",          color: "#64748B" },
+  { key: "Current Affairs",label: "Current Affairs",  color: "#10B981" },
+  { key: "Strategy",       label: "Strategy",         color: "#8B5CF6" },
+  { key: "Concept",        label: "Concepts",         color: "#0891B2" },
+  { key: "Formula",        label: "Formulas",         color: "#EC4899" },
+  { key: "Revision",       label: "Revision",         color: "#F59E0B" },
+  { key: "News",           label: "News",             color: "#F97316" },
+  { key: "Announcement",   label: "Announcements",    color: "#EF4444" },
+];
+
+const CAT_GRADIENTS: Record<string, string> = {
+  "General":         "linear-gradient(135deg,#3B82F6,#6366F1)",
+  "Current Affairs": "linear-gradient(135deg,#10B981,#059669)",
+  "Strategy":        "linear-gradient(135deg,#8B5CF6,#6D28D9)",
+  "Concept":         "linear-gradient(135deg,#0891B2,#1E40AF)",
+  "Formula":         "linear-gradient(135deg,#EC4899,#8B5CF6)",
+  "Revision":        "linear-gradient(135deg,#F59E0B,#F97316)",
+  "News":            "linear-gradient(135deg,#F97316,#EF4444)",
+  "Announcement":    "linear-gradient(135deg,#EF4444,#BE185D)",
 };
 
-const TYPE_ICONS: Record<Article["type"], React.ReactNode> = {
-  Concept:  <BookOpen   size={12} />,
-  Formula:  <Zap        size={12} />,
-  Revision: <RotateCcw  size={12} />,
-  Strategy: <TrendingUp size={12} />,
+function getCatColor(cat: string) {
+  return CATEGORIES.find((c) => c.key === cat)?.color ?? "#64748B";
+}
+
+const CAT_ICONS: Record<string, React.ReactNode> = {
+  "Concept":  <BookOpen   size={12} />,
+  "Formula":  <Zap        size={12} />,
+  "Revision": <RotateCcw  size={12} />,
+  "Strategy": <TrendingUp size={12} />,
+  "General":  <BookOpen   size={12} />,
 };
 
-const COVER_ICONS_SM: Record<Article["type"], React.ReactNode> = {
-  Concept:  <BookOpen  size={20} strokeWidth={1.5} />,
-  Formula:  <Zap       size={20} strokeWidth={1.5} />,
-  Revision: <RefreshCw size={20} strokeWidth={1.5} />,
-  Strategy: <Target    size={20} strokeWidth={1.5} />,
+const COVER_ICONS_SM: Record<string, React.ReactNode> = {
+  "Concept":  <BookOpen  size={20} strokeWidth={1.5} />,
+  "Formula":  <Zap       size={20} strokeWidth={1.5} />,
+  "Revision": <RefreshCw size={20} strokeWidth={1.5} />,
+  "Strategy": <Target    size={20} strokeWidth={1.5} />,
+  "General":  <BookOpen  size={20} strokeWidth={1.5} />,
 };
+
+function parseTags(raw: string): string[] {
+  try { return JSON.parse(raw); } catch { return []; }
+}
 
 /* ─── Compact article card ─── */
-function ArticleCard({ article, isRead }: { article: Article; isRead?: boolean }) {
-  const meta = TYPE_META[article.type];
+function ArticleCard({ article, isRead }: { article: PublicBlogPost; isRead?: boolean }) {
+  const gradient = CAT_GRADIENTS[article.category] ?? CAT_GRADIENTS["General"];
+  const catColor = getCatColor(article.category);
+  const tags = parseTags(article.tags);
+
   return (
     <Link
       href={`/blog/${article.slug}`}
@@ -44,11 +72,15 @@ function ArticleCard({ article, isRead }: { article: Article; isRead?: boolean }
       {/* Mini cover */}
       <div
         className="relative w-14 h-14 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
-        style={{ background: COVER_GRADIENTS[article.type] }}
+        style={{ background: gradient }}
       >
-        <div className="opacity-70 text-white">
-          {COVER_ICONS_SM[article.type]}
-        </div>
+        {article.coverUrl ? (
+          <img src={article.coverUrl} alt={article.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className="opacity-70 text-white">
+            {COVER_ICONS_SM[article.category] ?? <BookOpen size={20} strokeWidth={1.5} />}
+          </div>
+        )}
         {isRead && (
           <span
             className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center"
@@ -63,16 +95,9 @@ function ArticleCard({ article, isRead }: { article: Article; isRead?: boolean }
         <div className="flex items-center gap-1.5 mb-1">
           <span
             className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-            style={{ background: meta.bg, color: meta.color }}
+            style={{ background: `${catColor}20`, color: catColor }}
           >
-            {TYPE_ICONS[article.type]} {meta.label}
-          </span>
-          <span
-            className="inline-flex items-center gap-1 text-[10px]"
-            style={{ color: "var(--ink-4)" }}
-          >
-            <span className="w-1 h-1 rounded-full" style={{ background: DIFF_COLOR[article.difficulty] }} />
-            {article.difficulty}
+            {CAT_ICONS[article.category] ?? <BookOpen size={12} />} {article.category}
           </span>
         </div>
         <p
@@ -82,11 +107,11 @@ function ArticleCard({ article, isRead }: { article: Article; isRead?: boolean }
           {article.title}
         </p>
         <div className="flex items-center gap-2 mt-1.5 text-[11px]" style={{ color: "var(--ink-4)" }}>
-          <Clock size={10} /> {article.readTime}
-          {article.subject_tags[0] && (
+          <Clock size={10} /> {article.readTimeMin} min
+          {tags[0] && (
             <>
               <span>·</span>
-              <span>{article.subject_tags[0]}</span>
+              <span>{tags[0]}</span>
             </>
           )}
         </div>
@@ -158,6 +183,7 @@ export default function MyLibraryPage() {
   const [loadingBM,      setLoadingBM]      = useState(true);
   const [readSlugs,      setReadSlugs]      = useState<Set<string>>(new Set());
   const [savedArticleIds, setSavedArticleIds] = useState<Set<string>>(new Set());
+  const [allArticles,    setAllArticles]    = useState<PublicBlogPost[]>([]);
 
   useEffect(() => {
     try {
@@ -172,21 +198,20 @@ export default function MyLibraryPage() {
     apiGetBookmarks()
       .then((data: any) => setBookmarks(Array.isArray(data) ? data : []))
       .finally(() => setLoadingBM(false));
+      
+    apiGetBlogs({ limit: 100 })
+      .then(res => setAllArticles(res.items))
+      .catch(() => {});
   }, []);
 
   /* Map localStorage data to article objects */
-  const readArticles  = ARTICLES.filter((a) => readSlugs.has(a.slug));
-  const savedArticles = ARTICLES.filter((a) => savedArticleIds.has(a.id));
+  const readArticles  = allArticles.filter((a) => readSlugs.has(a.slug));
+  const savedArticles = allArticles.filter((a) => savedArticleIds.has(a.id));
   const unreadSaved   = savedArticles.filter((a) => !readSlugs.has(a.slug));
-  const completedSaved = savedArticles.filter((a) => readSlugs.has(a.slug));
 
   /* Stats */
-  const totalReadTime = readArticles.reduce((acc, a) => {
-    const mins = parseInt(a.readTime) || 0;
-    return acc + mins;
-  }, 0);
-
-  const topicsCovered = [...new Set(readArticles.flatMap((a) => a.subject_tags))];
+  const totalReadTime = readArticles.reduce((acc, a) => acc + (a.readTimeMin || 0), 0);
+  const topicsCovered = [...new Set(readArticles.flatMap((a) => parseTags(a.tags)))];
 
   return (
     <div className="fade-up max-w-3xl">
@@ -302,7 +327,7 @@ export default function MyLibraryPage() {
           </div>
           {unreadSaved.length > 5 && (
             <Link
-              href="/blog/all"
+              href="/blog"
               className="mt-3 flex items-center gap-1 text-[12px] font-semibold transition-colors hover:text-[var(--blue)]"
               style={{ color: "var(--ink-4)" }}
             >
@@ -341,7 +366,7 @@ export default function MyLibraryPage() {
             ))}
             {readArticles.length > 4 && (
               <Link
-                href="/blog/all"
+                href="/blog"
                 className="mt-1 flex items-center gap-1 text-[12px] font-semibold transition-colors hover:text-[var(--blue)]"
                 style={{ color: "var(--ink-4)" }}
               >
@@ -456,3 +481,4 @@ export default function MyLibraryPage() {
     </div>
   );
 }
+
