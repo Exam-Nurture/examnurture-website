@@ -66,26 +66,30 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
   const question = questions[currentIdx];
 
   const handleSelect = useCallback((optionIndex: number) => {
-    setAnswers(prev => ({ ...prev, [question.id]: optionIndex }));
+    const q = questions[currentIdx];
+    if (!q) return;
+    setAnswers(prev => ({ ...prev, [q.id]: optionIndex }));
     setStatuses(prev => ({
       ...prev,
-      [question.id]: prev[question.id] === "marked" || prev[question.id] === "answered-marked"
+      [q.id]: prev[q.id] === "marked" || prev[q.id] === "answered-marked"
         ? "answered-marked"
         : "answered",
     }));
-  }, [question]);
+  }, [questions, currentIdx]);
 
   const handleMark = useCallback(() => {
+    const q = questions[currentIdx];
+    if (!q) return;
     setStatuses(prev => {
-      const cur = prev[question.id] ?? "unattempted";
+      const cur = prev[q.id] ?? "unattempted";
       let next: QuestionStatus;
       if (cur === "unattempted") next = "marked";
       else if (cur === "answered") next = "answered-marked";
       else if (cur === "marked") next = "unattempted";
       else next = "answered";
-      return { ...prev, [question.id]: next };
+      return { ...prev, [q.id]: next };
     });
-  }, [question]);
+  }, [questions, currentIdx]);
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -98,6 +102,14 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
   const marked     = Object.values(statuses).filter(s => s === "marked" || s === "answered-marked").length;
   const unattempted = questions.length - answered;
   const isWarning  = timeLeft <= 300;  // 5 min
+
+  if (!question) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "var(--card)" }}>
+        <p className="text-sm font-medium" style={{ color: "var(--ink-3)" }}>No questions available for this test.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--card)" }}>

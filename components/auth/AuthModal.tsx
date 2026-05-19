@@ -22,6 +22,20 @@ interface Props {
   next?: string;
 }
 
+/**
+ * Navigate after auth.
+ * - Internal path (e.g. "/dashboard") → router.replace (SPA navigation).
+ * - Absolute URL (e.g. "http://localhost:3002/exam/X" from the Test Portal)
+ *   → window.location.replace (full navigation across origins).
+ */
+function navigateAfterAuth(target: string, router: ReturnType<typeof useRouter>) {
+  if (/^https?:\/\//i.test(target)) {
+    window.location.replace(target);
+  } else {
+    router.replace(target);
+  }
+}
+
 export default function AuthModal({ onClose, next = "/dashboard" }: Props) {
   const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
@@ -53,7 +67,7 @@ export default function AuthModal({ onClose, next = "/dashboard" }: Props) {
         try {
           await loginWithGoogle(credential);
           onClose();
-          router.push(next);
+          navigateAfterAuth(next, router);
         } catch {
           setError("Google sign-in failed. Please try again.");
         } finally {
@@ -78,7 +92,7 @@ export default function AuthModal({ onClose, next = "/dashboard" }: Props) {
     try {
       await login(email, password);
       onClose();
-      router.push(next);
+      navigateAfterAuth(next, router);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Invalid email or password.");
     } finally {

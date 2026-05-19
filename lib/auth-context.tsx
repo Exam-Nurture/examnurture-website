@@ -2,7 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { apiGetProfile, apiLogin, apiRegister, apiLogout, apiGoogleAuth, clearToken, type UserProfile } from "./api";
+import {
+  apiGetProfile, apiLogin, apiRegister, apiLogout, apiGoogleAuth,
+  clearToken, tryRefreshSession, type UserProfile,
+} from "./api";
 
 declare const google: any;
 
@@ -21,6 +24,23 @@ const AuthContext = createContext<AuthState | null>(null);
 function hasAuthCookie(): boolean {
   if (typeof document === "undefined") return false;
   return document.cookie.includes("en_token=");
+}
+
+/**
+ * Bootstrap auth on cold-load.
+ * - If access-token cookie is visible, hit /profile directly.
+ * - Otherwise, attempt a silent refresh via the httpOnly refresh cookie.
+ * - Only treat the user as logged out if BOTH paths fail.
+ */
+async function bootstrapAuth(): Promise<UserProfile | null> {
+  if (hasAuthCookie()) {
+    try { return await apiGetProfile(); } catch { /* fall through */ }
+  }
+  const refreshed = await tryRefreshSession();
+  if (refreshed) {
+    try { return await apiGetProfile(); } catch { /* ignore */ }
+  }
+  return null;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -45,12 +65,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!hasAuthCookie()) {
-      setLoading(false);
-      return;
-    }
-    refreshUser().finally(() => setLoading(false));
-  }, [refreshUser]);
+    let cancelled = false;
+    bootstrapAuth()
+      .then((profile) => {
+        if (cancelled) return;
+        if (profile) setUser(profile);
+        else clearToken();
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   // Global Google One Tap
   useEffect(() => {

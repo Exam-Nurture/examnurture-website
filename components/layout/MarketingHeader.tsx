@@ -90,11 +90,25 @@ export default function MarketingHeader() {
   const planLabel   = user?.subscription ? `Tier ${user.subscription.tierLevel}` : "Free";
 
   const handleNextParam = useCallback((next: string | null) => {
-    if (next && !modalDismissed.current) {
-      setNextParam(next);
-      if (!user && !loading) setShowAuthModal(true);
+    if (!next || modalDismissed.current) return;
+    setNextParam(next);
+
+    // Already authenticated → forward to `next` immediately.
+    // `next` may be an absolute URL (e.g. https://test.examnurture.com/exam/X)
+    // when coming from the Test Portal, so we can't use router.push.
+    if (user && !loading) {
+      const isAbsolute = /^https?:\/\//i.test(next);
+      if (isAbsolute) {
+        window.location.replace(next);
+      } else {
+        router.replace(next);
+      }
+      return;
     }
-  }, [user, loading]);
+
+    // Not authenticated yet → show the auth modal.
+    if (!user && !loading) setShowAuthModal(true);
+  }, [user, loading, router]);
 
   const handleCloseAuthModal = () => {
     modalDismissed.current = true;

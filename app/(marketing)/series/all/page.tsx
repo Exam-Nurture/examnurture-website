@@ -1,8 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import AuthModal from "@/components/auth/AuthModal";
+import { useAuth } from "@/lib/auth-context";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
@@ -258,6 +260,7 @@ function SeriesAllPageInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [series, setSeries] = useState<TestSeriesItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -268,6 +271,14 @@ function SeriesAllPageInner() {
   const [visibleCount, setVisibleCount] = useState(9);
   const [filters, setFilters] = useState<Filters>(() => readFilters(searchParams));
   const [debouncedQ, setDebouncedQ] = useState(filters.q);
+  const [authModal, setAuthModal] = useState<{ open: boolean; next: string }>({ open: false, next: "/dashboard" });
+
+  const requireAuth = useCallback((href: string, e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      setAuthModal({ open: true, next: href });
+    }
+  }, [user]);
 
   useEffect(() => {
     try {
@@ -394,7 +405,7 @@ function SeriesAllPageInner() {
     <main className="min-h-screen" style={{ background: "var(--bg)" }}>
 
       {/* ── Hero ────────────────────────────────────────── */}
-      <HeroSection stats={stats} />
+      <HeroSection stats={stats} onRequireAuth={requireAuth} />
 
       {/* ── Trending + Category Discovery ───────────────── */}
       <div className="mx-auto max-w-[1440px] px-4 pt-6 sm:px-6 lg:px-8">
@@ -498,7 +509,7 @@ function SeriesAllPageInner() {
                   >
                     {visibleSeries.map((item) => (
                       <motion.div key={item.id} variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}>
-                        <SeriesCard series={item} bookmarked={bookmarks.has(item.id)} onBookmark={() => toggleBookmark(item.id)} />
+                        <SeriesCard series={item} bookmarked={bookmarks.has(item.id)} onBookmark={() => toggleBookmark(item.id)} onRequireAuth={requireAuth} />
                       </motion.div>
                     ))}
                   </motion.div>
@@ -510,7 +521,7 @@ function SeriesAllPageInner() {
                   >
                     {visibleSeries.map((item) => (
                       <motion.div key={item.id} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
-                        <SeriesRow series={item} bookmarked={bookmarks.has(item.id)} onBookmark={() => toggleBookmark(item.id)} />
+                        <SeriesRow series={item} bookmarked={bookmarks.has(item.id)} onBookmark={() => toggleBookmark(item.id)} onRequireAuth={requireAuth} />
                       </motion.div>
                     ))}
                   </motion.div>
@@ -548,6 +559,14 @@ function SeriesAllPageInner() {
         onClose={() => setFilterOpen(false)}
       />
 
+      {/* ── Auth Modal ───────────────────────────────────── */}
+      {authModal.open && (
+        <AuthModal
+          onClose={() => setAuthModal({ open: false, next: "/dashboard" })}
+          next={authModal.next}
+        />
+      )}
+
       {/* ── Sticky mobile bottom bar ─────────────────────── */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 px-4 py-3 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/95 sm:hidden">
         <div className="flex gap-3">
@@ -577,8 +596,9 @@ function SeriesAllPageInner() {
 
 /* ─── Hero Section ───────────────────────────────────── */
 
-function HeroSection({ stats }: {
+function HeroSection({ stats, onRequireAuth }: {
   stats: { total: number; tests: number; learners: number; exams: number };
+  onRequireAuth: (href: string, e: React.MouseEvent) => void;
 }) {
   return (
     <section className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-br from-slate-50 via-blue-50/40 to-white dark:border-white/10 dark:from-slate-950 dark:via-blue-950/20 dark:to-slate-900">
@@ -601,13 +621,15 @@ function HeroSection({ stats }: {
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
-              href="/dashboard/my-series"
+              href="/dashboard/series"
+              onClick={(e) => onRequireAuth("/dashboard/series", e)}
               className="inline-flex h-12 items-center gap-2 rounded-2xl bg-blue-600 px-6 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700"
             >
               My Series <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/dashboard/plans"
+              onClick={(e) => onRequireAuth("/dashboard/plans", e)}
               className="inline-flex h-12 items-center gap-2 rounded-2xl border-2 border-slate-200 bg-white px-6 text-sm font-black text-slate-700 transition hover:border-blue-300 hover:text-blue-700 dark:border-white/10 dark:bg-white/8 dark:text-white"
             >
               View Plans
@@ -762,7 +784,7 @@ function CategoryDiscoveryGrid({ series, onSelectCategory, activeCategory }: {
 
 /* ─── Series Card (grid view) ────────────────────────── */
 
-function SeriesCard({ series: s, bookmarked, onBookmark }: { series: TestSeriesItem; bookmarked: boolean; onBookmark: () => void }) {
+function SeriesCard({ series: s, bookmarked, onBookmark, onRequireAuth }: { series: TestSeriesItem; bookmarked: boolean; onBookmark: () => void; onRequireAuth?: (href: string, e: React.MouseEvent) => void }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl dark:border-white/8 dark:bg-slate-900">
       {/* Gradient banner */}
@@ -845,6 +867,7 @@ function SeriesCard({ series: s, bookmarked, onBookmark }: { series: TestSeriesI
               <>
                 <Link
                   href={`/dashboard/checkout/TEST_SERIES:${s.id}?title=${encodeURIComponent(s.title)}&days=365`}
+                  onClick={(e) => onRequireAuth?.(`/dashboard/checkout/TEST_SERIES:${s.id}?title=${encodeURIComponent(s.title)}&days=365`, e)}
                   className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-sm font-black text-white shadow-md shadow-blue-600/20 transition hover:brightness-105 active:scale-[0.98]"
                 >
                   Buy Now
@@ -873,7 +896,7 @@ function SeriesCard({ series: s, bookmarked, onBookmark }: { series: TestSeriesI
 
 /* ─── Series Row (list view) ─────────────────────────── */
 
-function SeriesRow({ series: s, bookmarked, onBookmark }: { series: TestSeriesItem; bookmarked: boolean; onBookmark: () => void }) {
+function SeriesRow({ series: s, bookmarked, onBookmark, onRequireAuth }: { series: TestSeriesItem; bookmarked: boolean; onBookmark: () => void; onRequireAuth?: (href: string, e: React.MouseEvent) => void }) {
   return (
     <article className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-blue-200 hover:shadow-md dark:border-white/8 dark:bg-slate-900">
       <div className={`h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br ${s.bannerGradient} flex items-center justify-center`}>
@@ -906,7 +929,11 @@ function SeriesRow({ series: s, bookmarked, onBookmark }: { series: TestSeriesIt
           <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-blue-600" : ""}`} />
         </button>
         {s.isPaid ? (
-          <Link href={`/dashboard/checkout/TEST_SERIES:${s.id}?title=${encodeURIComponent(s.title)}&days=365`} className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700">
+          <Link
+            href={`/dashboard/checkout/TEST_SERIES:${s.id}?title=${encodeURIComponent(s.title)}&days=365`}
+            onClick={(e) => onRequireAuth?.(`/dashboard/checkout/TEST_SERIES:${s.id}?title=${encodeURIComponent(s.title)}&days=365`, e)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700"
+          >
             Buy Now
           </Link>
         ) : (

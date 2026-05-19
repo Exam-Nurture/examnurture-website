@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiGetProfile, apiLogout } from "@/lib/api";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const NAV = [
   { label: "Dashboard", href: "/admin", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -75,13 +76,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors relative"
                 style={{
                   color: active ? "var(--blue)" : "var(--ink-2)",
                   background: active ? "var(--blue-soft)" : "transparent",
+                  fontWeight: active ? 600 : 500,
                 }}
               >
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                {active && (
+                  <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-r-full" style={{ background: "var(--blue)" }} />
+                )}
+                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
                 </svg>
                 {item.label}
@@ -116,18 +121,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main */}
       <div className="flex-1 flex flex-col md:ml-56">
         {/* Topbar */}
-        <header className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 border-b" style={{ background: "var(--card)", borderColor: "var(--line)" }}>
-          <button className="md:hidden" onClick={() => setSidebarOpen(true)}>
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="var(--ink-2)" strokeWidth={2}>
+        <header className="sticky top-0 z-20 flex items-center gap-3 px-4 py-2.5 border-b" style={{ background: "var(--card)", borderColor: "var(--line)" }}>
+          <button className="md:hidden p-1.5 rounded-lg" style={{ color: "var(--ink-2)" }} onClick={() => setSidebarOpen(true)}>
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
           <span className="text-sm font-semibold" style={{ color: "var(--ink-1)" }}>
             {NAV.find((n) => (n.href === "/admin" ? pathname === "/admin" : pathname.startsWith(n.href)))?.label ?? "Admin"}
           </span>
-          <Link href="/" className="ml-auto text-xs" style={{ color: "var(--ink-3)" }}>
-            View site →
-          </Link>
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
+            <Link href="/" className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ color: "var(--ink-3)", background: "var(--bg)" }}>
+              View site →
+            </Link>
+          </div>
         </header>
 
         <main className="flex-1 p-4 md:p-6">{children}</main>

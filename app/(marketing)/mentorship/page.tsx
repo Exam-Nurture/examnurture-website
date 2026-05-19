@@ -39,12 +39,12 @@ const STATS = [
 ];
 
 const FEATURES = [
-  { icon: User,          title: "Personal Academic Guide",        desc: "A dedicated mentor tracks your progress, clears doubts, and keeps you motivated throughout your preparation.",                  color: "text-blue-600",    bg: "bg-blue-50"    },
-  { icon: Target,        title: "Syllabus-to-Selection Roadmap",  desc: "Smart, personalised study plans with clear milestones — from day 1 of prep to final selection.",                              color: "text-violet-600",  bg: "bg-violet-50"  },
-  { icon: Mic,           title: "1:1 Mentorship Sessions",        desc: "Weekly live 1:1 calls with your mentor for direct interaction, review, and guidance.",                                          color: "text-emerald-600", bg: "bg-emerald-50" },
-  { icon: BookOpen,      title: "Subject-Wise Guidance",          desc: "Step-by-step concept coverage for every subject — taught in order of your exam's actual syllabus.",                             color: "text-amber-600",   bg: "bg-amber-50"   },
-  { icon: ClipboardList, title: "Career Support & Interview Prep",desc: "End-to-end guidance till final selection — including document verification, medical, and joining advice.",                    color: "text-cyan-600",    bg: "bg-cyan-50"    },
-  { icon: BarChart3,     title: "Weekly Performance Review",      desc: "Data-driven feedback on mock tests, weak areas, accuracy, and speed — reviewed every week.",                                   color: "text-rose-600",    bg: "bg-rose-50"    },
+  { icon: User,          title: "Personal Academic Guide",        desc: "A dedicated mentor tracks your progress, clears doubts, and keeps you motivated throughout your preparation.",                  color: "text-blue-600 dark:text-blue-400",    bg: "bg-blue-50 dark:bg-blue-900/20"    },
+  { icon: Target,        title: "Syllabus-to-Selection Roadmap",  desc: "Smart, personalised study plans with clear milestones — from day 1 of prep to final selection.",                              color: "text-violet-600 dark:text-violet-400",  bg: "bg-violet-50 dark:bg-violet-900/20"  },
+  { icon: Mic,           title: "1:1 Mentorship Sessions",        desc: "Weekly live 1:1 calls with your mentor for direct interaction, review, and guidance.",                                          color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+  { icon: BookOpen,      title: "Subject-Wise Guidance",          desc: "Step-by-step concept coverage for every subject — taught in order of your exam's actual syllabus.",                             color: "text-amber-600 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-900/20"   },
+  { icon: ClipboardList, title: "Career Support & Interview Prep",desc: "End-to-end guidance till final selection — including document verification, medical, and joining advice.",                    color: "text-cyan-600 dark:text-cyan-400",    bg: "bg-cyan-50 dark:bg-cyan-900/20"    },
+  { icon: BarChart3,     title: "Weekly Performance Review",      desc: "Data-driven feedback on mock tests, weak areas, accuracy, and speed — reviewed every week.",                                   color: "text-rose-600 dark:text-rose-400",    bg: "bg-rose-50 dark:bg-rose-900/20"    },
 ];
 
 const STEPS = [
@@ -72,11 +72,11 @@ const FAQS = [
 function SectionHeader({ label, title, desc }: { label: string; title: string; desc: string }) {
   return (
     <div className="max-w-2xl">
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-purple-600 text-[10px] font-bold uppercase tracking-widest mb-3">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-900/30 border border-purple-100 dark:border-purple-800/50 text-purple-600 dark:text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-3">
         {label}
       </span>
-      <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">{title}</h2>
-      <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+      <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mb-2">{title}</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{desc}</p>
     </div>
   );
 }
@@ -92,11 +92,11 @@ export default function MentorshipPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-950">
 
       {/* ── Hero ── */}
       <section className="relative pt-20 pb-14 lg:pt-28 lg:pb-20 overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none select-none" aria-hidden>
+        <div className="absolute inset-0 pointer-events-none select-none dark:hidden" aria-hidden>
           <div className="absolute inset-0" style={{
             background: [
               "radial-gradient(ellipse 90% 55% at -5% 45%, rgba(139,92,246,0.09) 0%, transparent 60%)",
@@ -108,16 +108,16 @@ export default function MentorshipPage() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-50 border border-purple-100 rounded-full text-purple-600 text-xs font-bold uppercase tracking-widest mb-6">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-50 dark:bg-purple-900/30 border border-purple-100 dark:border-purple-800/50 rounded-full text-purple-600 dark:text-purple-400 text-xs font-bold uppercase tracking-widest mb-6">
               <Sparkles className="w-3 h-3" /> 1-on-1 Expert Guidance
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-5 leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white mb-5 leading-tight">
               Learn from the{" "}
               <span className="bg-gradient-to-r from-purple-600 via-violet-500 to-indigo-500 bg-clip-text text-transparent">
                 Best Minds & Toppers
               </span>
             </h1>
-            <p className="text-base md:text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed mb-10">
+            <p className="text-base md:text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed mb-10">
               Personalised strategies, direct doubt resolution, and a roadmap to success designed
               by those who have already conquered the exams.
             </p>
@@ -127,13 +127,13 @@ export default function MentorshipPage() {
               {STATS.map((s) => {
                 const Icon = s.icon;
                 return (
-                  <div key={s.label} className="flex items-center gap-3 bg-white border border-gray-100 rounded-2xl px-4 py-3 shadow-sm">
-                    <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+                  <div key={s.label} className="flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 shadow-sm">
+                    <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
                       <Icon size={15} className="text-purple-500" />
                     </div>
                     <div className="text-left">
-                      <div className="text-lg font-extrabold text-gray-900 leading-none">{s.value}</div>
-                      <div className="text-[10px] text-gray-400 mt-0.5">{s.label}</div>
+                      <div className="text-lg font-extrabold text-gray-900 dark:text-white leading-none">{s.value}</div>
+                      <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{s.label}</div>
                     </div>
                   </div>
                 );
@@ -153,20 +153,20 @@ export default function MentorshipPage() {
               desc="Expert-led programs tailored to your exam — limited seats, maximum personalisation."
             />
             <Link href="/dashboard/mentorship"
-              className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-sm font-bold transition-colors">
+              className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-400 text-sm font-bold transition-colors">
               My Mentorships <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[1, 2, 3].map(i => <div key={i} className="h-[500px] rounded-3xl bg-gray-50 animate-pulse" />)}
+              {[1, 2, 3].map(i => <div key={i} className="h-[500px] rounded-3xl bg-gray-100 dark:bg-gray-800/50 animate-pulse" />)}
             </div>
           ) : programs.length === 0 ? (
-            <div className="text-center py-20 bg-purple-50/30 rounded-3xl border border-dashed border-purple-100">
-              <Users className="w-14 h-14 text-purple-200 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-gray-600">No programs available right now</h3>
-              <p className="text-sm text-gray-400 mt-2">New mentorship batches are starting soon. Stay tuned!</p>
+            <div className="text-center py-20 bg-purple-50/30 dark:bg-purple-900/10 rounded-3xl border border-dashed border-purple-100 dark:border-purple-800/40">
+              <Users className="w-14 h-14 text-purple-200 dark:text-purple-800 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-600 dark:text-gray-300">No programs available right now</h3>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">New mentorship batches are starting soon. Stay tuned!</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -176,18 +176,18 @@ export default function MentorshipPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: idx * 0.08 }}
-                  className="group relative bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500 flex flex-col overflow-hidden"
+                  className="group relative bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500 flex flex-col overflow-hidden"
                 >
                   {/* Thumbnail */}
-                  <div className="aspect-[16/9] bg-gray-100 relative overflow-hidden">
+                  <div className="aspect-[16/9] bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
                     {prog.thumbnailUrl ? (
                       <img src={prog.thumbnailUrl} alt={prog.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50">
-                        <Award className="w-16 h-16 text-purple-200" />
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30">
+                        <Award className="w-16 h-16 text-purple-200 dark:text-purple-700" />
                       </div>
                     )}
-                    <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur-md text-purple-700 text-[10px] font-bold rounded-full shadow-sm">
+                    <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md text-purple-700 dark:text-purple-400 text-[10px] font-bold rounded-full shadow-sm">
                       {prog.exam?.shortName || "General"}
                     </div>
                   </div>
@@ -196,45 +196,45 @@ export default function MentorshipPage() {
                   <div className="p-6 flex-1 flex flex-col">
                     <div className="flex items-center gap-1 mb-2">
                       <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                      <span className="text-xs font-bold text-gray-600">Highly Rated Mentorship</span>
+                      <span className="text-xs font-bold text-gray-600 dark:text-gray-400">Highly Rated Mentorship</span>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors line-clamp-1">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-1">
                       {prog.title}
                     </h3>
-                    <p className="text-sm text-gray-500 line-clamp-2 mb-5 leading-relaxed">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-5 leading-relaxed">
                       {prog.description || "Get 1-on-1 guidance and a personalised roadmap to crack your dream exam."}
                     </p>
 
                     <div className="mt-auto space-y-4">
                       {/* Mentor */}
-                      <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                      <div className="p-4 bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-100 dark:border-gray-700/50">
                         <div className="flex items-center gap-3 mb-2.5">
-                          <div className="w-10 h-10 rounded-full bg-purple-100 overflow-hidden shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 overflow-hidden shrink-0">
                             {prog.mentorImageUrl
                               ? <img src={prog.mentorImageUrl} className="w-full h-full object-cover" alt={prog.mentorName} />
                               : <Users className="w-full h-full p-2.5 text-purple-400" />}
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-gray-900">{prog.mentorName}</div>
-                            <div className="text-[10px] text-gray-500">{prog.mentorTitle || "Lead Mentor"}</div>
+                            <div className="text-xs font-bold text-gray-900 dark:text-white">{prog.mentorName}</div>
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400">{prog.mentorTitle || "Lead Mentor"}</div>
                           </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 italic line-clamp-2">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 italic line-clamp-2">
                           "{prog.mentorBio || "Helping students achieve their goals through structured learning."}"
                         </p>
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
                         <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {prog.courseDurationWeeks} Weeks</div>
                         <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Limited Seats</div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
                         <div>
                           {prog.price && prog.discountedPrice && prog.price !== prog.discountedPrice && (
-                            <div className="text-[10px] font-bold text-gray-400 line-through">₹{prog.price.toLocaleString('en-IN')}</div>
+                            <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 line-through">₹{prog.price.toLocaleString('en-IN')}</div>
                           )}
-                          <div className="text-2xl font-black text-gray-900">₹{(prog.discountedPrice ?? prog.price).toLocaleString('en-IN')}</div>
+                          <div className="text-2xl font-black text-gray-900 dark:text-white">₹{(prog.discountedPrice ?? prog.price).toLocaleString('en-IN')}</div>
                         </div>
                         <Link
                           href={`/dashboard/checkout/MENTORSHIP:${prog.id}?title=${encodeURIComponent(prog.title)}&mentor=${encodeURIComponent(prog.mentorName)}&weeks=${prog.courseDurationWeeks}`}
@@ -252,7 +252,7 @@ export default function MentorshipPage() {
       </section>
 
       {/* ── What you get ── */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           <SectionHeader
             label="What You Get"
@@ -268,14 +268,14 @@ export default function MentorshipPage() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.07, duration: 0.3 }}
-                  className="bg-white rounded-2xl border border-gray-100 p-5 flex gap-4 hover:shadow-md hover:border-gray-200 transition-all"
+                  className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 flex gap-4 hover:shadow-md hover:border-gray-200 dark:hover:border-gray-700 transition-all"
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${f.bg}`}>
                     <Icon size={18} className={f.color} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 mb-1">{f.title}</p>
-                    <p className="text-xs text-gray-500 leading-relaxed">{f.desc}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{f.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
                   </div>
                 </motion.div>
               );
@@ -285,7 +285,7 @@ export default function MentorshipPage() {
       </section>
 
       {/* ── How it works ── */}
-      <section className="py-16">
+      <section className="py-16 bg-white dark:bg-gray-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           <SectionHeader
             label="How It Works"
@@ -301,21 +301,21 @@ export default function MentorshipPage() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1, duration: 0.3 }}
-                  className="relative bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4 overflow-hidden hover:shadow-md hover:border-purple-100 transition-all"
+                  className="relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 flex flex-col gap-4 overflow-hidden hover:shadow-md hover:border-purple-100 dark:hover:border-purple-900/50 transition-all"
                 >
-                  <div className="absolute -top-3 -right-2 text-[56px] font-black leading-none pointer-events-none select-none text-gray-50">
+                  <div className="absolute -top-3 -right-2 text-[56px] font-black leading-none pointer-events-none select-none text-gray-50 dark:text-gray-800">
                     {s.step}
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
                     <Icon size={18} className="text-purple-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-gray-900 mb-1.5">{s.title}</p>
-                    <p className="text-xs text-gray-500 leading-relaxed">{s.desc}</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white mb-1.5">{s.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{s.desc}</p>
                   </div>
                   {i < STEPS.length - 1 && (
                     <div className="hidden xl:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10">
-                      <ArrowRight size={16} className="text-gray-300" />
+                      <ArrowRight size={16} className="text-gray-300 dark:text-gray-600" />
                     </div>
                   )}
                 </motion.div>
@@ -386,7 +386,7 @@ export default function MentorshipPage() {
       </section>
 
       {/* ── FAQs ── */}
-      <section className="py-16">
+      <section className="py-16 bg-white dark:bg-gray-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           <SectionHeader
             label="FAQs"
@@ -395,13 +395,13 @@ export default function MentorshipPage() {
           />
           <div className="flex flex-col gap-2 max-w-3xl mt-8">
             {FAQS.map((faq, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:border-purple-100 transition-colors">
+              <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:border-purple-100 dark:hover:border-purple-900/50 transition-colors">
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   className="w-full flex items-center justify-between px-5 py-4 text-left gap-4"
                 >
-                  <span className="text-sm font-semibold text-gray-900">{faq.q}</span>
-                  <ChevronDown size={16} className={`shrink-0 text-gray-400 transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""}`} />
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">{faq.q}</span>
+                  <ChevronDown size={16} className={`shrink-0 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""}`} />
                 </button>
                 <AnimatePresence initial={false}>
                   {openFaq === i && (
@@ -412,7 +412,7 @@ export default function MentorshipPage() {
                       transition={{ duration: 0.2, ease: "easeOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="px-5 pb-4 text-sm text-gray-500 leading-relaxed border-t border-gray-50">
+                      <div className="px-5 pb-4 text-sm text-gray-500 dark:text-gray-400 leading-relaxed border-t border-gray-50 dark:border-gray-800">
                         <div className="pt-3">{faq.a}</div>
                       </div>
                     </motion.div>
@@ -425,7 +425,7 @@ export default function MentorshipPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="pb-20">
+      <section className="pb-20 bg-white dark:bg-gray-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           <div className="rounded-3xl p-8 md:p-10 bg-gradient-to-br from-purple-600 to-indigo-600 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-purple-500/20">
             <div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import AuthModal from "@/components/auth/AuthModal";
 import {
   ArrowRight,
@@ -533,13 +533,12 @@ function FeaturesSection() {
    EXAM CATEGORIES
 ══════════════════════════════════════════════ */
 function ExamCategoriesSection() {
-  const [selectedExam, setSelectedExam] = useState(examCategories[0]);
-  const examRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const sidebarRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const sidebarContainerRef = useRef<HTMLDivElement | null>(null);
-  const mobileExamRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const mobileTabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const mobileTabContainerRef = useRef<HTMLDivElement | null>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [trackX, setTrackX] = useState(0);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const tabContainerRef = useRef<HTMLDivElement | null>(null);
+  const tabRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const activeIdxRef = useRef(0);
 
   const descriptions: Record<string, string> = {
     "JPSC Prelims": "Prepare for Jharkhand Public Service Commission Prelims with full-length test series, previous year papers, and expert study materials.",
@@ -552,58 +551,50 @@ function ExamCategoriesSection() {
     "UET": "Engineering entrance exam preparation with structured courses and practice tests.",
   };
 
-  // Unified scroll tracking — guards by breakpoint so handlers don't conflict
-  useEffect(() => {
-    const LG = 1024; // matches Tailwind's lg breakpoint
+  const GAP = 16; // mr-4 = 16px
 
-    const handleScroll = () => {
-      const isDesktop = window.innerWidth >= LG;
-
-      if (isDesktop) {
-        const TRIGGER_Y = 160;
-        let activeExam = examCategories[0];
-        for (const exam of examCategories) {
-          const el = examRefs.current[exam.name];
-          if (!el) continue;
-          if (el.getBoundingClientRect().top <= TRIGGER_Y) activeExam = exam;
-        }
-        setSelectedExam(activeExam);
-      } else {
-        const TRIGGER_Y = 120;
-        let activeExam = examCategories[0];
-        for (const exam of examCategories) {
-          const el = mobileExamRefs.current[exam.name];
-          if (!el) continue;
-          if (el.getBoundingClientRect().top <= TRIGGER_Y) activeExam = exam;
-        }
-        setSelectedExam(activeExam);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+  // No paddingLeft on the track — offset is baked into trackX so that
+  // width:"84%" on flex items resolves against the full container width (W),
+  // not against a content-box reduced by the padding (which caused a growing
+  // per-card mismatch between CSS and JS).
+  const computeX = useCallback((idx: number) => {
+    if (!viewportRef.current) return 0;
+    const W = viewportRef.current.clientWidth;
+    const cardW = W * 0.84;
+    const leftPad = W * 0.08;
+    return leftPad - idx * (cardW + GAP);
   }, []);
 
+  const goTo = useCallback((idx: number) => {
+    const clamped = Math.max(0, Math.min(examCategories.length - 1, idx));
+    activeIdxRef.current = clamped;
+    setActiveIdx(clamped);
+    setTrackX(computeX(clamped));
+    const container = tabContainerRef.current;
+    const tab = tabRefs.current[clamped];
+    if (container && tab) {
+      container.scrollTo({
+        left: tab.offsetLeft - container.clientWidth / 2 + tab.clientWidth / 2,
+        behavior: "smooth",
+      });
+    }
+  }, [computeX]);
+
+  // Initialise position after mount + recompute on resize (single stable listener)
   useEffect(() => {
-    const sidebarButton = sidebarRefs.current[selectedExam.name];
-    if (sidebarButton) {
-      sidebarButton.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-    const mobileTab = mobileTabRefs.current[selectedExam.name];
-    if (mobileTab) {
-      mobileTab.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-    }
-  }, [selectedExam]);
+    setTrackX(computeX(0));
+    const onResize = () => setTrackX(computeX(activeIdxRef.current));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [computeX]);
 
   return (
     <section className="py-20 lg:py-28 bg-[var(--bg)] border-t border-[var(--line-soft)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+
         <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="text-center mb-16"
+          initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
+          className="text-center mb-12"
         >
           <p className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">Popular Exams</p>
           <h2 className="text-4xl lg:text-5xl font-bold text-[var(--ink-1)] mb-4">Prepare for Any Exam</h2>
@@ -612,243 +603,134 @@ function ExamCategoriesSection() {
           </p>
         </motion.div>
 
-        {/* Desktop: Two-column layout */}
-        <div className="hidden lg:grid grid-cols-3 gap-0">
-          {/* Left: Scrollable exam list */}
-          <div className="lg:col-span-1">
-            <div className="max-h-[600px] overflow-y-auto sticky top-24" ref={sidebarContainerRef}>
-              <div className="p-4">
-                <h3 className="text-sm font-bold text-[var(--ink-3)] uppercase tracking-wider mb-4 px-2">Popular Exams</h3>
-                <div className="space-y-2">
-                  {examCategories.map((exam) => (
-                    <button
-                      key={exam.name}
-                      ref={(el) => {
-                        if (el) sidebarRefs.current[exam.name] = el;
-                      }}
-                      onClick={() => {
-                        setSelectedExam(exam);
-                        examRefs.current[exam.name]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                      }}
-                      className={`w-full text-left px-4 py-3 rounded-l-xl transition-all duration-200 ${
-                        selectedExam.name === exam.name
-                          ? "bg-blue-600 text-white border border-blue-600 border-r-0 shadow-md"
-                          : "hover:bg-blue-50 dark:hover:bg-blue-900/10 text-[var(--ink-1)] bg-[var(--card)] border border-[var(--line-soft)] hover:border-blue-200"
-                      }`}
-                    >
-                      <div className="font-semibold text-sm">{exam.name}</div>
-                      <div className={`text-xs mt-0.5 ${selectedExam.name === exam.name ? "text-blue-100" : "text-gray-500"}`}>
-                        {exam.tag}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Exam details stack */}
-          <div className="lg:col-span-2 space-y-0">
-            {examCategories.map((exam, idx) => (
-              <div
-                key={exam.name}
-                ref={(el) => {
-                  if (el) examRefs.current[exam.name] = el;
-                }}
-                data-exam={exam.name}
-                className={`p-7 transition-all duration-300 border-l-0 ${
-                  selectedExam.name === exam.name
-                    ? "bg-blue-50/50 dark:bg-blue-950/30 border-2 border-blue-400 shadow-md"
-                    : "bg-[var(--card)] border border-[var(--line-soft)] opacity-50"
-                } ${idx === 0 ? "rounded-tr-xl" : ""} ${idx === examCategories.length - 1 ? "rounded-br-xl" : ""}`}
+        {/* Tab bar — centred */}
+        <div ref={tabContainerRef} className="overflow-x-auto scrollbar-hide mb-8">
+          <div className="flex gap-2 min-w-min mx-auto justify-center py-1">
+            {examCategories.map((ex, idx) => (
+              <button
+                key={ex.name}
+                ref={(el) => { tabRefs.current[idx] = el; }}
+                onClick={() => goTo(idx)}
+                className={`px-4 py-2.5 rounded-xl whitespace-nowrap transition-all duration-200 flex-shrink-0 text-left ${
+                  activeIdx === idx
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25"
+                    : "bg-[var(--card)] border border-[var(--line-soft)] text-[var(--ink-2)] hover:border-blue-300 hover:text-[var(--ink-1)]"
+                }`}
               >
+                <div className="font-semibold text-sm">{ex.name}</div>
+                <div className={`text-xs mt-0.5 ${activeIdx === idx ? "text-blue-100" : "text-[var(--ink-4)]"}`}>{ex.tag}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Horizontal carousel — active card 84% wide, neighbours peek 8% each side */}
+        <div ref={viewportRef} className="overflow-hidden">
+          <motion.div
+            className="flex"
+            animate={{ x: trackX }}
+            transition={{ type: "spring", stiffness: 280, damping: 32 }}
+          >
+            {examCategories.map((exam, idx) => {
+              const offset = idx - activeIdx;
+              const isActive = offset === 0;
+              const isAdjacent = Math.abs(offset) === 1;
+              return (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
+                  key={exam.name}
+                  className="flex-shrink-0 mr-4 cursor-pointer"
+                  style={{ width: "84%" }}
+                  animate={{
+                    opacity: isActive ? 1 : isAdjacent ? 0.12 : 0,
+                    scale: isActive ? 1 : 0.95,
+                  }}
+                  transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  onClick={() => !isActive && goTo(idx)}
                 >
-                  {/* Header row */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-xs font-semibold px-3 py-1 rounded-full ${exam.color}`}>
-                        {exam.tag}
-                      </span>
+                  <div className={`rounded-2xl border p-7 lg:p-10 transition-colors duration-300 ${
+                    isActive
+                      ? "bg-[var(--card)] border-blue-500/50 shadow-2xl"
+                      : "bg-[var(--card)] border-[var(--line-soft)]"
+                  }`}>
+
+                    {/* Badges */}
+                    <div className="flex items-center gap-2 flex-wrap mb-5">
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${exam.color}`}>{exam.tag}</span>
                       {exam.state && (
-                        <span className="flex items-center gap-1 text-xs text-[var(--ink-3)] bg-[var(--bg)] px-2.5 py-1 rounded-full border border-[var(--line-soft)]">
-                          <MapPin className="w-3 h-3" />
-                          {exam.state}
+                        <span className="flex items-center gap-1 text-xs text-[var(--ink-3)] bg-[var(--bg)] border border-[var(--line-soft)] px-2.5 py-1 rounded-full">
+                          <MapPin className="w-3 h-3" /> {exam.state}
                         </span>
                       )}
                       {exam.board && (
-                        <span className="flex items-center gap-1 text-xs text-[var(--ink-3)] bg-[var(--bg)] px-2.5 py-1 rounded-full border border-[var(--line-soft)]">
-                          <Building2 className="w-3 h-3" />
-                          {exam.board}
+                        <span className="flex items-center gap-1 text-xs text-[var(--ink-3)] bg-[var(--bg)] border border-[var(--line-soft)] px-2.5 py-1 rounded-full">
+                          <Building2 className="w-3 h-3" /> {exam.board}
                         </span>
                       )}
                     </div>
-                  </div>
 
-                  <h3 className="text-2xl font-bold text-[var(--ink-1)] mb-1.5">{exam.name}</h3>
-                  <p className="text-sm text-[var(--ink-3)] leading-relaxed max-w-xl mb-5">
-                    {descriptions[exam.name] || "Comprehensive preparation with full-length test series, previous year papers, and expert study materials."}
-                  </p>
+                    <h3 className="text-3xl lg:text-4xl font-bold text-[var(--ink-1)] mb-3">{exam.name}</h3>
+                    <p className="text-[var(--ink-3)] leading-relaxed mb-8 text-base max-w-2xl">
+                      {descriptions[exam.name] || "Comprehensive preparation with full-length test series, previous year papers, and expert study materials."}
+                    </p>
 
-                  {/* Stats row */}
-                  <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="flex items-center gap-3 bg-[var(--card)] rounded-xl p-4 border border-[var(--line-soft)] shadow-sm">
-                      <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
-                        <ClipboardList className="w-4.5 h-4.5 text-blue-600" />
+                    <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
+                      <div className="flex gap-4">
+                        <div className="flex items-center gap-3 bg-[var(--bg)] rounded-xl px-4 py-3 border border-[var(--line-soft)]">
+                          <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
+                            <ClipboardList className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <div className="text-xl font-bold text-blue-600">{exam.numTests}+</div>
+                            <div className="text-xs text-[var(--ink-3)]">Practice Tests</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 bg-[var(--bg)] rounded-xl px-4 py-3 border border-[var(--line-soft)]">
+                          <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
+                            <ScrollText className="w-4 h-4 text-emerald-600" />
+                          </div>
+                          <div>
+                            <div className="text-xl font-bold text-emerald-600">{exam.numPYQ}+</div>
+                            <div className="text-xs text-[var(--ink-3)]">PYQ Papers</div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-xl font-bold text-blue-600">{exam.numTests}+</div>
-                        <div className="text-xs text-[var(--ink-3)]">Practice Tests</div>
+                      <div className="flex gap-3 sm:ml-auto">
+                        <Link href={exam.slug ? `/exams/${exam.slug}` : "/exams"}>
+                          <button className="px-6 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20">
+                            Explore Exam <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </Link>
+                        <Link href="/series/all">
+                          <button className="px-6 py-3 border-2 border-[var(--line)] text-[var(--ink-1)] text-sm font-semibold rounded-xl hover:border-blue-400 hover:text-blue-600 transition-all">
+                            Start Tests
+                          </button>
+                        </Link>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 bg-[var(--card)] rounded-xl p-4 border border-[var(--line-soft)] shadow-sm">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
-                        <ScrollText className="w-4.5 h-4.5 text-emerald-600" />
-                      </div>
-                      <div>
-                        <div className="text-xl font-bold text-emerald-600">{exam.numPYQ}+</div>
-                        <div className="text-xs text-[var(--ink-3)]">PYQ Papers</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex gap-3">
-                    <Link href={exam.slug ? `/exams/${exam.slug}` : "/exams"} className="flex-1">
-                      <button className="w-full px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
-                        Explore Exam
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </Link>
-                    <Link href="/series/all" className="flex-1">
-                      <button className="w-full px-5 py-2.5 border-2 border-blue-600 text-blue-600 text-sm font-semibold rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all">
-                        Start Tests
-                      </button>
-                    </Link>
                   </div>
                 </motion.div>
-              </div>
-            ))}
-          </div>
+              );
+            })}
+          </motion.div>
         </div>
 
-        {/* Mobile: Horizontal tab + stacked scroll layout */}
-        <div className="lg:hidden">
-          {/* Sticky horizontal tab bar */}
-          <div className="sticky top-0 z-20 bg-[var(--bg)]/90 backdrop-blur-md border-b border-[var(--line-soft)] shadow-sm">
-            <div ref={mobileTabContainerRef} className="overflow-x-auto py-3 px-2">
-              <div className="flex gap-2 min-w-min">
-                {examCategories.map((exam) => (
-                  <button
-                    key={exam.name}
-                    ref={(el) => { if (el) mobileTabRefs.current[exam.name] = el; }}
-                    onClick={() => {
-                      setSelectedExam(exam);
-                      mobileExamRefs.current[exam.name]?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }}
-                    className={`px-4 py-2.5 rounded-xl whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
-                      selectedExam.name === exam.name
-                        ? "bg-blue-600 text-white border border-blue-600 shadow-md"
-                        : "bg-[var(--card)] border border-[var(--line-soft)] text-[var(--ink-1)] hover:border-blue-200"
-                    }`}
-                  >
-                    <div className="font-semibold text-sm">{exam.name}</div>
-                    <div className={`text-xs mt-0.5 ${selectedExam.name === exam.name ? "text-blue-100" : "text-gray-500"}`}>
-                      {exam.tag}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Stacked exam cards — all always rendered */}
-          <div className="space-y-4 pt-4">
-            {examCategories.map((exam) => (
-              <div
-                key={exam.name}
-                ref={(el) => { if (el) mobileExamRefs.current[exam.name] = el; }}
-                data-exam-mobile={exam.name}
-                className={`rounded-2xl border-2 p-5 transition-all duration-300 ${
-                  selectedExam.name === exam.name
-                    ? "bg-blue-50/50 dark:bg-blue-950/30 border-blue-400 shadow-md"
-                    : "bg-[var(--card)] border-[var(--line-soft)]"
-                }`}
-              >
-                {/* Badges */}
-                <div className="flex items-center gap-2 flex-wrap mb-3">
-                  <span className={`text-xs font-semibold px-3 py-1 rounded-full ${exam.color}`}>
-                    {exam.tag}
-                  </span>
-                  {exam.state && (
-                    <span className="flex items-center gap-1 text-xs text-[var(--ink-3)] bg-[var(--bg)] border border-[var(--line-soft)] px-2.5 py-1 rounded-full">
-                      <MapPin className="w-3 h-3" />
-                      {exam.state}
-                    </span>
-                  )}
-                  {exam.board && (
-                    <span className="flex items-center gap-1 text-xs text-[var(--ink-3)] bg-[var(--bg)] border border-[var(--line-soft)] px-2.5 py-1 rounded-full">
-                      <Building2 className="w-3 h-3" />
-                      {exam.board}
-                    </span>
-                  )}
-                </div>
-
-                <h3 className="text-xl font-bold text-[var(--ink-1)] mb-1.5">{exam.name}</h3>
-                <p className="text-[var(--ink-3)] leading-relaxed mb-5 text-sm">
-                  {descriptions[exam.name] || "Comprehensive preparation with full-length test series, previous year papers, and expert study materials."}
-                </p>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-3 mb-5">
-                  <div className="flex items-center gap-3 bg-[var(--card)] rounded-xl p-3 border border-[var(--line-soft)] shadow-sm">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
-                      <ClipboardList className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-blue-600">{exam.numTests}+</div>
-                      <div className="text-xs text-[var(--ink-3)]">Practice Tests</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 bg-[var(--card)] rounded-xl p-3 border border-[var(--line-soft)] shadow-sm">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
-                      <ScrollText className="w-4 h-4 text-emerald-600" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-emerald-600">{exam.numPYQ}+</div>
-                      <div className="text-xs text-[var(--ink-3)]">PYQ Papers</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex flex-col gap-3">
-                  <Link href={exam.slug ? `/exams/${exam.slug}` : "/exams"} className="w-full">
-                    <button className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 text-sm">
-                      Explore Exam
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </Link>
-                  <Link href="/series/all" className="w-full">
-                    <button className="w-full px-6 py-3 border-2 border-blue-600 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all text-sm">
-                      Start Tests
-                    </button>
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Dot indicators */}
+        <div className="flex items-center justify-center gap-2 mt-7">
+          {examCategories.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => goTo(idx)}
+              className={`rounded-full transition-all duration-300 ${
+                activeIdx === idx ? "w-7 h-2 bg-blue-600" : "w-2 h-2 bg-[var(--line-soft)] hover:bg-[var(--ink-4)]"
+              }`}
+            />
+          ))}
         </div>
 
-        {/* Browse All CTA */}
-        <div className="text-center mt-12">
+        <div className="text-center mt-10">
           <Link href="/exams">
             <button className="px-8 py-4 border-2 border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 mx-auto">
-              Browse All Exams
-              <ArrowRight className="w-4 h-4" />
+              Browse All Exams <ArrowRight className="w-4 h-4" />
             </button>
           </Link>
         </div>

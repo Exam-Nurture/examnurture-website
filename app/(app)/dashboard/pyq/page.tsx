@@ -1,17 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Clock, BookOpen, Download, Play, CheckCircle2, ChevronDown, Zap } from "lucide-react";
 import { apiGetPYQPapers, apiGetPYQAttempts } from "@/lib/api";
 
 const YEARS = ["All Years", "2024", "2023", "2022", "2021", "2020", "2019"];
 
 /* ─────────────────────────────────────────────
-   Page
+   Page (inner — needs useSearchParams)
 ───────────────────────────────────────────── */
-export default function PYQPage() {
-  const [activeTab, setActiveTab] = useState<"All" | "My Attempts">("All");
+function PYQPageInner() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<"All" | "My Attempts">(
+    tabParam === "attempts" ? "My Attempts" : "All"
+  );
   const [year, setYear] = useState("All Years");
 
   const [papersData, setPapersData] = useState<any>(null);
@@ -133,6 +138,14 @@ export default function PYQPage() {
         )
       )}
     </div>
+  );
+}
+
+export default function PYQPage() {
+  return (
+    <Suspense fallback={<div className="fade-up" style={{ maxWidth: 1200 }} />}>
+      <PYQPageInner />
+    </Suspense>
   );
 }
 

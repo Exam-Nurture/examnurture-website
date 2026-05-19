@@ -10,6 +10,24 @@ const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
 
 const TOKEN_COOKIE = "en_token";
 
+/* ── HTTP status helpers ────────────────────────── */
+
+function statusDescription(status: number): string {
+  const map: Record<number, string> = {
+    400: "Bad request",
+    401: "Unauthorised",
+    403: "Access denied",
+    404: "Not found",
+    409: "Conflict",
+    422: "Validation error",
+    429: "Too many requests",
+    500: "Server error",
+    502: "Bad gateway",
+    503: "Service unavailable",
+  };
+  return map[status] ?? `HTTP ${status}`;
+}
+
 /* ── Token helpers ──────────────────────────────── */
 
 export function getToken(): string | null {
@@ -18,14 +36,33 @@ export function getToken(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+/**
+ * Cookie domain helper.
+ * Scopes the access-token cookie to `.examnurture.com` in production so it's
+ * readable by both `examnurture.com` (main site) and `test.examnurture.com`
+ * (test portal). On localhost, omit Domain so the browser uses the bare host
+ * (which is shared across ports).
+ */
+function cookieDomainAttr(): string {
+  if (typeof window === "undefined") return "";
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") return "";
+  if (host.endsWith(".examnurture.com") || host === "examnurture.com") {
+    return "; Domain=.examnurture.com";
+  }
+  return "";
+}
+
 export function setToken(token: string) {
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-  document.cookie = `${TOKEN_COOKIE}=${encodeURIComponent(token)}; path=/; max-age=${15 * 60}; SameSite=Lax${secure}`;
+  const domain = cookieDomainAttr();
+  document.cookie = `${TOKEN_COOKIE}=${encodeURIComponent(token)}; path=/; max-age=${15 * 60}; SameSite=Lax${domain}${secure}`;
 }
 
 export function clearToken() {
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-  document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0; SameSite=Lax${secure}`;
+  const domain = cookieDomainAttr();
+  document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0; SameSite=Lax${domain}${secure}`;
 }
 
 /* ── Core fetch wrapper ─────────────────────────── */
@@ -45,6 +82,15 @@ async function doRefresh(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Public helper used by the AuthProvider on cold-load.
+ * Returns true if the silent refresh (via httpOnly cookie) succeeded.
+ */
+export async function tryRefreshSession(): Promise<boolean> {
+  if (!refreshing) refreshing = doRefresh().finally(() => { refreshing = null; });
+  return refreshing;
 }
 
 export async function apiFetch<T = unknown>(
@@ -77,17 +123,36 @@ export async function apiFetch<T = unknown>(
   }
 
   if (!res.ok) {
-    let body: { error?: { message?: string } } = {};
+    // Handle multiple backend error formats:
+    // - CoreAPI (FastAPI):   { detail: "..." }
+    // - Test_Backend (Express): { message: "..." } or { error: { message: "..." } }
+    let body: { error?: { message?: string }; detail?: string | { msg?: string }[]; message?: string } = {};
     try { body = await res.json(); } catch { /* empty */ }
-    throw new ApiError(res.status, body?.error?.message ?? res.statusText);
+
+    let msg: string | undefined;
+    if (typeof body?.detail === "string") {
+      msg = body.detail;
+    } else if (Array.isArray(body?.detail) && body.detail[0]?.msg) {
+      // FastAPI validation errors: [{ loc: [...], msg: "...", type: "..." }]
+      msg = body.detail.map((d) => d.msg).filter(Boolean).join("; ");
+    } else if (body?.error?.message) {
+      msg = body.error.message;
+    } else if (typeof body?.message === "string") {
+      msg = body.message;
+    }
+
+    // statusText is empty in HTTP/2; fall back to a status-code description
+    const fallback = res.statusText || statusDescription(res.status);
+    throw new ApiError(res.status, msg || fallback, path);
   }
 
   return res.json() as Promise<T>;
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
+  constructor(public status: number, message: string, public path?: string) {
+    super(message || statusDescription(status));
+    this.name = "ApiError";
   }
 }
 

@@ -93,28 +93,42 @@ function optionState(
   selected: number | null,
   correct: number | undefined,
   revealed: boolean
-): "default" | "selected" | "correct" | "wrong" | "correct-unselected" {
+): OptionState {
   if (!revealed) return idx === selected ? "selected" : "default";
   if (idx === correct) return "correct";
   if (idx === selected && idx !== correct) return "wrong";
   return "default";
 }
 
-const STATE_CLASSES: Record<string, string> = {
-  default:            "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/40",
-  selected:           "border-blue-500 bg-blue-50 ring-1 ring-blue-300",
-  correct:            "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-300",
-  wrong:              "border-red-400 bg-red-50 ring-1 ring-red-300",
-  "correct-unselected": "border-emerald-400 bg-emerald-50/40",
-};
+import type { CSSProperties } from "react";
 
-const LABEL_CLASSES: Record<string, string> = {
-  default:            "border-gray-200 bg-gray-50 text-gray-500",
-  selected:           "border-blue-500 bg-blue-500 text-white",
-  correct:            "border-emerald-500 bg-emerald-500 text-white",
-  wrong:              "border-red-400 bg-red-400 text-white",
-  "correct-unselected": "border-emerald-400 bg-emerald-100 text-emerald-700",
-};
+type OptionState = "default" | "selected" | "correct" | "wrong" | "correct-unselected";
+
+/* CSS-variable–based styles — work in both light and dark mode */
+function getOptionStyle(state: OptionState): CSSProperties {
+  switch (state) {
+    case "selected":
+      return { borderColor: "var(--blue)", background: "var(--blue-soft)", boxShadow: "0 0 0 1px var(--blue)" };
+    case "correct":
+      return { borderColor: "var(--green)", background: "var(--green-soft)", boxShadow: "0 0 0 1px var(--green)" };
+    case "wrong":
+      return { borderColor: "var(--red)", background: "var(--red-soft)", boxShadow: "0 0 0 1px var(--red)" };
+    case "correct-unselected":
+      return { borderColor: "var(--green)", background: "var(--green-soft)", opacity: 0.7 };
+    default:
+      return { borderColor: "var(--line)", background: "var(--card)" };
+  }
+}
+
+function getLabelStyle(state: OptionState): CSSProperties {
+  switch (state) {
+    case "selected":        return { borderColor: "var(--blue)",  background: "var(--blue)",  color: "#fff" };
+    case "correct":         return { borderColor: "var(--green)", background: "var(--green)", color: "#fff" };
+    case "wrong":           return { borderColor: "var(--red)",   background: "var(--red)",   color: "#fff" };
+    case "correct-unselected": return { borderColor: "var(--green)", background: "var(--green-soft)", color: "var(--green)" };
+    default:                return { borderColor: "var(--line-soft)", background: "var(--bg)", color: "var(--ink-3)" };
+  }
+}
 
 /* ─── Component ──────────────────────────────── */
 export default function QuestionViewer({
@@ -190,10 +204,14 @@ export default function QuestionViewer({
               key={idx}
               onClick={() => !revealed && onSelect(idx)}
               disabled={revealed}
-              className={`group flex items-start gap-3 w-full text-left px-4 py-3.5 rounded-xl border transition-all duration-150 cursor-pointer disabled:cursor-default ${STATE_CLASSES[state]}`}
+              className="group flex items-start gap-3 w-full text-left px-4 py-3.5 rounded-xl border transition-all duration-150 disabled:cursor-default"
+              style={{ ...getOptionStyle(state), borderWidth: "1.5px", borderStyle: "solid" }}
             >
               {/* Label bubble */}
-              <span className={`flex-shrink-0 w-7 h-7 rounded-lg border flex items-center justify-center text-[12px] font-bold transition-colors ${LABEL_CLASSES[state]}`}>
+              <span
+                className="flex-shrink-0 w-7 h-7 rounded-lg border flex items-center justify-center text-[12px] font-bold transition-colors"
+                style={{ ...getLabelStyle(state), borderWidth: "1.5px", borderStyle: "solid" }}
+              >
                 {LABELS[idx]}
               </span>
               {/* Option text */}
@@ -202,10 +220,10 @@ export default function QuestionViewer({
               </div>
               {/* Result icon */}
               {revealed && state === "correct" && (
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "var(--green)" }} />
               )}
               {revealed && state === "wrong" && (
-                <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <XCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "var(--red)" }} />
               )}
             </button>
           );
