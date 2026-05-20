@@ -52,7 +52,7 @@ function BlogCard({ post }: { post: PublicBlogPost }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group flex flex-col bg-[#f7f7f5] border border-[#e6e6e6] rounded-[12px] overflow-hidden hover:border-black transition-colors duration-200"
+      className="group flex flex-col bg-[var(--bg-secondary)] border border-[var(--line)] rounded-[12px] overflow-hidden hover:border-black transition-colors duration-200"
     >
       {/* Cover */}
       <div className="relative h-44 w-full shrink-0 overflow-hidden">
@@ -63,8 +63,8 @@ function BlogCard({ post }: { post: PublicBlogPost }) {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-[#eeeeec]">
-            <BookOpen size={40} className="text-[#6b7280]" strokeWidth={1} />
+          <div className="w-full h-full flex items-center justify-center bg-[var(--surface-hover)]">
+            <BookOpen size={40} className="text-[var(--ink-2)]" strokeWidth={1} />
           </div>
         )}
         <span className="absolute bottom-3 left-3 text-[11px] font-medium px-2.5 py-1 rounded-full bg-black text-white">
@@ -79,7 +79,7 @@ function BlogCard({ post }: { post: PublicBlogPost }) {
         </h3>
 
         {post.excerpt && (
-          <p className="text-[13px] text-[#6b7280] line-clamp-2 leading-relaxed">
+          <p className="text-[13px] text-[var(--ink-2)] line-clamp-2 leading-relaxed">
             {post.excerpt}
           </p>
         )}
@@ -87,22 +87,22 @@ function BlogCard({ post }: { post: PublicBlogPost }) {
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {tags.map((tag) => (
-              <span key={tag} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white border border-[#e6e6e6] text-[#6b7280]">
+              <span key={tag} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white border border-[var(--line)] text-[var(--ink-2)]">
                 #{tag}
               </span>
             ))}
           </div>
         )}
 
-        <div className="mt-auto flex items-center justify-between pt-3 border-t border-[#e6e6e6]">
+        <div className="mt-auto flex items-center justify-between pt-3 border-t border-[var(--line)]">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center text-white text-[10px] font-bold shrink-0">
               {post.author[0]?.toUpperCase() ?? "E"}
             </div>
-            <span className="text-xs text-[#6b7280] truncate max-w-[100px]">{post.author}</span>
+            <span className="text-xs text-[var(--ink-2)] truncate max-w-[100px]">{post.author}</span>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] text-[#6b7280]">
+          <div className="flex items-center gap-3 text-[11px] text-[var(--ink-2)]">
             {post.publishedAt && (
               <span className="flex items-center gap-1">
                 <Calendar size={11} />
@@ -131,14 +131,14 @@ function FeaturedCard({ post }: { post: PublicBlogPost }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group relative flex flex-col md:flex-row bg-[#f7f7f5] border border-[#e6e6e6] rounded-[16px] overflow-hidden hover:border-black transition-colors duration-200"
+      className="group relative flex flex-col md:flex-row bg-[var(--bg-secondary)] border border-[var(--line)] rounded-[16px] overflow-hidden hover:border-black transition-colors duration-200"
     >
       <div className="relative md:w-2/5 h-56 md:h-auto shrink-0 overflow-hidden">
         {post.coverUrl ? (
           <img src={post.coverUrl} alt={post.title} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-[#eeeeec]">
-            <Sparkles size={48} className="text-[#6b7280]" strokeWidth={1} />
+          <div className="w-full h-full flex items-center justify-center bg-[var(--surface-hover)]">
+            <Sparkles size={48} className="text-[var(--ink-2)]" strokeWidth={1} />
           </div>
         )}
         <span className="absolute top-4 left-4 text-[11px] font-medium px-2.5 py-1 rounded-full bg-black text-white">
@@ -147,7 +147,7 @@ function FeaturedCard({ post }: { post: PublicBlogPost }) {
       </div>
 
       <div className="flex flex-col flex-1 p-6 md:p-8 gap-4">
-        <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#6b7280]"
+        <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--ink-2)]"
              style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
           <TrendingUp size={12} /> FEATURED
         </div>
@@ -156,12 +156,12 @@ function FeaturedCard({ post }: { post: PublicBlogPost }) {
           {post.title}
         </h2>
         {post.excerpt && (
-          <p className="text-[15px] text-[#6b7280] leading-relaxed line-clamp-3"
+          <p className="text-[15px] text-[var(--ink-2)] leading-relaxed line-clamp-3"
              style={{ fontWeight: 300 }}>
             {post.excerpt}
           </p>
         )}
-        <div className="mt-auto flex items-center gap-4 text-xs text-[#6b7280]">
+        <div className="mt-auto flex items-center gap-4 text-xs text-[var(--ink-2)]">
           <span className="flex items-center gap-1.5 font-medium text-black">
             <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center text-white text-[9px] font-bold">
               {post.author[0]?.toUpperCase()}
@@ -230,7 +230,7 @@ export default function BlogPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="py-20 md:py-28 px-4 bg-white border-b border-[#e6e6e6]">
+      <section className="py-20 md:py-28 px-4 bg-white border-b border-[var(--line)]">
         <div className="max-w-6xl mx-auto text-center">
           <p className="text-[11px] font-normal uppercase mb-5 text-black"
              style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
@@ -240,20 +240,20 @@ export default function BlogPage() {
               style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
             Insights, Strategies &amp;<br />Exam Updates
           </h1>
-          <p className="text-[18px] max-w-2xl mx-auto mb-8 text-[#6b7280]"
+          <p className="text-[18px] max-w-2xl mx-auto mb-8 text-[var(--ink-2)]"
              style={{ fontWeight: 300, letterSpacing: "-0.26px" }}>
             Expert articles, current affairs, exam strategies, and study tips for government competitive exams across India.
           </p>
 
           {/* Search */}
           <div className="relative max-w-md mx-auto">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b7280]" />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ink-2)]" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search articles..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-full text-sm outline-none border border-[#e6e6e6] bg-[#f7f7f5] text-black focus:border-black transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 rounded-full text-sm outline-none border border-[var(--line)] bg-[var(--bg-secondary)] text-black focus:border-black transition-colors"
             />
           </div>
         </div>
@@ -262,7 +262,7 @@ export default function BlogPage() {
       <div className="max-w-6xl mx-auto px-4 py-10">
         {/* Category filter */}
         <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-1 scrollbar-none">
-          <Filter size={14} className="text-[#6b7280] shrink-0" />
+          <Filter size={14} className="text-[var(--ink-2)] shrink-0" />
           {CATEGORIES.map((c) => {
             const active = c.key === category;
             return (
@@ -271,9 +271,9 @@ export default function BlogPage() {
                 onClick={() => handleCategory(c.key)}
                 className="shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
                 style={{
-                  background: active ? "#000" : "#f7f7f5",
-                  color: active ? "#fff" : "#6b7280",
-                  border: active ? "1.5px solid #000" : "1.5px solid #e6e6e6",
+                  background: active ? "var(--blue)" : "var(--bg-secondary)",
+                  color: active ? "#fff" : "var(--ink-2)",
+                  border: active ? `1.5px solid var(--blue)` : "1.5px solid var(--line)",
                 }}
               >
                 {c.label}

@@ -61,7 +61,7 @@ function PYQPageInner() {
         </div>
         <Link
           href="/pyq/all"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border border-[#e6e6e6] hover:border-black transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border border-[var(--line)] hover:border-black transition-colors"
           style={{ color: "var(--ink-2)" }}
         >
           Browse All PYQs
@@ -209,7 +209,9 @@ function PaperCard({ paper: p }: { paper: any }) {
       <div className="flex items-center gap-2">
         <Link
           href={`/pyq/${p.id}`}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-full text-[13px] font-medium text-white bg-black hover:bg-[#1a1a1a] transition-colors"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-full text-[13px] font-medium text-white bg-[var(--blue)] hover:bg-[var(--blue-ink)] transition-colors"
           style={{ height: 38, fontWeight: 480 }}
         >
           <Play size={11} fill="white" stroke="none" />
@@ -289,7 +291,7 @@ function AttemptCard({ attempt: a }: { attempt: any }) {
 
       <Link
         href={`/pyq/${a.paperId}?attemptId=${a.id}`}
-        className="inline-flex items-center justify-center rounded-full text-[13px] font-medium border border-[#e6e6e6] hover:border-black transition-colors w-full"
+        className="inline-flex items-center justify-center rounded-full text-[13px] font-medium border border-[var(--line)] hover:border-black transition-colors w-full"
         style={{ color: "var(--ink-1)", height: 38, fontWeight: 480 }}
       >
         View Detailed Report

@@ -68,75 +68,84 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center py-20 px-4">
-      <div className="w-full max-w-5xl rounded-[24px] overflow-hidden border border-[#e6e6e6] flex flex-col lg:flex-row">
+      <div className="w-full max-w-5xl rounded-[24px] overflow-hidden border border-[var(--line)] flex flex-col lg:flex-row">
 
-        {/* LEFT: Lime info panel */}
-        <div className="lg:w-[42%] bg-[#dceeb1] p-10 flex flex-col justify-between">
+        {/* LEFT: Brand blue info panel */}
+        <div className="lg:w-[42%] relative overflow-hidden p-10 flex flex-col justify-between"
+             style={{ background: "linear-gradient(145deg, #0D287E 0%, #091E60 100%)" }}>
 
-          <div>
+          {/* Decorative ambient circles */}
+          <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full pointer-events-none"
+               style={{ background: "rgba(255,255,255,0.05)" }} />
+          <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full pointer-events-none"
+               style={{ background: "rgba(255,255,255,0.04)" }} />
+          <div className="absolute top-1/2 right-8 w-32 h-32 rounded-full pointer-events-none"
+               style={{ background: "rgba(29,78,216,0.25)" }} />
+
+          <div className="relative z-10">
             {/* Logo */}
             <Link href="/" className="inline-flex items-center gap-2.5 mb-12">
               <img src="/examnurture-logo.jpg" alt="ExamNurture" className="w-9 h-9 rounded-[10px] object-cover" />
-              <span className="font-semibold text-lg text-black">
+              <span className="font-semibold text-lg text-white">
                 ExamNurture
               </span>
             </Link>
 
-            <p className="text-[11px] font-normal uppercase mb-4 text-black/50"
+            <p className="text-[11px] font-normal uppercase mb-4 text-white/50"
                style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
               Get In Touch
             </p>
-            <h2 className="text-[32px] leading-[1.10] text-black mb-3"
+            <h2 className="text-[32px] leading-[1.10] text-white mb-3"
                 style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
               Let's talk
             </h2>
-            <p className="text-[15px] text-black/60 leading-relaxed mb-10">
+            <p className="text-[15px] text-white/60 leading-relaxed mb-10">
               Have a question or want to explore a partnership? We're here and reply within 24 hours.
             </p>
 
             {/* Contact rows */}
             <div className="space-y-5">
               <a href="mailto:info@examnurture.com" className="flex items-center gap-4 group">
-                <div className="w-10 h-10 rounded-[10px] bg-black/10 flex items-center justify-center shrink-0 group-hover:bg-black/20 transition-colors">
-                  <Mail className="w-4 h-4 text-black" />
+                <div className="w-10 h-10 rounded-[10px] bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-colors">
+                  <Mail className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-normal uppercase text-black/50 mb-0.5"
+                  <p className="text-[10px] font-normal uppercase text-white/50 mb-0.5"
                      style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>Email</p>
-                  <p className="text-sm font-medium text-black">info@examnurture.com</p>
+                  <p className="text-sm font-medium text-white">info@examnurture.com</p>
                 </div>
               </a>
 
               <a href="tel:+917050722933" className="flex items-center gap-4 group">
-                <div className="w-10 h-10 rounded-[10px] bg-black/10 flex items-center justify-center shrink-0 group-hover:bg-black/20 transition-colors">
-                  <Phone className="w-4 h-4 text-black" />
+                <div className="w-10 h-10 rounded-[10px] bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-colors">
+                  <Phone className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-normal uppercase text-black/50 mb-0.5"
+                  <p className="text-[10px] font-normal uppercase text-white/50 mb-0.5"
                      style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>Phone</p>
-                  <p className="text-sm font-medium text-black">+91 70507 22933</p>
+                  <p className="text-sm font-medium text-white">+91 70507 22933</p>
                 </div>
               </a>
 
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-[10px] bg-black/10 flex items-center justify-center shrink-0">
-                  <MapPin className="w-4 h-4 text-black" />
+                <div className="w-10 h-10 rounded-[10px] bg-white/10 flex items-center justify-center shrink-0">
+                  <MapPin className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-normal uppercase text-black/50 mb-0.5"
+                  <p className="text-[10px] font-normal uppercase text-white/50 mb-0.5"
                      style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>Address</p>
-                  <p className="text-sm font-medium text-black leading-relaxed">Kashyap Mohalla, Chainpur<br />Jharkhand — 822110</p>
+                  <p className="text-sm font-medium text-white leading-relaxed">Kashyap Mohalla, Chainpur<br />Jharkhand — 822110</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Bottom: socials + WhatsApp */}
-          <div className="mt-12">
+          <div className="mt-12 relative z-10">
             <div className="flex items-center gap-2 flex-wrap mb-5">
               {socials.map(s => (
                 <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-black/10 text-black text-xs font-medium transition-colors hover:bg-black hover:text-white border border-transparent">
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/10 text-white text-xs font-medium transition-colors hover:bg-white/20 border border-white/10">
                   {s.icon}
                   {s.label}
                 </a>
@@ -144,7 +153,7 @@ export default function ContactPage() {
             </div>
 
             <a href="https://wa.me/917050722933" target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-3 px-4 py-3 rounded-[16px] bg-black/10 border border-black/20 hover:bg-black/20 transition-colors group">
+              className="flex items-center gap-3 px-4 py-3 rounded-[16px] bg-white/10 border border-white/15 hover:bg-white/20 transition-colors group">
               <div className="w-9 h-9 rounded-[10px] bg-[#25D366] flex items-center justify-center shrink-0">
                 <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 fill-white">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
@@ -152,10 +161,10 @@ export default function ContactPage() {
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-black">Chat on WhatsApp</p>
-                <p className="text-xs text-black/50">+91 70507 22933</p>
+                <p className="text-sm font-medium text-white">Chat on WhatsApp</p>
+                <p className="text-xs text-white/50">+91 70507 22933</p>
               </div>
-              <ArrowUpRight className="w-4 h-4 text-black/40 group-hover:text-black transition-colors shrink-0" />
+              <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white transition-colors shrink-0" />
             </a>
           </div>
         </div>
@@ -165,11 +174,12 @@ export default function ContactPage() {
 
           {status === "success" ? (
             <div className="flex flex-col items-center justify-center h-full text-center py-16">
-              <div className="w-14 h-14 rounded-[16px] bg-[#f7f7f5] border border-[#e6e6e6] flex items-center justify-center mb-5">
-                <CheckCircle className="w-7 h-7 text-black" />
+              <div className="w-14 h-14 rounded-[16px] flex items-center justify-center mb-5"
+                   style={{ background: "linear-gradient(145deg, #0D287E, #091E60)" }}>
+                <CheckCircle className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-[20px] font-semibold text-black mb-2">Message sent!</h3>
-              <p className="text-[#6b7280] text-sm max-w-xs mb-6">
+              <p className="text-[var(--ink-2)] text-sm max-w-xs mb-6">
                 We'll reply within 24 hours. Keep an eye on your inbox.
               </p>
               <button onClick={() => setStatus("idle")}
@@ -180,7 +190,7 @@ export default function ContactPage() {
           ) : (
             <>
               <div className="mb-8">
-                <p className="text-[11px] font-normal uppercase mb-3 text-[#6b7280]"
+                <p className="text-[11px] font-normal uppercase mb-3 text-[var(--ink-2)]"
                    style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
                   Contact Form
                 </p>
@@ -200,38 +210,38 @@ export default function ContactPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-normal uppercase text-[#6b7280] mb-1.5"
+                    <label className="block text-[11px] font-normal uppercase text-[var(--ink-2)] mb-1.5"
                            style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>Name</label>
                     <input required value={form.name} onChange={set("name")} placeholder="Rahul Sharma"
-                      className="w-full px-4 py-3 rounded-[10px] border border-[#e6e6e6] text-sm text-black placeholder-[#9ca3af] outline-none focus:border-black transition-colors bg-white" />
+                      className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-black placeholder-[#9ca3af] outline-none focus:border-[#0D287E] transition-colors bg-white" />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-normal uppercase text-[#6b7280] mb-1.5"
+                    <label className="block text-[11px] font-normal uppercase text-[var(--ink-2)] mb-1.5"
                            style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>Email</label>
                     <input required type="email" value={form.email} onChange={set("email")} placeholder="you@email.com"
-                      className="w-full px-4 py-3 rounded-[10px] border border-[#e6e6e6] text-sm text-black placeholder-[#9ca3af] outline-none focus:border-black transition-colors bg-white" />
+                      className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-black placeholder-[#9ca3af] outline-none focus:border-[#0D287E] transition-colors bg-white" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-normal uppercase text-[#6b7280] mb-1.5"
+                  <label className="block text-[11px] font-normal uppercase text-[var(--ink-2)] mb-1.5"
                          style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>Subject</label>
                   <select required value={form.subject} onChange={set("subject")}
-                    className="w-full px-4 py-3 rounded-[10px] border border-[#e6e6e6] text-sm text-black outline-none focus:border-black transition-colors appearance-none cursor-pointer bg-white">
+                    className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-black outline-none focus:border-black transition-colors appearance-none cursor-pointer bg-white">
                     <option value="" disabled>Select a topic…</option>
                     {SUBJECTS.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-normal uppercase text-[#6b7280] mb-1.5"
+                  <label className="block text-[11px] font-normal uppercase text-[var(--ink-2)] mb-1.5"
                          style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>Message</label>
                   <textarea required minLength={10} rows={5} value={form.message} onChange={set("message")} placeholder="Tell us how we can help…"
-                    className="w-full px-4 py-3 rounded-[10px] border border-[#e6e6e6] text-sm text-black placeholder-[#9ca3af] outline-none focus:border-black transition-colors resize-none bg-white" />
+                    className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-black placeholder-[#9ca3af] outline-none focus:border-black transition-colors resize-none bg-white" />
                 </div>
 
                 <button type="submit" disabled={status === "sending"}
-                  className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-full bg-black hover:bg-[#1a1a1a] text-white font-medium text-[15px] transition-colors disabled:opacity-60 mt-2"
+                  className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-full bg-[var(--blue)] hover:bg-[var(--blue-ink)] text-white font-medium text-[15px] transition-colors disabled:opacity-60 mt-2"
                   style={{ fontWeight: 480, letterSpacing: "-0.10px" }}>
                   {status === "sending" ? (
                     <><svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Sending…</>

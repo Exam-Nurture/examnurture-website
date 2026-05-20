@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Sora, JetBrains_Mono } from "next/font/google";
+import { Poppins, Sora, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -7,10 +7,10 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
-const plusJakarta = Plus_Jakarta_Sans({
+const poppins = Poppins({
   variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const sora = Sora({
@@ -73,7 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${plusJakarta.variable} ${sora.variable} ${jetbrainsMono.variable} h-full`}
+      className={`${poppins.variable} ${sora.variable} ${jetbrainsMono.variable} h-full`}
       style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}
     >
       <body className="min-h-full bg-[var(--bg)] text-[var(--ink-1)]" suppressHydrationWarning>

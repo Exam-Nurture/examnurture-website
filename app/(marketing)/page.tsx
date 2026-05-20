@@ -150,8 +150,8 @@ function BtnPrimary({
 }: { onClick?: () => void; href?: string; children: React.ReactNode; inverse?: boolean }) {
   const cls = `inline-flex items-center gap-2 px-5 py-[10px] rounded-full transition-colors text-[18px] leading-[1.40] ${
     inverse
-      ? "bg-white text-[#203E90] hover:bg-[#EAE8EC] dark:bg-[var(--ink-1)] dark:text-[var(--bg)] dark:hover:bg-[var(--ink-2)]"
-      : "bg-[#203E90] text-white hover:bg-[#1A3278] dark:bg-[var(--blue)] dark:text-white dark:hover:bg-[var(--blue-ink)]"
+      ? "bg-white text-[#0D287E] hover:bg-[#EAE8EC] dark:bg-[var(--ink-1)] dark:text-[var(--bg)] dark:hover:bg-[var(--ink-2)]"
+      : "bg-[#0D287E] text-white hover:bg-[#0A2070] dark:bg-[var(--blue)] dark:text-white dark:hover:bg-[var(--blue-ink)]"
   }`;
   const sty = { fontWeight: 480, letterSpacing: "-0.10px" };
   if (href) return <Link href={href}><button className={cls} style={sty}>{children}</button></Link>;
@@ -165,7 +165,7 @@ function BtnSecondary({
   const cls = `inline-flex items-center gap-2 px-[18px] py-[8px] pb-[10px] rounded-full transition-colors text-[18px] leading-[1.40] ${
     onDark
       ? "bg-transparent border border-white/30 text-white hover:bg-white/10"
-      : "bg-[#FBFBFB] border border-[#EAE8EC] text-[#2C2C2E] hover:bg-[#EAE8EC] dark:bg-[var(--card)] dark:border-[var(--line-soft)] dark:text-[var(--ink-1)] dark:hover:bg-[var(--bg)]"
+      : "bg-white border border-[#EAE8EC] text-[#2C2C2E] hover:bg-[#EAE8EC] dark:bg-[var(--card)] dark:border-[var(--line-soft)] dark:text-[var(--ink-1)] dark:hover:bg-[var(--bg)]"
   }`;
   const sty = { fontWeight: 480, letterSpacing: "-0.10px" };
   if (href) return <Link href={href}><button className={cls} style={sty}>{children}</button></Link>;
@@ -194,7 +194,7 @@ function DownloadAppBtn({ inverse = false }: { inverse?: boolean }) {
         className={`inline-flex items-center rounded-full overflow-hidden transition-all duration-200 group ${
           inverse
             ? "border border-white/30 hover:border-white/60"
-            : "border border-[#EAE8EC] hover:border-[#203E90]"
+            : "border border-[#EAE8EC] hover:border-[#0D287E]"
         }`}
       >
         {/* Label */}
@@ -212,7 +212,7 @@ function DownloadAppBtn({ inverse = false }: { inverse?: boolean }) {
           className={`flex items-center justify-center w-11 h-full py-[10px] border-l transition-colors ${
             inverse
               ? "border-white/20 bg-white/10 group-hover:bg-white/20"
-              : `border-[#EAE8EC] bg-[#EAE8EC] ${showQR ? "bg-[#203E90] border-[#203E90]" : "group-hover:bg-[#203E90] group-hover:border-[#203E90]"}`
+              : `border-[#EAE8EC] bg-[#EAE8EC] ${showQR ? "bg-[#0D287E] border-[#0D287E]" : "group-hover:bg-[#0D287E] group-hover:border-[#0D287E]"}`
           }`}
         >
           <QrCode
@@ -264,7 +264,7 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
   const { user, loading: authLoading } = useAuth();
 
   return (
-    <section className="hero-atmospheric bg-[#FBFBFB] dark:bg-[var(--bg)] py-24 lg:py-32">
+    <section className="hero-atmospheric bg-white dark:bg-[var(--bg)] py-24 lg:py-32">
       <div className="max-w-[1280px] mx-auto px-6 lg:px-8 text-center">
 
 
@@ -362,7 +362,7 @@ function MarqueeStrip() {
 ───────────────────────────────────────────────────────────── */
 function FeaturesSection() {
   return (
-    <section className="py-24 lg:py-28 bg-[#FBFBFB] dark:bg-[var(--bg)]">
+    <section className="py-24 lg:py-28 bg-white dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-6 lg:px-8">
 
         {/* Left-aligned header — Figma style (not always centered) */}
@@ -390,7 +390,7 @@ function FeaturesSection() {
                   {f.desc}
                 </p>
                 <div
-                  className="mt-5 flex items-center gap-1 text-[15px] text-[#203E90] dark:text-[var(--ink-1)] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  className="mt-5 flex items-center gap-1 text-[15px] text-[#0D287E] dark:text-[var(--ink-1)] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                   style={{ fontWeight: 500 }}
                 >
                   Explore <ChevronRight className="h-4 w-4" />
@@ -446,7 +446,7 @@ function ExamCategoriesSection() {
 
   return (
     /* canvas pad → blue-tinted block with rounded corners */
-    <section className="py-5 bg-[#FBFBFB] dark:bg-[var(--bg)]">
+    <section className="py-5 bg-white dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-[#E8EDF8] dark:bg-[#12151C] dark:border dark:border-[rgba(255,255,255,0.06)] rounded-none sm:rounded-[28px] px-5 pt-10 pb-10 sm:px-10 lg:px-16 lg:pt-14 lg:pb-14 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_8px_32px_rgba(0,0,0,0.5)]">
 
@@ -476,7 +476,7 @@ function ExamCategoriesSection() {
                   onClick={() => goTo(idx)}
                   className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors duration-200 flex-shrink-0 text-[14px] ${
                     activeIdx === idx
-                      ? "bg-[#203E90] dark:bg-[var(--blue)] text-white"
+                      ? "bg-[#0D287E] dark:bg-[var(--blue)] text-white"
                       : "bg-white dark:bg-[var(--card)] border border-[#EAE8EC] dark:border-[var(--line-soft)] text-[#2C2C2E] dark:text-[var(--ink-1)] hover:bg-[#EAE8EC] dark:hover:bg-[var(--bg)]"
                   }`}
                   style={{ fontWeight: activeIdx === idx ? 500 : 400 }}
@@ -521,7 +521,7 @@ function ExamCategoriesSection() {
                       {/* Badges */}
                       <div className="flex items-center gap-2 flex-wrap mb-5">
                         <span
-                          className="text-[11px] px-3 py-1 rounded-full bg-[#203E90] dark:bg-[var(--blue)] text-white uppercase"
+                          className="text-[11px] px-3 py-1 rounded-full bg-[#0D287E] dark:bg-[var(--blue)] text-white uppercase"
                           style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.4px", fontWeight: 500 }}
                         >
                           {exam.tag}
@@ -595,7 +595,7 @@ function ExamCategoriesSection() {
                 onClick={() => goTo(idx)}
                 className={`rounded-full transition-all duration-300 ${
                   activeIdx === idx
-                    ? "w-7 h-2 bg-[#203E90] dark:bg-[var(--blue)]"
+                    ? "w-7 h-2 bg-[#0D287E] dark:bg-[var(--blue)]"
                     : "w-2 h-2 bg-[#CBCDD5] dark:bg-[var(--ink-4)] hover:bg-[#8D8D8F] dark:hover:bg-[var(--ink-3)]"
                 }`}
               />
@@ -617,7 +617,7 @@ function ExamCategoriesSection() {
 ───────────────────────────────────────────────────────────── */
 function TestimonialsSection() {
   return (
-    <section className="py-5 bg-[#FBFBFB] dark:bg-[var(--bg)]">
+    <section className="py-5 bg-white dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-[#EAE8EC] dark:bg-[#12151C] dark:border dark:border-[rgba(255,255,255,0.06)] rounded-none sm:rounded-[28px] px-5 pt-10 pb-10 sm:px-10 lg:px-16 lg:pt-14 lg:pb-14 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_8px_32px_rgba(0,0,0,0.5)]">
 
@@ -648,7 +648,7 @@ function TestimonialsSection() {
                 </blockquote>
                 <div className="flex items-center gap-3">
                   <div
-                    className="h-10 w-10 rounded-full bg-[#203E90] dark:bg-[var(--blue)] flex items-center justify-center text-white text-[12px] flex-shrink-0"
+                    className="h-10 w-10 rounded-full bg-[#0D287E] dark:bg-[var(--blue)] flex items-center justify-center text-white text-[12px] flex-shrink-0"
                     style={{ fontWeight: 700, fontFamily: "var(--font-mono)" }}
                   >
                     {t.initials}
@@ -707,7 +707,7 @@ function FAQSection() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   return (
-    <section className="py-20 lg:py-24 bg-[#FBFBFB] dark:bg-[var(--bg)] border-t border-[#EAE8EC] dark:border-[var(--line-soft)]">
+    <section className="py-20 lg:py-24 bg-white dark:bg-[var(--bg)] border-t border-[#EAE8EC] dark:border-[var(--line-soft)]">
       <div className="max-w-[720px] mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Centered heading */}
@@ -729,7 +729,7 @@ function FAQSection() {
                 key={idx}
                 className={`rounded-[16px] border overflow-hidden transition-colors duration-200 ${
                   isOpen
-                    ? "border-[#203E90] dark:border-[rgba(53,87,199,0.4)] bg-white dark:bg-[var(--card)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset]"
+                    ? "border-[#0D287E] dark:border-[rgba(53,87,199,0.4)] bg-white dark:bg-[var(--card)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset]"
                     : "border-[#EAE8EC] dark:border-[rgba(255,255,255,0.06)] bg-[#EAE8EC] dark:bg-[var(--card)] hover:bg-[#CBCDD5] dark:hover:bg-[rgba(255,255,255,0.03)] hover:border-[#CBCDD5] dark:hover:border-[rgba(255,255,255,0.09)]"
                 }`}
               >
@@ -784,13 +784,13 @@ function CTASection({ stats, loading }: { stats: PlatformStats | null; loading: 
   };
 
   return (
-    <section className="py-5 pb-8 bg-[#FBFBFB] dark:bg-[var(--bg)]">
+    <section className="py-5 pb-8 bg-white dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-[#203E90] dark:bg-[#12151C] dark:border dark:border-[rgba(255,255,255,0.07)] rounded-none sm:rounded-[28px] px-5 pt-12 pb-12 sm:px-10 lg:px-16 lg:pt-16 lg:pb-16 text-center dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_0_80px_-20px_rgba(32,62,144,0.4),0_16px_48px_rgba(0,0,0,0.7)] relative overflow-hidden">
+        <div className="bg-[#0D287E] dark:bg-[#12151C] dark:border dark:border-[rgba(255,255,255,0.07)] rounded-none sm:rounded-[28px] px-5 pt-12 pb-12 sm:px-10 lg:px-16 lg:pt-16 lg:pb-16 text-center dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_0_80px_-20px_rgba(32,62,144,0.4),0_16px_48px_rgba(0,0,0,0.7)] relative overflow-hidden">
 
           {/* Dark mode ambient glow orb */}
           <div className="hidden dark:block absolute inset-0 pointer-events-none" aria-hidden="true">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full bg-[#203E90] opacity-20 blur-[80px]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full bg-[#0D287E] opacity-20 blur-[80px]" />
             <div className="absolute top-0 right-1/4 w-[200px] h-[200px] rounded-full bg-[#2A56C6] opacity-10 blur-[60px]" />
           </div>
 
@@ -854,7 +854,7 @@ export default function LandingPage() {
   const { stats, loading } = useStats();
 
   return (
-    <div className="min-h-screen bg-[#FBFBFB] dark:bg-[var(--bg)]">
+    <div className="min-h-screen bg-white dark:bg-[var(--bg)]">
       {showModal && <AuthModal onClose={() => setShowModal(false)} next="/dashboard" />}
       <HeroSection onLogin={openLogin} stats={stats} />
       <MarqueeStrip />

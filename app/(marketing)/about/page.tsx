@@ -64,7 +64,7 @@ export default function AboutPage() {
               style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
             Building India's Future<br />of Education
           </h1>
-          <p className="text-[18px] leading-[1.45] text-[#6b7280] max-w-2xl mx-auto"
+          <p className="text-[18px] leading-[1.45] text-[var(--ink-2)] max-w-2xl mx-auto"
              style={{ fontWeight: 300, letterSpacing: "-0.26px" }}>
             We're on a mission to empower students with world-class learning experiences and mentorship to excel in competitive exams.
           </p>
@@ -72,11 +72,11 @@ export default function AboutPage() {
       </section>
 
       {/* Mission */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[#f7f7f5]">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[var(--bg-secondary)]">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="w-full flex justify-center">
-              <div className="rounded-[16px] overflow-hidden border border-[#e6e6e6] w-full">
+              <div className="rounded-[16px] overflow-hidden border border-[var(--line)] w-full">
                 <img
                   alt="Our Mission"
                   src="/mission.jpg"
@@ -95,7 +95,7 @@ export default function AboutPage() {
                   style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
                 Empower Every Student
               </h2>
-              <p className="text-[18px] leading-[1.45] text-[#6b7280]"
+              <p className="text-[18px] leading-[1.45] text-[var(--ink-2)]"
                  style={{ fontWeight: 300, letterSpacing: "-0.26px" }}>
                 To provide every student in India with comprehensive, accessible, and high-quality test series, courses, mentorship, and study materials — enabling them to excel in competitive exams with confidence and clarity.
               </p>
@@ -121,7 +121,7 @@ export default function AboutPage() {
                   style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
                 India's Most Trusted Platform
               </h2>
-              <p className="text-[18px] leading-[1.45] text-[#6b7280]"
+              <p className="text-[18px] leading-[1.45] text-[var(--ink-2)]"
                  style={{ fontWeight: 300, letterSpacing: "-0.26px" }}>
                 To become the most trusted and innovative online education platform in India, dedicated to transforming learning experiences and fostering lifelong success for students across all exam disciplines.
               </p>
@@ -132,7 +132,7 @@ export default function AboutPage() {
             </div>
 
             <div className="md:order-2 w-full flex justify-center">
-              <div className="rounded-[16px] overflow-hidden border border-[#e6e6e6] w-full">
+              <div className="rounded-[16px] overflow-hidden border border-[var(--line)] w-full">
                 <img
                   alt="Our Vision"
                   src="/vision.jpg"
@@ -148,7 +148,7 @@ export default function AboutPage() {
       {/* Values */}
       <section className="py-5 bg-white">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-[#f7f7f5] rounded-none sm:rounded-[24px] px-5 pt-14 pb-14">
+          <div className="bg-[var(--bg-secondary)] rounded-none sm:rounded-[24px] px-5 pt-14 pb-14">
             <div className="text-center mb-12">
               <p className="text-[11px] font-normal uppercase mb-5 text-black"
                  style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
@@ -171,11 +171,11 @@ export default function AboutPage() {
               ].map((value, idx) => (
                 <div
                   key={idx}
-                  className="bg-white rounded-[8px] p-7 border border-[#e6e6e6] hover:border-black transition-colors duration-200"
+                  className="bg-white rounded-[8px] p-7 border border-[var(--line)] hover:border-black transition-colors duration-200"
                 >
                   <div className="text-4xl mb-4">{value.icon}</div>
                   <h3 className="text-[18px] font-semibold text-black mb-2">{value.title}</h3>
-                  <p className="text-[15px] text-[#6b7280] leading-relaxed">{value.desc}</p>
+                  <p className="text-[15px] text-[var(--ink-2)] leading-relaxed">{value.desc}</p>
                 </div>
               ))}
             </div>
@@ -195,24 +195,24 @@ export default function AboutPage() {
                 style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
               Meet Our Team
             </h2>
-            <p className="text-[18px] text-[#6b7280]" style={{ fontWeight: 300 }}>
+            <p className="text-[18px] text-[var(--ink-2)]" style={{ fontWeight: 300 }}>
               Passionate educators and technologists building the future
             </p>
           </div>
 
           {loading ? (
             <div className="text-center py-16">
-              <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#e6e6e6] border-t-black mx-auto" />
-              <p className="text-[#6b7280] mt-4 text-sm">Loading team members...</p>
+              <div className="animate-spin rounded-full h-10 w-10 border-2 border-[var(--line)] border-t-[var(--ink-1)] mx-auto" />
+              <p className="text-[var(--ink-2)] mt-4 text-sm">Loading team members...</p>
             </div>
           ) : error || teamMembers.length === 0 ? (
             <div className="relative">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="rounded-[12px] bg-[#f7f7f5] border border-[#e6e6e6] overflow-hidden">
-                    <div className="aspect-square bg-[#eeeeec] flex items-center justify-center">
+                  <div key={i} className="rounded-[12px] bg-[var(--bg-secondary)] border border-[var(--line)] overflow-hidden">
+                    <div className="aspect-square bg-[var(--surface-hover)] flex items-center justify-center">
                       <div className="w-20 h-20 rounded-full bg-[#e6e6e6] flex items-center justify-center">
-                        <svg className="w-10 h-10 text-[#6b7280]" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-10 h-10 text-[var(--ink-2)]" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                         </svg>
                       </div>
@@ -226,13 +226,13 @@ export default function AboutPage() {
               </div>
               <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-[16px]">
                 <div className="text-center px-6 py-8">
-                  <div className="w-14 h-14 bg-[#f7f7f5] rounded-[12px] flex items-center justify-center mx-auto mb-4 border border-[#e6e6e6]">
+                  <div className="w-14 h-14 bg-[var(--bg-secondary)] rounded-[12px] flex items-center justify-center mx-auto mb-4 border border-[var(--line)]">
                     <svg className="w-7 h-7 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </div>
                   <h3 className="text-[18px] font-semibold text-black mb-2">Team Directory Coming Soon</h3>
-                  <p className="text-[#6b7280] text-sm max-w-xs mx-auto">Our amazing team will be introduced here shortly!</p>
+                  <p className="text-[var(--ink-2)] text-sm max-w-xs mx-auto">Our amazing team will be introduced here shortly!</p>
                 </div>
               </div>
             </div>
@@ -241,41 +241,41 @@ export default function AboutPage() {
               {teamMembers.map((member) => (
                 <div
                   key={member.id}
-                  className="rounded-[12px] bg-[#f7f7f5] border border-[#e6e6e6] overflow-hidden hover:border-black transition-colors duration-200"
+                  className="rounded-[12px] bg-[var(--bg-secondary)] border border-[var(--line)] overflow-hidden hover:border-black transition-colors duration-200"
                 >
-                  <div className="relative overflow-hidden aspect-square bg-[#eeeeec]">
+                  <div className="relative overflow-hidden aspect-square bg-[var(--surface-hover)]">
                     {member.photo_image_url ? (
                       <img src={member.photo_image_url} alt={member.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-5xl font-bold text-[#6b7280]">{member.name.charAt(0).toUpperCase()}</span>
+                        <span className="text-5xl font-bold text-[var(--ink-2)]">{member.name.charAt(0).toUpperCase()}</span>
                       </div>
                     )}
                   </div>
                   <div className="p-4 space-y-2">
                     <div>
                       <h3 className="text-[15px] font-semibold text-black">{member.name}</h3>
-                      <p className="text-[13px] text-[#6b7280]">{member.role}</p>
+                      <p className="text-[13px] text-[var(--ink-2)]">{member.role}</p>
                     </div>
-                    {member.bio && <p className="text-[13px] text-[#6b7280] line-clamp-2">{member.bio}</p>}
+                    {member.bio && <p className="text-[13px] text-[var(--ink-2)] line-clamp-2">{member.bio}</p>}
                     <div className="flex items-center gap-2 pt-1">
                       {member.linkedin_url && (
-                        <a href={member.linkedin_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[#e6e6e6] text-[#6b7280] hover:text-black hover:border-black transition-colors">
+                        <a href={member.linkedin_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[var(--line)] text-[var(--ink-2)] hover:text-black hover:border-black transition-colors">
                           <LinkedInIcon className="w-3.5 h-3.5" />
                         </a>
                       )}
                       {member.github_url && (
-                        <a href={member.github_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[#e6e6e6] text-[#6b7280] hover:text-black hover:border-black transition-colors">
+                        <a href={member.github_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[var(--line)] text-[var(--ink-2)] hover:text-black hover:border-black transition-colors">
                           <GithubIcon className="w-3.5 h-3.5" />
                         </a>
                       )}
                       {member.website_url && (
-                        <a href={member.website_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[#e6e6e6] text-[#6b7280] hover:text-black hover:border-black transition-colors">
+                        <a href={member.website_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[var(--line)] text-[var(--ink-2)] hover:text-black hover:border-black transition-colors">
                           <Globe className="w-3.5 h-3.5" />
                         </a>
                       )}
                       {member.twitter_url && (
-                        <a href={member.twitter_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[#e6e6e6] text-[#6b7280] hover:text-black hover:border-black transition-colors">
+                        <a href={member.twitter_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[var(--line)] text-[var(--ink-2)] hover:text-black hover:border-black transition-colors">
                           <Mail className="w-3.5 h-3.5" />
                         </a>
                       )}

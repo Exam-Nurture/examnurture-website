@@ -117,7 +117,7 @@ export default function SeriesDetailPage() {
           <Link
             href={`/dashboard/checkout/${encodeURIComponent(`TEST_SERIES:${id}`)}`}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shrink-0 transition-all hover:brightness-110 active:scale-[0.98]"
-            style={{ background: "#F97316" }}
+            style={{ background: "var(--blue)" }}
           >
             <ShoppingCart size={14} /> Unlock Series
           </Link>
@@ -173,6 +173,8 @@ export default function SeriesDetailPage() {
                 ) : (
                   <Link
                     href={`/exam/${test.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-[13px] font-bold shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
                   >
                     <Play size={12} fill="white" stroke="none" /> Start Test

@@ -5,9 +5,9 @@
 @layer base {
   :root {
     /* ── Accent ── */
-    --blue: #203E90;
-    --blue-ink: #2B52BC;
-    --blue-soft: rgba(32, 62, 144, 0.08);
+    --blue: #0D287E;
+    --blue-ink: #1D4ED8;
+    --blue-soft: rgba(13, 40, 126, 0.08);
     --cyan: #06B6D4;
     --cyan-ink: #0891B2;
     --cyan-soft: rgba(6, 182, 212, 0.10);
@@ -35,10 +35,10 @@
     /* ── Surfaces & lines ── */
     --line: #D9DBE2;
     --line-soft: #EAE8EC;
-    --bg: #FBFBFB;
-    --bg-secondary: #F4F4F6;
+    --bg: #FFFFFF;
+    --bg-secondary: #F2F4F7;
     --card: #FFFFFF;
-    --surface-hover: #F0F1F4;
+    --surface-hover: #F2F4F7;
     --glass: rgba(255, 255, 255, 0.88);
     --glass-border: rgba(217, 219, 226, 0.65);
 
@@ -207,9 +207,9 @@
 .mesh-gradient {
   background-color: var(--bg);
   background-image:
-    radial-gradient(ellipse 60% 50% at 10% 20%, rgba(32,62,144,0.06) 0px, transparent 60%),
-    radial-gradient(ellipse 40% 40% at 85% 5%,  rgba(32,62,144,0.04) 0px, transparent 55%),
-    radial-gradient(ellipse 30% 30% at 50% 90%, rgba(32,62,144,0.02) 0px, transparent 50%);
+    radial-gradient(ellipse 60% 50% at 10% 20%, rgba(13,40,126,0.06) 0px, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 85% 5%,  rgba(13,40,126,0.04) 0px, transparent 55%),
+    radial-gradient(ellipse 30% 30% at 50% 90%, rgba(13,40,126,0.02) 0px, transparent 50%);
 }
 
 .dark .mesh-gradient {
@@ -366,7 +366,7 @@ body::after {
   text-transform: uppercase;
   background: var(--blue-soft);
   color: var(--blue);
-  border: 1px solid rgba(32, 62, 144, 0.14);
+  border: 1px solid rgba(13, 40, 126, 0.14);
   margin-bottom: 20px;
 }
 .dark .eyebrow {
@@ -390,14 +390,14 @@ body::after {
   transition: background 400ms var(--ease-spring),
               transform  300ms var(--ease-spring),
               box-shadow 300ms var(--ease-spring);
-  box-shadow: 0 1px 2px rgba(32, 62, 144, 0.18),
-              0 4px 16px -4px rgba(32, 62, 144, 0.30);
+  box-shadow: 0 1px 2px rgba(13, 40, 126, 0.18),
+              0 4px 16px -4px rgba(13, 40, 126, 0.30);
 }
 .btn-pill:hover {
   background: var(--blue-ink);
   transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(32, 62, 144, 0.20),
-              0 8px 28px -6px rgba(32, 62, 144, 0.42);
+  box-shadow: 0 2px 4px rgba(13, 40, 126, 0.20),
+              0 8px 28px -6px rgba(13, 40, 126, 0.42);
 }
 .btn-pill:active { transform: scale(0.975); }
 /* Dark mode: add a radiant glow */
@@ -458,7 +458,7 @@ body::after {
   border-radius: 999px;
   backdrop-filter: blur(24px) saturate(1.5);
   -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  background: rgba(251, 251, 251, 0.88);
+  background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(217, 219, 226, 0.65);
   box-shadow: 0 2px 16px -4px rgba(32,34,40,.08),
               0 0 0 1px rgba(255, 255, 255, 0.75) inset;
@@ -506,8 +506,8 @@ body::after {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -5%,  rgba(32,62,144,0.06)  0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 85% 20%,  rgba(32,62,144,0.03)  0%, transparent 50%);
+    radial-gradient(ellipse 80% 50% at 50% -5%,  rgba(13,40,126,0.06)  0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 85% 20%,  rgba(13,40,126,0.03)  0%, transparent 50%);
 }
 .dark .hero-atmospheric::before {
   background:
@@ -520,7 +520,7 @@ body::after {
 /* ── Accent glow (for buttons/badges in dark mode) ── */
 .glow-accent {
   box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset,
-              0 4px 20px -4px rgba(32,62,144,0.50);
+              0 4px 20px -4px rgba(13,40,126,0.50);
 }
 .dark .glow-accent {
   box-shadow: 0 0 0 1px rgba(255,255,255,0.10) inset,
@@ -594,7 +594,7 @@ body::after {
 .blog-content li { margin: 0.35em 0; }
 .blog-content blockquote {
   border-left: 4px solid var(--blue);
-  background: rgba(32,62,144,0.04);
+  background: rgba(13,40,126,0.04);
   padding: 0.75em 1.25em;
   margin: 1.2em 0;
   border-radius: 0 8px 8px 0;

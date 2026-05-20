@@ -140,7 +140,7 @@ export default function PYQExamPage() {
           <p className="text-red-500 font-bold mb-4">{error}</p>
           <button
             onClick={() => router.push("/dashboard/pyq")}
-            className="px-5 py-2.5 rounded-full bg-black text-white text-sm font-medium"
+            className="px-5 py-2.5 rounded-full bg-[var(--blue)] text-white text-sm font-medium"
           >
             Back to PYQ Papers
           </button>
@@ -165,6 +165,7 @@ export default function PYQExamPage() {
           result={result}
           questions={questions}
           userAnswers={userAnswers}
+          testTitle={paperData ? `${paperData.year} — ${paperData.title}` : undefined}
           onBack={() => router.push("/dashboard/pyq")}
         />
       </div>

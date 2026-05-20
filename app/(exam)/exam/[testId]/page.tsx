@@ -140,7 +140,7 @@ export default function ExamPage() {
           <p className="text-red-500 font-bold mb-4">{error}</p>
           <button
             onClick={() => router.push("/dashboard/series")}
-            className="px-5 py-2.5 rounded-full bg-black text-white text-sm font-medium"
+            className="px-5 py-2.5 rounded-full bg-[var(--blue)] text-white text-sm font-medium"
           >
             Back to Test Series
           </button>
@@ -166,8 +166,8 @@ export default function ExamPage() {
           result={result}
           questions={questions}
           userAnswers={userAnswers}
+          testTitle={testData?.title}
           onBack={() => router.push("/dashboard/series")}
-          onRetry={() => { setPhase("loading"); setResult(null); setUserAnswers({}); }}
         />
       </div>
     );
