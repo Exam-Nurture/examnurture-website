@@ -7,10 +7,13 @@ import { Search, ArrowRight, FileText, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ── Exam taxonomy ── */
+type ColorTheme = "blue" | "emerald" | "purple" | "amber" | "rose" | "cyan";
+const THEMES: ColorTheme[] = ["blue", "emerald", "purple", "amber", "rose", "cyan"];
+
 interface Exam {
   name: string;
   href: string;
-  tag?: { label: string; color: string };
+  isPopular?: boolean;
   desc?: string;
 }
 
@@ -18,22 +21,32 @@ interface Category {
   id: string;
   label: string;
   emoji: string;
-  color: string;       // Tailwind bg class for active pill
-  textColor: string;   // Tailwind text class
+  theme?: ColorTheme; // Optional: can come from API, or generated dynamically
   exams: Exam[];
 }
 
-const categories: Category[] = [
+interface ProcessedCategory extends Category {
+  theme: ColorTheme;
+}
+
+const categoryStyles: Record<ColorTheme, { bg: string; text: string }> = {
+  blue: { bg: "bg-[var(--blue-soft)]", text: "text-[var(--blue)]" },
+  emerald: { bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400" },
+  purple: { bg: "bg-purple-500/10", text: "text-purple-600 dark:text-purple-400" },
+  amber: { bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400" },
+  rose: { bg: "bg-rose-500/10", text: "text-rose-600 dark:text-rose-400" },
+  cyan: { bg: "bg-cyan-500/10", text: "text-cyan-600 dark:text-cyan-400" },
+};
+
+const rawCategories: Category[] = [
   {
     id: "psc",
     label: "State PSC",
     emoji: "🏛️",
-    color: "bg-blue-500/10",
-    textColor: "text-blue-600 dark:text-blue-400",
     exams: [
-      { name: "JPSC Prelims", href: "/exams/jpsc", tag: { label: "Popular", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" }, desc: "Jharkhand Public Service" },
+      { name: "JPSC Prelims", href: "/exams/jpsc", isPopular: true, desc: "Jharkhand Public Service" },
       { name: "JPSC Mains", href: "/exams/jpsc-mains", desc: "Jharkhand Public Service" },
-      { name: "BPSC", href: "/exams/bpsc", tag: { label: "Hot", color: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" }, desc: "Bihar Public Service" },
+      { name: "BPSC", href: "/exams/bpsc", isPopular: true, desc: "Bihar Public Service" },
       { name: "UPPSC", href: "/exams/uppsc", desc: "Uttar Pradesh PSC" },
       { name: "MPSC", href: "/exams/mpsc", desc: "Maharashtra PSC" },
     ],
@@ -42,14 +55,12 @@ const categories: Category[] = [
     id: "banking",
     label: "Banking",
     emoji: "🏦",
-    color: "bg-emerald-500/10",
-    textColor: "text-emerald-600 dark:text-emerald-400",
     exams: [
-      { name: "SBI PO", href: "/exams/sbi-po", tag: { label: "🔥 Hot", color: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" }, desc: "State Bank of India PO" },
-      { name: "IBPS PO", href: "/exams/ibps-po", tag: { label: "Popular", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" }, desc: "Institute of Banking Personnel" },
+      { name: "SBI PO", href: "/exams/sbi-po", isPopular: true, desc: "State Bank of India PO" },
+      { name: "IBPS PO", href: "/exams/ibps-po", isPopular: true, desc: "Institute of Banking Personnel" },
       { name: "IBPS Clerk", href: "/exams/ibps-clerk", desc: "IBPS Clerical Cadre" },
       { name: "SBI Clerk", href: "/exams/sbi-clerk", desc: "SBI Junior Associates" },
-      { name: "RBI Grade B", href: "/exams/rbi-grade-b", tag: { label: "Hard", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400" }, desc: "Reserve Bank of India" },
+      { name: "RBI Grade B", href: "/exams/rbi-grade-b", desc: "Reserve Bank of India" },
       { name: "NABARD Grade A", href: "/exams/nabard", desc: "National Bank Agriculture" },
     ],
   },
@@ -57,11 +68,9 @@ const categories: Category[] = [
     id: "ssc",
     label: "SSC",
     emoji: "📋",
-    color: "bg-purple-500/10",
-    textColor: "text-purple-600 dark:text-purple-400",
     exams: [
-      { name: "SSC CGL", href: "/exams/ssc-cgl", tag: { label: "⭐ Popular", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" }, desc: "Combined Graduate Level" },
-      { name: "SSC CHSL", href: "/exams/ssc-chsl", tag: { label: "Popular", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" }, desc: "Combined Higher Sec. Level" },
+      { name: "SSC CGL", href: "/exams/ssc-cgl", isPopular: true, desc: "Combined Graduate Level" },
+      { name: "SSC CHSL", href: "/exams/ssc-chsl", isPopular: true, desc: "Combined Higher Sec. Level" },
       { name: "SSC MTS", href: "/exams/ssc-mts", desc: "Multi Tasking Staff" },
       { name: "SSC GD Constable", href: "/exams/ssc-gd", desc: "General Duty Constable" },
       { name: "SSC CPO", href: "/exams/ssc-cpo", desc: "Central Police Organisation" },
@@ -71,11 +80,9 @@ const categories: Category[] = [
     id: "railway",
     label: "Railway",
     emoji: "🚆",
-    color: "bg-amber-500/10",
-    textColor: "text-amber-600 dark:text-amber-400",
     exams: [
-      { name: "RRB NTPC", href: "/exams/rrb-ntpc", tag: { label: "🔥 Hot", color: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" }, desc: "Non-Technical Popular Cat." },
-      { name: "RRB Group D", href: "/exams/rrb-group-d", tag: { label: "Popular", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" }, desc: "Railway Group D Posts" },
+      { name: "RRB NTPC", href: "/exams/rrb-ntpc", isPopular: true, desc: "Non-Technical Popular Cat." },
+      { name: "RRB Group D", href: "/exams/rrb-group-d", isPopular: true, desc: "Railway Group D Posts" },
       { name: "RRB ALP", href: "/exams/rrb-alp", desc: "Assistant Loco Pilot" },
       { name: "RRB JE", href: "/exams/rrb-je", desc: "Junior Engineer" },
     ],
@@ -84,13 +91,11 @@ const categories: Category[] = [
     id: "police",
     label: "Police & Defence",
     emoji: "🛡️",
-    color: "bg-rose-500/10",
-    textColor: "text-rose-600 dark:text-rose-400",
     exams: [
-      { name: "Jharkhand Daroga SI", href: "/exams/daroga", tag: { label: "⭐ Popular", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" }, desc: "Sub Inspector Recruitment" },
-      { name: "UP Police Constable", href: "/exams/up-police", tag: { label: "Hot", color: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" }, desc: "UP Police Recruitment" },
+      { name: "Jharkhand Daroga SI", href: "/exams/daroga", isPopular: true, desc: "Sub Inspector Recruitment" },
+      { name: "UP Police Constable", href: "/exams/up-police", isPopular: true, desc: "UP Police Recruitment" },
       { name: "CRPF", href: "/exams/crpf", desc: "Central Reserve Police" },
-      { name: "CDS", href: "/exams/cds", tag: { label: "Hard", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400" }, desc: "Combined Defence Services" },
+      { name: "CDS", href: "/exams/cds", desc: "Combined Defence Services" },
       { name: "NDA", href: "/exams/nda", desc: "National Defence Academy" },
     ],
   },
@@ -98,16 +103,20 @@ const categories: Category[] = [
     id: "teaching",
     label: "Teaching",
     emoji: "👨‍🏫",
-    color: "bg-cyan-500/10",
-    textColor: "text-cyan-600 dark:text-cyan-400",
     exams: [
-      { name: "CTET", href: "/exams/ctet", tag: { label: "Popular", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" }, desc: "Central Teacher Eligibility" },
+      { name: "CTET", href: "/exams/ctet", isPopular: true, desc: "Central Teacher Eligibility" },
       { name: "STET (Jharkhand)", href: "/exams/stet", desc: "State Teacher Eligibility" },
       { name: "KVS PGT/TGT", href: "/exams/kvs", desc: "Kendriya Vidyalaya" },
       { name: "DSSSB", href: "/exams/dsssb", desc: "Delhi Subordinate Services" },
     ],
   },
 ];
+
+/* Dynamically assign themes to categories using modulo logic so it safely repeats */
+const categories: ProcessedCategory[] = rawCategories.map((cat, idx) => ({
+  ...cat,
+  theme: cat.theme || THEMES[idx % THEMES.length],
+}));
 
 /* Flatten all exams for search */
 const allExams = categories.flatMap((cat) =>
@@ -160,8 +169,8 @@ export default function MegaMenu({ show, onMouseEnter, onMouseLeave }: MegaMenuP
         type="button"
         className={`flex items-center gap-1 px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
           isExamsActive || show
-            ? "text-blue-600 bg-blue-50/80 dark:bg-blue-900/20"
-            : "text-[var(--ink-2)] hover:text-blue-600 hover:bg-blue-50/60 dark:hover:bg-blue-900/10"
+            ? "text-[var(--blue)] bg-[var(--blue-soft)]"
+            : "text-[var(--ink-2)] hover:text-[var(--blue)] hover:bg-[var(--blue-soft)]"
         }`}
       >
         Exams
@@ -190,7 +199,7 @@ export default function MegaMenu({ show, onMouseEnter, onMouseLeave }: MegaMenuP
 
               {/* Top bar: search */}
               <div className="px-4 py-3 border-b border-[var(--line-soft)] bg-[var(--bg)] flex items-center justify-between gap-4">
-                <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-[var(--card)] rounded-xl border border-[var(--line-soft)] focus-within:border-blue-400 focus-within:shadow-sm transition-all">
+                <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-[var(--card)] rounded-xl border border-[var(--line-soft)] focus-within:border-[var(--blue)] focus-within:shadow-sm transition-all">
                   <Search className="w-4 h-4 text-[var(--ink-4)] flex-shrink-0" />
                   <input
                     ref={searchInputRef}
@@ -208,22 +217,6 @@ export default function MegaMenu({ show, onMouseEnter, onMouseLeave }: MegaMenuP
                   )}
                 </div>
 
-                {/* Quick links */}
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {[
-                    { label: "Courses",              href: "/courses/all",    icon: FileText,  color: "text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50" },
-                    { label: "Previous Year Papers", href: "/pyq/all",        icon: Zap,       color: "text-amber-600 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50" },
-                  ].map(({ label, href, icon: Icon, color }) => (
-                    <Link
-                      key={href}
-                      href={href}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${color}`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      {label}
-                    </Link>
-                  ))}
-                </div>
               </div>
 
               {/* Search results overlay */}
@@ -244,18 +237,18 @@ export default function MegaMenu({ show, onMouseEnter, onMouseLeave }: MegaMenuP
                           <Link
                             key={exam.href}
                             href={exam.href}
-                            className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 group transition-colors"
+                            className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[var(--blue-soft)] group transition-colors"
                           >
-                            <div className="w-7 h-7 rounded-lg bg-[var(--bg)] flex items-center justify-center text-sm flex-shrink-0 mt-0.5 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30">
+                            <div className="w-7 h-7 rounded-lg bg-[var(--bg)] flex items-center justify-center text-sm flex-shrink-0 mt-0.5 group-hover:bg-[var(--blue-soft)]">
                               {categories.find((c) => c.id === exam.categoryId)?.emoji}
                             </div>
                             <div className="min-w-0">
-                              <div className="text-sm font-semibold text-[var(--ink-1)] group-hover:text-blue-600 truncate">{exam.name}</div>
+                              <div className="text-sm font-semibold text-[var(--ink-1)] group-hover:text-[var(--blue)] truncate">{exam.name}</div>
                               <div className="text-xs text-[var(--ink-4)] truncate">{exam.category}</div>
                             </div>
-                            {exam.tag && (
-                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${exam.tag.color}`}>
-                                {exam.tag.label}
+                            {exam.isPopular && (
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                                ⭐ Popular
                               </span>
                             )}
                           </Link>
@@ -281,12 +274,12 @@ export default function MegaMenu({ show, onMouseEnter, onMouseLeave }: MegaMenuP
                         onClick={() => setActiveCategory(cat.id)}
                         className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-all duration-150 ${
                           isActive
-                            ? `${cat.color} ${cat.textColor} border-r-2 border-blue-500`
+                            ? `${categoryStyles[cat.theme].bg} ${categoryStyles[cat.theme].text} border-r-2 border-[var(--blue)]`
                             : "text-[var(--ink-3)] hover:bg-[var(--bg)]"
                         }`}
                       >
                         <span className="text-lg leading-none">{cat.emoji}</span>
-                        <span className={`text-sm font-semibold ${isActive ? cat.textColor : ""}`}>{cat.label}</span>
+                        <span className={`text-sm font-semibold ${isActive ? categoryStyles[cat.theme].text : ""}`}>{cat.label}</span>
                         {isActive && (
                           <ArrowRight className="w-3 h-3 ml-auto opacity-60" />
                         )}
@@ -308,7 +301,7 @@ export default function MegaMenu({ show, onMouseEnter, onMouseLeave }: MegaMenuP
                       {/* Category header */}
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-xl">{activeCat.emoji}</span>
-                        <h3 className={`text-sm font-bold ${activeCat.textColor}`}>{activeCat.label}</h3>
+                        <h3 className={`text-sm font-bold ${categoryStyles[activeCat.theme].text}`}>{activeCat.label}</h3>
                         <span className="text-xs text-[var(--ink-4)] ml-1">{activeCat.exams.length} exams</span>
                       </div>
 
@@ -318,19 +311,19 @@ export default function MegaMenu({ show, onMouseEnter, onMouseLeave }: MegaMenuP
                           <Link
                             key={exam.href}
                             href={exam.href}
-                            className="group flex items-start gap-2.5 p-3 rounded-xl border border-transparent hover:border-blue-100 hover:bg-blue-50/60 transition-all duration-150"
+                            className="group flex items-start gap-2.5 p-3 rounded-xl border border-transparent hover:border-[var(--blue-soft)] hover:bg-[var(--blue-soft)] transition-all duration-150"
                           >
-                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 text-sm transition-colors ${activeCat.color}`}>
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 text-sm transition-colors ${categoryStyles[activeCat.theme].bg} ${categoryStyles[activeCat.theme].text}`}>
                               {activeCat.emoji}
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-start justify-between gap-1.5">
-                                <span className="text-sm font-semibold text-[var(--ink-1)] group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-snug">
+                                <span className="text-sm font-semibold text-[var(--ink-1)] group-hover:text-[var(--blue)] leading-snug">
                                   {exam.name}
                                 </span>
-                                {exam.tag && (
-                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap ${exam.tag.color}`}>
-                                    {exam.tag.label}
+                                {exam.isPopular && (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                                    ⭐ Popular
                                   </span>
                                 )}
                               </div>
@@ -353,7 +346,7 @@ export default function MegaMenu({ show, onMouseEnter, onMouseLeave }: MegaMenuP
                 </p>
                 <Link
                   href="/exams"
-                  className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                  className="flex items-center gap-1 text-xs font-semibold text-[var(--blue)] hover:text-[var(--blue-ink)] transition-colors"
                 >
                   Browse all exams
                   <ArrowRight className="w-3.5 h-3.5" />

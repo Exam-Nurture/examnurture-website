@@ -7,14 +7,12 @@ import AuthModal from "@/components/auth/AuthModal";
 import {
   ArrowRight,
   BookOpen,
-  Users,
   Star,
   CheckCircle,
   ChevronRight,
   FileText,
   GraduationCap,
   MapPin,
-  PlayCircle,
   Library,
   ClipboardList,
   ScrollText,
@@ -57,15 +55,13 @@ const MARQUEE_ITEMS = [
   "Daroga SI", "RBI Grade B", "UET", "BPSC", "UPPSC", "MPPSC", "RPSC",
 ];
 
-const FEATURE_EMOJIS = ["📝", "📚", "🎬", "📰", "🏛️", "🧑‍🏫"];
+const FEATURE_EMOJIS = ["📝", "📚", "📰", "🏛️"];
 
 const features = [
   { icon: FileText,      title: "Full-Length Test Series", desc: "CBT-style exams with real exam interface, auto-timer, and question palette — just like the actual test.",          href: "/series/all"  },
   { icon: BookOpen,      title: "Previous Year Papers",    desc: "Thousands of PYQ papers with detailed solutions across JPSC, Banking, SSC, Railway, and more.",                   href: "/pyq/all"     },
-  { icon: PlayCircle,    title: "Courses",                 desc: "Comprehensive video courses, interactive lessons, and expert guidance for structured learning.",                   href: "/courses/all" },
-  { icon: Library,       title: "Blogs",                   desc: "Expert articles, preparation tips, exam strategies, and latest updates on government exams.",                     href: "/blog"        },
-  { icon: GraduationCap, title: "Exams",                   desc: "Browse all exams — syllabus, exam pattern, eligibility, important dates, and preparation resources.",             href: "/exams"       },
-  { icon: Users,         title: "Mentorship Support",      desc: "Guided preparation plans, expert support, and focused direction when your study path needs clarity.",             href: "/mentorship"  },
+  { icon: Library,       title: "Blogs",                   desc: "Expert articles, preparation tips, exam strategies, and latest updates on government exams.",                     href: "/blog"  },
+  { icon: GraduationCap, title: "Exams",                   desc: "Browse all exams — syllabus, exam pattern, eligibility, important dates, and preparation resources.",             href: "/exams" },
 ];
 
 const examCategories = [
@@ -140,7 +136,7 @@ function useStats(): { stats: PlatformStats | null; loading: boolean } {
 function Eyebrow({ children, inverse = false }: { children: React.ReactNode; inverse?: boolean }) {
   return (
     <p
-      className={`text-[11px] font-normal uppercase mb-5 ${inverse ? "text-white/50" : "text-black"}`}
+      className={`text-[11px] font-normal uppercase mb-5 ${inverse ? "text-white/50" : "text-[#8D8D8F] dark:text-[var(--ink-3)]"}`}
       style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}
     >
       {children}
@@ -154,8 +150,8 @@ function BtnPrimary({
 }: { onClick?: () => void; href?: string; children: React.ReactNode; inverse?: boolean }) {
   const cls = `inline-flex items-center gap-2 px-5 py-[10px] rounded-full transition-colors text-[18px] leading-[1.40] ${
     inverse
-      ? "bg-white text-black hover:bg-[#f7f7f5]"
-      : "bg-black text-white hover:bg-[#1a1a1a]"
+      ? "bg-white text-[#203E90] hover:bg-[#EAE8EC] dark:bg-[var(--ink-1)] dark:text-[var(--bg)] dark:hover:bg-[var(--ink-2)]"
+      : "bg-[#203E90] text-white hover:bg-[#1A3278] dark:bg-[var(--blue)] dark:text-white dark:hover:bg-[var(--blue-ink)]"
   }`;
   const sty = { fontWeight: 480, letterSpacing: "-0.10px" };
   if (href) return <Link href={href}><button className={cls} style={sty}>{children}</button></Link>;
@@ -169,7 +165,7 @@ function BtnSecondary({
   const cls = `inline-flex items-center gap-2 px-[18px] py-[8px] pb-[10px] rounded-full transition-colors text-[18px] leading-[1.40] ${
     onDark
       ? "bg-transparent border border-white/30 text-white hover:bg-white/10"
-      : "bg-white border border-[#e6e6e6] text-black hover:bg-[#f7f7f5]"
+      : "bg-[#FBFBFB] border border-[#EAE8EC] text-[#2C2C2E] hover:bg-[#EAE8EC] dark:bg-[var(--card)] dark:border-[var(--line-soft)] dark:text-[var(--ink-1)] dark:hover:bg-[var(--bg)]"
   }`;
   const sty = { fontWeight: 480, letterSpacing: "-0.10px" };
   if (href) return <Link href={href}><button className={cls} style={sty}>{children}</button></Link>;
@@ -198,13 +194,13 @@ function DownloadAppBtn({ inverse = false }: { inverse?: boolean }) {
         className={`inline-flex items-center rounded-full overflow-hidden transition-all duration-200 group ${
           inverse
             ? "border border-white/30 hover:border-white/60"
-            : "border border-[#e6e6e6] hover:border-black"
+            : "border border-[#EAE8EC] hover:border-[#203E90]"
         }`}
       >
         {/* Label */}
         <span
           className={`flex items-center gap-2 pl-5 pr-4 py-[10px] text-[18px] leading-[1.40] transition-colors ${
-            inverse ? "text-white" : "text-black"
+            inverse ? "text-white" : "text-[#2C2C2E]"
           }`}
           style={{ fontWeight: 480, letterSpacing: "-0.10px" }}
         >
@@ -216,14 +212,14 @@ function DownloadAppBtn({ inverse = false }: { inverse?: boolean }) {
           className={`flex items-center justify-center w-11 h-full py-[10px] border-l transition-colors ${
             inverse
               ? "border-white/20 bg-white/10 group-hover:bg-white/20"
-              : `border-[#e6e6e6] bg-[#f7f7f5] ${showQR ? "bg-black border-black" : "group-hover:bg-black group-hover:border-black"}`
+              : `border-[#EAE8EC] bg-[#EAE8EC] ${showQR ? "bg-[#203E90] border-[#203E90]" : "group-hover:bg-[#203E90] group-hover:border-[#203E90]"}`
           }`}
         >
           <QrCode
             className={`w-5 h-5 transition-colors ${
               inverse
                 ? "text-white/70"
-                : showQR ? "text-white" : "text-black group-hover:text-white"
+                : showQR ? "text-white" : "text-[#2C2C2E] group-hover:text-white"
             }`}
           />
         </span>
@@ -233,7 +229,7 @@ function DownloadAppBtn({ inverse = false }: { inverse?: boolean }) {
       {showQR && (
         <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
           <div
-            className="bg-white rounded-[16px] p-4 border border-[#e6e6e6] w-[192px]"
+            className="bg-white dark:bg-[var(--card)] rounded-[16px] p-4 border border-[#EAE8EC] dark:border-[var(--line-soft)] w-[192px]"
             style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)" }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -245,7 +241,7 @@ function DownloadAppBtn({ inverse = false }: { inverse?: boolean }) {
               className="w-full rounded-[8px]"
             />
             <p
-              className="text-center text-[10px] text-black/40 mt-3 leading-none"
+              className="text-center text-[10px] text-[#8D8D8F] mt-3 leading-none"
               style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.5px", textTransform: "uppercase" }}
             >
               Scan to download
@@ -253,7 +249,7 @@ function DownloadAppBtn({ inverse = false }: { inverse?: boolean }) {
           </div>
           {/* Caret arrow */}
           <div className="flex justify-center -mt-[7px]">
-            <div className="w-3.5 h-3.5 bg-white border-r border-b border-[#e6e6e6] rotate-45" />
+            <div className="w-3.5 h-3.5 bg-white border-r border-b border-[#EAE8EC] rotate-45" />
           </div>
         </div>
       )}
@@ -268,14 +264,13 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
   const { user, loading: authLoading } = useAuth();
 
   return (
-    <section className="bg-white py-24 lg:py-32">
+    <section className="hero-atmospheric bg-[#FBFBFB] dark:bg-[var(--bg)] py-24 lg:py-32">
       <div className="max-w-[1280px] mx-auto px-6 lg:px-8 text-center">
 
-        <Eyebrow>🎯 India&apos;s Leading Exam Prep Platform</Eyebrow>
 
         {/* display-xl: 86px / weight 300 / ls -1.72px / lh 1.00 */}
         <h1
-          className="text-[48px] sm:text-[64px] lg:text-[86px] leading-[1] text-black mb-8"
+          className="text-[48px] sm:text-[64px] lg:text-[86px] leading-[1] text-[#2C2C2E] dark:text-[var(--ink-1)] mb-8"
           style={{ fontWeight: 300, letterSpacing: "-1.72px" }}
         >
           Master Any Exam.<br />Crack Your Dream Job.
@@ -283,7 +278,7 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
 
         {/* body-lg: 20px / weight 330 / ls -0.14px */}
         <p
-          className="text-[18px] sm:text-[20px] text-black mb-12 max-w-xl mx-auto leading-[1.40]"
+          className="text-[18px] sm:text-[20px] text-[#666872] dark:text-[var(--ink-2)] mb-12 max-w-xl mx-auto leading-[1.40]"
           style={{ fontWeight: 330, letterSpacing: "-0.14px" }}
         >
           Full-length mock tests, PYQ papers, and AI analytics — everything you need to crack JPSC, Banking, SSC, Railway and more.
@@ -293,8 +288,8 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-16">
           {authLoading ? (
             <>
-              <div className="h-12 w-48 rounded-full bg-[#f1f1f1] animate-pulse" />
-              <div className="h-12 w-48 rounded-full bg-[#f1f1f1] animate-pulse" />
+              <div className="h-12 w-48 rounded-full bg-[#EAE8EC] dark:bg-[var(--line-soft)] animate-pulse" />
+              <div className="h-12 w-48 rounded-full bg-[#EAE8EC] dark:bg-[var(--line-soft)] animate-pulse" />
             </>
           ) : user ? (
             <>
@@ -310,7 +305,7 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
         </div>
 
         {/* Stats row — display-lg numbers, figmaMono labels */}
-        <div className="flex flex-wrap items-center justify-center gap-10 lg:gap-16 pt-8 border-t border-[#e6e6e6]">
+        <div className="flex flex-wrap items-center justify-center gap-10 lg:gap-16 pt-8 border-t border-[#EAE8EC] dark:border-[var(--line-soft)]">
           {[
             { value: stats?.users      ? `${Math.floor(stats.users / 1000)}K+` : "10K+", label: "Students Preparing" },
             { value: stats?.exams      ? `${stats.exams}+`                     : "50+",  label: "Exams Covered"      },
@@ -319,13 +314,13 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
           ].map(({ value, label }) => (
             <div key={label} className="text-center">
               <div
-                className="text-[36px] sm:text-[48px] leading-none text-black tabular-nums"
+                className="text-[36px] sm:text-[48px] leading-none text-[#2C2C2E] dark:text-[var(--ink-1)] tabular-nums"
                 style={{ fontWeight: 300, letterSpacing: "-0.96px" }}
               >
                 {value}
               </div>
               <div
-                className="mt-2 text-[11px] uppercase text-black/60"
+                className="mt-2 text-[11px] uppercase text-[#8D8D8F] dark:text-[var(--ink-3)]"
                 style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}
               >
                 {label}
@@ -367,14 +362,13 @@ function MarqueeStrip() {
 ───────────────────────────────────────────────────────────── */
 function FeaturesSection() {
   return (
-    <section className="py-24 lg:py-28 bg-white">
+    <section className="py-24 lg:py-28 bg-[#FBFBFB] dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-6 lg:px-8">
 
         {/* Left-aligned header — Figma style (not always centered) */}
         <div className="mb-14 max-w-2xl">
-          <Eyebrow>⚡ Everything You Need</Eyebrow>
           <h2
-            className="text-[40px] sm:text-[52px] lg:text-[64px] leading-[1.10] text-black"
+            className="text-[40px] sm:text-[52px] lg:text-[64px] leading-[1.10] text-[#2C2C2E] dark:text-[var(--ink-1)]"
             style={{ fontWeight: 300, letterSpacing: "-0.96px" }}
           >
             One platform.<br />Complete prep.
@@ -385,18 +379,18 @@ function FeaturesSection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map((f, i) => (
             <Link key={f.title} href={f.href} className="group">
-              <div className="bg-[#f7f7f5] rounded-[8px] p-6 h-full flex flex-col hover:bg-[#eeeeec] transition-colors duration-200">
+              <div className="bg-[#EAE8EC] dark:bg-[var(--card)] rounded-[16px] p-6 h-full flex flex-col hover:bg-[#CBCDD5] dark:hover:bg-[rgba(255,255,255,0.04)] transition-colors duration-200 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] dark:border dark:border-[rgba(255,255,255,0.06)]">
                 <div className="text-[40px] mb-4 select-none leading-none">{FEATURE_EMOJIS[i]}</div>
                 {/* card-title: 24px / weight 700 */}
-                <h3 className="text-[22px] text-black mb-2 leading-[1.45]" style={{ fontWeight: 700 }}>
+                <h3 className="text-[22px] text-[#2C2C2E] dark:text-[var(--ink-1)] mb-2 leading-[1.45]" style={{ fontWeight: 700 }}>
                   {f.title}
                 </h3>
                 {/* body-sm: 16px / weight 330 */}
-                <p className="text-[16px] text-black leading-[1.45] flex-1" style={{ fontWeight: 330, letterSpacing: "-0.14px" }}>
+                <p className="text-[16px] text-[#666872] dark:text-[var(--ink-3)] leading-[1.45] flex-1" style={{ fontWeight: 330, letterSpacing: "-0.14px" }}>
                   {f.desc}
                 </p>
                 <div
-                  className="mt-5 flex items-center gap-1 text-[15px] text-black opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  className="mt-5 flex items-center gap-1 text-[15px] text-[#203E90] dark:text-[var(--ink-1)] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                   style={{ fontWeight: 500 }}
                 >
                   Explore <ChevronRight className="h-4 w-4" />
@@ -451,21 +445,21 @@ function ExamCategoriesSection() {
   }, [computeX]);
 
   return (
-    /* white canvas pad → lime block with rounded corners */
-    <section className="py-5 bg-white">
+    /* canvas pad → blue-tinted block with rounded corners */
+    <section className="py-5 bg-[#FBFBFB] dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-[#dceeb1] rounded-none sm:rounded-[24px] px-5 pt-10 pb-10 sm:px-10 lg:px-16 lg:pt-14 lg:pb-14">
+        <div className="bg-[#E8EDF8] dark:bg-[#12151C] dark:border dark:border-[rgba(255,255,255,0.06)] rounded-none sm:rounded-[28px] px-5 pt-10 pb-10 sm:px-10 lg:px-16 lg:pt-14 lg:pb-14 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_8px_32px_rgba(0,0,0,0.5)]">
 
           <div className="mb-10">
             <Eyebrow>🏆 Popular Exams</Eyebrow>
             <h2
-              className="text-[38px] sm:text-[52px] lg:text-[64px] leading-[1.10] text-black"
+              className="text-[38px] sm:text-[52px] lg:text-[64px] leading-[1.10] text-[#2C2C2E] dark:text-[var(--ink-1)]"
               style={{ fontWeight: 300, letterSpacing: "-0.96px" }}
             >
               Prepare for<br />Any Exam
             </h2>
             <p
-              className="mt-4 text-[18px] text-black leading-[1.45] max-w-2xl"
+              className="mt-4 text-[18px] text-[#666872] dark:text-[var(--ink-2)] leading-[1.45] max-w-2xl"
               style={{ fontWeight: 330, letterSpacing: "-0.26px" }}
             >
               From state PSC to banking to central government — comprehensive coverage for all major competitive exams.
@@ -482,8 +476,8 @@ function ExamCategoriesSection() {
                   onClick={() => goTo(idx)}
                   className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors duration-200 flex-shrink-0 text-[14px] ${
                     activeIdx === idx
-                      ? "bg-black text-white"
-                      : "bg-white border border-[#e6e6e6] text-black hover:bg-[#f7f7f5]"
+                      ? "bg-[#203E90] dark:bg-[var(--blue)] text-white"
+                      : "bg-white dark:bg-[var(--card)] border border-[#EAE8EC] dark:border-[var(--line-soft)] text-[#2C2C2E] dark:text-[var(--ink-1)] hover:bg-[#EAE8EC] dark:hover:bg-[var(--bg)]"
                   }`}
                   style={{ fontWeight: activeIdx === idx ? 500 : 400 }}
                 >
@@ -518,25 +512,27 @@ function ExamCategoriesSection() {
                   >
                     {/* pricing-card style: white, rounded-lg, hairline border, subtle shadow */}
                     <div
-                      className={`bg-white rounded-[24px] p-7 lg:p-10 border border-[#e6e6e6] ${
-                        isActive ? "shadow-[0_4px_16px_rgba(0,0,0,0.06)]" : ""
+                      className={`bg-white dark:bg-[var(--card)] rounded-[26px] p-7 lg:p-10 border border-[#EAE8EC] dark:border-[rgba(255,255,255,0.07)] transition-all duration-300 ${
+                        isActive
+                          ? "shadow-[0_4px_20px_rgba(44,44,46,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.7),_0_0_0_1px_rgba(255,255,255,0.06)_inset]"
+                          : ""
                       }`}
                     >
                       {/* Badges */}
                       <div className="flex items-center gap-2 flex-wrap mb-5">
                         <span
-                          className="text-[11px] px-3 py-1 rounded-full bg-black text-white uppercase"
+                          className="text-[11px] px-3 py-1 rounded-full bg-[#203E90] dark:bg-[var(--blue)] text-white uppercase"
                           style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.4px", fontWeight: 500 }}
                         >
                           {exam.tag}
                         </span>
                         {exam.state && (
-                          <span className="flex items-center gap-1 text-[12px] text-black bg-[#f7f7f5] border border-[#e6e6e6] px-2.5 py-1 rounded-full">
+                          <span className="flex items-center gap-1 text-[12px] text-[#666872] dark:text-[var(--ink-2)] bg-[#EAE8EC] dark:bg-[var(--bg)] border border-[#CBCDD5] dark:border-[var(--line-soft)] px-2.5 py-1 rounded-full">
                             <MapPin className="w-3 h-3" /> {exam.state}
                           </span>
                         )}
                         {exam.board && (
-                          <span className="flex items-center gap-1 text-[12px] text-black bg-[#f7f7f5] border border-[#e6e6e6] px-2.5 py-1 rounded-full">
+                          <span className="flex items-center gap-1 text-[12px] text-[#666872] dark:text-[var(--ink-2)] bg-[#EAE8EC] dark:bg-[var(--bg)] border border-[#CBCDD5] dark:border-[var(--line-soft)] px-2.5 py-1 rounded-full">
                             <Building2 className="w-3 h-3" /> {exam.board}
                           </span>
                         )}
@@ -544,14 +540,14 @@ function ExamCategoriesSection() {
 
                       {/* display-lg headline */}
                       <h3
-                        className="text-[32px] sm:text-[40px] lg:text-[48px] text-black mb-3 leading-[1.10]"
+                        className="text-[32px] sm:text-[40px] lg:text-[48px] text-[#2C2C2E] dark:text-[var(--ink-1)] mb-3 leading-[1.10]"
                         style={{ fontWeight: 300, letterSpacing: "-0.96px" }}
                       >
                         {exam.name}
                       </h3>
 
                       <p
-                        className="text-[18px] text-black leading-[1.45] mb-8 max-w-2xl"
+                        className="text-[18px] text-[#666872] dark:text-[var(--ink-2)] leading-[1.45] mb-8 max-w-2xl"
                         style={{ fontWeight: 330, letterSpacing: "-0.26px" }}
                       >
                         {examDescriptions[exam.name] || "Comprehensive preparation with full-length test series, previous year papers, and expert study materials."}
@@ -560,18 +556,18 @@ function ExamCategoriesSection() {
                       <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
                         {/* Stat tiles — surface-soft */}
                         <div className="flex gap-3">
-                          <div className="bg-[#f7f7f5] rounded-[8px] px-4 py-3 border border-[#e6e6e6] flex items-center gap-3">
-                            <ClipboardList className="w-4 h-4 text-black flex-shrink-0" />
+                          <div className="bg-[#EAE8EC] dark:bg-[var(--bg)] rounded-[8px] px-4 py-3 border border-[#CBCDD5] dark:border-[var(--line-soft)] flex items-center gap-3">
+                            <ClipboardList className="w-4 h-4 text-[#8D8D8F] dark:text-[var(--ink-3)] flex-shrink-0" />
                             <div>
-                              <div className="text-[20px] text-black leading-none" style={{ fontWeight: 700 }}>{exam.numTests}+</div>
-                              <div className="text-[10px] text-black/60 mt-0.5 uppercase" style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.4px" }}>Tests</div>
+                              <div className="text-[20px] text-[#2C2C2E] dark:text-[var(--ink-1)] leading-none" style={{ fontWeight: 700 }}>{exam.numTests}+</div>
+                              <div className="text-[10px] text-[#8D8D8F] dark:text-[var(--ink-4)] mt-0.5 uppercase" style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.4px" }}>Tests</div>
                             </div>
                           </div>
-                          <div className="bg-[#f7f7f5] rounded-[8px] px-4 py-3 border border-[#e6e6e6] flex items-center gap-3">
-                            <ScrollText className="w-4 h-4 text-black flex-shrink-0" />
+                          <div className="bg-[#EAE8EC] dark:bg-[var(--bg)] rounded-[8px] px-4 py-3 border border-[#CBCDD5] dark:border-[var(--line-soft)] flex items-center gap-3">
+                            <ScrollText className="w-4 h-4 text-[#8D8D8F] dark:text-[var(--ink-3)] flex-shrink-0" />
                             <div>
-                              <div className="text-[20px] text-black leading-none" style={{ fontWeight: 700 }}>{exam.numPYQ}+</div>
-                              <div className="text-[10px] text-black/60 mt-0.5 uppercase" style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.4px" }}>PYQ Papers</div>
+                              <div className="text-[20px] text-[#2C2C2E] dark:text-[var(--ink-1)] leading-none" style={{ fontWeight: 700 }}>{exam.numPYQ}+</div>
+                              <div className="text-[10px] text-[#8D8D8F] dark:text-[var(--ink-4)] mt-0.5 uppercase" style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.4px" }}>PYQ Papers</div>
                             </div>
                           </div>
                         </div>
@@ -598,7 +594,9 @@ function ExamCategoriesSection() {
                 key={idx}
                 onClick={() => goTo(idx)}
                 className={`rounded-full transition-all duration-300 ${
-                  activeIdx === idx ? "w-7 h-2 bg-black" : "w-2 h-2 bg-black/20 hover:bg-black/40"
+                  activeIdx === idx
+                    ? "w-7 h-2 bg-[#203E90] dark:bg-[var(--blue)]"
+                    : "w-2 h-2 bg-[#CBCDD5] dark:bg-[var(--ink-4)] hover:bg-[#8D8D8F] dark:hover:bg-[var(--ink-3)]"
                 }`}
               />
             ))}
@@ -619,14 +617,14 @@ function ExamCategoriesSection() {
 ───────────────────────────────────────────────────────────── */
 function TestimonialsSection() {
   return (
-    <section className="py-5 bg-white">
+    <section className="py-5 bg-[#FBFBFB] dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-[#f4ecd6] rounded-none sm:rounded-[24px] px-5 pt-10 pb-10 sm:px-10 lg:px-16 lg:pt-14 lg:pb-14">
+        <div className="bg-[#EAE8EC] dark:bg-[#12151C] dark:border dark:border-[rgba(255,255,255,0.06)] rounded-none sm:rounded-[28px] px-5 pt-10 pb-10 sm:px-10 lg:px-16 lg:pt-14 lg:pb-14 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_8px_32px_rgba(0,0,0,0.5)]">
 
           <div className="mb-12">
             <Eyebrow>🌟 Student Success</Eyebrow>
             <h2
-              className="text-[38px] sm:text-[52px] lg:text-[64px] leading-[1.10] text-black"
+              className="text-[38px] sm:text-[52px] lg:text-[64px] leading-[1.10] text-[#2C2C2E] dark:text-[var(--ink-1)]"
               style={{ fontWeight: 300, letterSpacing: "-0.96px" }}
             >
               Toppers trust<br />ExamNurture
@@ -635,30 +633,29 @@ function TestimonialsSection() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {testimonials.map((t) => (
-              <div key={t.name} className="bg-white rounded-[8px] p-6 flex flex-col border border-[#e6e6e6]">
-                {/* Stars — black on white */}
+              <div key={t.name} className="bg-white dark:bg-[var(--card)] rounded-[18px] p-6 flex flex-col border border-[#CBCDD5] dark:border-[rgba(255,255,255,0.07)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset]">
+                {/* Stars */}
                 <div className="flex items-center gap-0.5 mb-4">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="w-4 h-4 text-black fill-black" />
+                    <Star key={s} className="w-4 h-4 text-amber-400 fill-amber-400 dark:text-amber-300 dark:fill-amber-300" />
                   ))}
                 </div>
                 <blockquote
-                  className="text-[16px] text-black leading-[1.45] mb-6 flex-1"
+                  className="text-[16px] text-[#666872] dark:text-[var(--ink-2)] leading-[1.45] mb-6 flex-1"
                   style={{ fontWeight: 330, letterSpacing: "-0.14px" }}
                 >
                   &ldquo;{t.text}&rdquo;
                 </blockquote>
                 <div className="flex items-center gap-3">
-                  {/* Black circular avatar — button-icon-circular style */}
                   <div
-                    className="h-10 w-10 rounded-full bg-black flex items-center justify-center text-white text-[12px] flex-shrink-0"
+                    className="h-10 w-10 rounded-full bg-[#203E90] dark:bg-[var(--blue)] flex items-center justify-center text-white text-[12px] flex-shrink-0"
                     style={{ fontWeight: 700, fontFamily: "var(--font-mono)" }}
                   >
                     {t.initials}
                   </div>
                   <div>
-                    <p className="text-[15px] text-black" style={{ fontWeight: 700 }}>{t.name}</p>
-                    <p className="text-[11px] text-black/50 mt-0.5" style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.3px" }}>{t.role}</p>
+                    <p className="text-[15px] text-[#2C2C2E] dark:text-[var(--ink-1)]" style={{ fontWeight: 700 }}>{t.name}</p>
+                    <p className="text-[11px] text-[#8D8D8F] dark:text-[var(--ink-4)] mt-0.5" style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.3px" }}>{t.role}</p>
                   </div>
                 </div>
               </div>
@@ -710,13 +707,13 @@ function FAQSection() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   return (
-    <section className="py-20 lg:py-24 bg-white border-t border-[#e6e6e6]">
+    <section className="py-20 lg:py-24 bg-[#FBFBFB] dark:bg-[var(--bg)] border-t border-[#EAE8EC] dark:border-[var(--line-soft)]">
       <div className="max-w-[720px] mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Centered heading — SuperKalam style */}
+        {/* Centered heading */}
         <div className="text-center mb-12">
           <h2
-            className="text-[36px] sm:text-[48px] lg:text-[56px] leading-[1.10] text-black"
+            className="text-[36px] sm:text-[48px] lg:text-[56px] leading-[1.10] text-[#2C2C2E] dark:text-[var(--ink-1)]"
             style={{ fontWeight: 300, letterSpacing: "-0.96px" }}
           >
             Frequently Asked<br />Questions
@@ -731,7 +728,9 @@ function FAQSection() {
               <div
                 key={idx}
                 className={`rounded-[16px] border overflow-hidden transition-colors duration-200 ${
-                  isOpen ? "border-black bg-white" : "border-[#e6e6e6] bg-[#f7f7f5] hover:bg-[#f0f0ee] hover:border-[#d0d0ce]"
+                  isOpen
+                    ? "border-[#203E90] dark:border-[rgba(53,87,199,0.4)] bg-white dark:bg-[var(--card)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset]"
+                    : "border-[#EAE8EC] dark:border-[rgba(255,255,255,0.06)] bg-[#EAE8EC] dark:bg-[var(--card)] hover:bg-[#CBCDD5] dark:hover:bg-[rgba(255,255,255,0.03)] hover:border-[#CBCDD5] dark:hover:border-[rgba(255,255,255,0.09)]"
                 }`}
               >
                 <button
@@ -739,13 +738,13 @@ function FAQSection() {
                   className="w-full flex items-center justify-between px-6 py-5 text-left"
                 >
                   <span
-                    className="text-[17px] text-black leading-[1.45] pr-4"
+                    className="text-[17px] text-[#2C2C2E] dark:text-[var(--ink-1)] leading-[1.45] pr-4"
                     style={{ fontWeight: isOpen ? 600 : 400, letterSpacing: "-0.14px" }}
                   >
                     {item.q}
                   </span>
                   <ChevronDown
-                    className={`w-5 h-5 text-black/40 flex-shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180 text-black/70" : ""}`}
+                    className={`w-5 h-5 text-[#CBCDD5] dark:text-[var(--ink-4)] flex-shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180 !text-[#8D8D8F] dark:!text-[var(--ink-2)]" : ""}`}
                   />
                 </button>
 
@@ -754,7 +753,7 @@ function FAQSection() {
                   className={`overflow-hidden transition-all duration-300 ${isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
                 >
                   <p
-                    className="px-6 pb-6 text-[16px] text-black/60 leading-[1.60]"
+                    className="px-6 pb-6 text-[16px] text-[#8D8D8F] dark:text-[var(--ink-3)] leading-[1.60]"
                     style={{ fontWeight: 330, letterSpacing: "-0.14px" }}
                   >
                     {item.a}
@@ -785,9 +784,15 @@ function CTASection({ stats, loading }: { stats: PlatformStats | null; loading: 
   };
 
   return (
-    <section className="py-5 pb-8 bg-white">
+    <section className="py-5 pb-8 bg-[#FBFBFB] dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-[#1f1d3d] rounded-none sm:rounded-[24px] px-5 pt-12 pb-12 sm:px-10 lg:px-16 lg:pt-16 lg:pb-16 text-center">
+        <div className="bg-[#203E90] dark:bg-[#12151C] dark:border dark:border-[rgba(255,255,255,0.07)] rounded-none sm:rounded-[28px] px-5 pt-12 pb-12 sm:px-10 lg:px-16 lg:pt-16 lg:pb-16 text-center dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_0_80px_-20px_rgba(32,62,144,0.4),0_16px_48px_rgba(0,0,0,0.7)] relative overflow-hidden">
+
+          {/* Dark mode ambient glow orb */}
+          <div className="hidden dark:block absolute inset-0 pointer-events-none" aria-hidden="true">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full bg-[#203E90] opacity-20 blur-[80px]" />
+            <div className="absolute top-0 right-1/4 w-[200px] h-[200px] rounded-full bg-[#2A56C6] opacity-10 blur-[60px]" />
+          </div>
 
           <Eyebrow inverse>⚡ Free to Start</Eyebrow>
 
@@ -849,7 +854,7 @@ export default function LandingPage() {
   const { stats, loading } = useStats();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FBFBFB] dark:bg-[var(--bg)]">
       {showModal && <AuthModal onClose={() => setShowModal(false)} next="/dashboard" />}
       <HeroSection onLogin={openLogin} stats={stats} />
       <MarqueeStrip />

@@ -135,6 +135,7 @@ interface Filters {
   status: string;
   solved: string;
   sort: SortValue;
+  collection: string;
 }
 
 const defaultFilters: Filters = {
@@ -149,6 +150,7 @@ const defaultFilters: Filters = {
   status: "All",
   solved: "All",
   sort: "latest",
+  collection: "All",
 };
 
 function readFilters(params: URLSearchParams): Filters {
@@ -164,6 +166,7 @@ function readFilters(params: URLSearchParams): Filters {
     status: params.get("status") ?? "All",
     solved: params.get("solved") ?? "All",
     sort: (params.get("sort") as SortValue) ?? "latest",
+    collection: params.get("collection") ?? "All",
   };
 }
 
@@ -316,6 +319,8 @@ function PyqAllPageInner() {
       if (filters.access !== "All" && (filters.access === "Free" ? p.isPremium : !p.isPremium)) return false;
       if (filters.status !== "All" && (filters.status === "Attempted" ? p.completionPercentage === 0 : p.completionPercentage > 0)) return false;
       if (filters.solved !== "All" && (filters.solved === "Solved" ? p.completionPercentage < 100 : p.completionPercentage === 100)) return false;
+      if (filters.collection === "Trending" && p.attempts < 1500) return false;
+      if (filters.collection === "Popular" && p.rating < 4.5) return false;
       return true;
     });
     return result.sort((a, b) => {
@@ -368,145 +373,312 @@ function PyqAllPageInner() {
       {/* Hero */}
       <HeroSection stats={stats} onRequireAuth={requireAuth} />
 
-      <div className="mx-auto max-w-[1440px] px-4 pb-0 pt-6 sm:px-6 lg:px-8">
-        {/* Trending carousel */}
-        <TrendingCarousel papers={papers.slice(0, 8)} />
+      {/* ── Unified layout: Left sidebar + Right Content ────────────── */}
+      <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="flex gap-6 items-start">
 
-        {/* Category discovery grid */}
-        <CategoryDiscoveryGrid
-          papers={papers}
-          onSelectCategory={(v) => updateFilter("category", v)}
-          activeCategory={filters.category}
-        />
-      </div>
+          {/* ── Left sidebar filters (desktop) ───────────── */}
+          <aside className="hidden lg:flex flex-col gap-5 w-[210px] shrink-0 sticky top-20">
+            {/* Search */}
+            <div
+              className="flex items-center gap-2 rounded-[14px] border px-3 py-2.5"
+              style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
+            >
+              <Search size={14} style={{ color: "var(--ink-4)" }} className="shrink-0" />
+              <input
+                value={filters.q}
+                onChange={(e) => updateFilter("q", e.target.value)}
+                placeholder="Search PYQs…"
+                className="flex-1 min-w-0 bg-transparent text-[13px] outline-none placeholder:text-[var(--ink-4)]"
+                style={{ color: "var(--ink-1)" }}
+              />
+              {filters.q && (
+                <button type="button" onClick={() => updateFilter("q", "")} style={{ color: "var(--ink-4)" }}>
+                  <X size={12} />
+                </button>
+              )}
+            </div>
 
-      {/* ── Unified search + listing section ────────────── */}
-      <div className="border-y border-slate-200 bg-slate-50 dark:border-white/8 dark:bg-slate-950">
-        <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
+            {/* Category */}
+            <div className="rounded-[14px] border p-3" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+              <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5 px-1" style={{ color: "var(--ink-3)" }}>Category</p>
+              <div className="flex flex-col gap-0.5 max-h-[200px] overflow-y-auto [scrollbar-width:thin]">
+                {["All", ...CATEGORIES].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => updateFilter("category", cat)}
+                    className="w-full text-left px-2.5 py-1.5 rounded-[8px] text-[13px] transition-all"
+                    style={{
+                      background: filters.category === cat ? "var(--blue-soft)" : "transparent",
+                      color: filters.category === cat ? "var(--blue)" : "var(--ink-2)",
+                      fontWeight: filters.category === cat ? 600 : 400,
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* Full-width search bar */}
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition focus-within:border-blue-400 focus-within:shadow-md dark:border-white/10 dark:bg-slate-900">
-            <Search className="h-5 w-5 shrink-0 text-slate-400" />
-            <input
-              value={filters.q}
-              onChange={(e) => updateFilter("q", e.target.value)}
-              placeholder="Search by exam name, year, subject or topic…"
-              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400 dark:text-white"
-            />
-            {filters.q && (
-              <button type="button" onClick={() => updateFilter("q", "")} className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 dark:bg-white/10 dark:text-slate-400">
-                <X className="h-3.5 w-3.5" />
+            {/* Collection */}
+            <div className="rounded-[14px] border p-3" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+              <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5 px-1" style={{ color: "var(--ink-3)" }}>Collection</p>
+              <div className="flex flex-col gap-0.5">
+                {["All", "Trending", "Popular"].map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => updateFilter("collection", opt)}
+                    className="w-full text-left px-2.5 py-1.5 rounded-[8px] text-[13px] transition-all"
+                    style={{
+                      background: filters.collection === opt ? "var(--blue-soft)" : "transparent",
+                      color: filters.collection === opt ? "var(--blue)" : "var(--ink-2)",
+                      fontWeight: filters.collection === opt ? 600 : 400,
+                    }}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Access */}
+            <div className="rounded-[14px] border p-3" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+              <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5 px-1" style={{ color: "var(--ink-3)" }}>Access</p>
+              <div className="flex flex-col gap-0.5">
+                {["All", "Free", "Premium"].map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => updateFilter("access", opt)}
+                    className="w-full text-left px-2.5 py-1.5 rounded-[8px] text-[13px] transition-all"
+                    style={{
+                      background: filters.access === opt ? "var(--blue-soft)" : "transparent",
+                      color: filters.access === opt ? "var(--blue)" : "var(--ink-2)",
+                      fontWeight: filters.access === opt ? 600 : 400,
+                    }}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Exams */}
+            {exams.length > 2 && (
+              <div className="rounded-[14px] border p-3" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+                <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5 px-1" style={{ color: "var(--ink-3)" }}>Exam</p>
+                <div className="flex flex-col gap-0.5 max-h-[200px] overflow-y-auto [scrollbar-width:thin]">
+                  {exams.map((ex) => (
+                    <button
+                      key={ex}
+                      type="button"
+                      onClick={() => updateFilter("exam", ex)}
+                      className="w-full text-left px-2.5 py-1.5 rounded-[8px] text-[13px] transition-all"
+                      style={{
+                        background: filters.exam === ex ? "var(--blue-soft)" : "transparent",
+                        color: filters.exam === ex ? "var(--blue)" : "var(--ink-2)",
+                        fontWeight: filters.exam === ex ? 600 : 400,
+                      }}
+                    >
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Year */}
+            <div className="rounded-[14px] border p-3" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+              <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5 px-1" style={{ color: "var(--ink-3)" }}>Year</p>
+              <div className="flex flex-col gap-0.5 max-h-[200px] overflow-y-auto [scrollbar-width:thin]">
+                {["All", ...YEARS].map((yr) => (
+                  <button
+                    key={yr}
+                    type="button"
+                    onClick={() => updateFilter("year", yr)}
+                    className="w-full text-left px-2.5 py-1.5 rounded-[8px] text-[13px] transition-all"
+                    style={{
+                      background: filters.year === yr ? "var(--blue-soft)" : "transparent",
+                      color: filters.year === yr ? "var(--blue)" : "var(--ink-2)",
+                      fontWeight: filters.year === yr ? 600 : 400,
+                    }}
+                  >
+                    {yr}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Reset */}
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="flex items-center justify-center gap-1.5 rounded-[12px] border py-2 text-[12px] font-semibold transition-colors hover:border-[var(--blue)] hover:text-[var(--blue)]"
+                style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}
+              >
+                <RotateCcw size={12} /> Clear {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""}
               </button>
             )}
-          </div>
+          </aside>
 
-          {/* Sort + Filter toolbar */}
-          <div className="sticky top-14 z-20 mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/95 px-4 py-3 shadow-sm backdrop-blur-xl dark:border-white/8 dark:bg-slate-950/95">
+          {/* ── Right content ─────────────────────────────── */}
+          <div className="flex-1 min-w-0 flex flex-col gap-6">
+
+            {/* Mobile search + filter row */}
+            <div className="flex gap-2 lg:hidden">
+              <div
+                className="flex flex-1 items-center gap-2 rounded-[14px] border px-3 py-2.5"
+                style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
+              >
+                <Search size={14} style={{ color: "var(--ink-4)" }} />
+                <input
+                  value={filters.q}
+                  onChange={(e) => updateFilter("q", e.target.value)}
+                  placeholder="Search PYQs…"
+                  className="flex-1 min-w-0 bg-transparent text-[13px] outline-none placeholder:text-[var(--ink-4)]"
+                  style={{ color: "var(--ink-1)" }}
+                />
+                {filters.q && <button type="button" onClick={() => updateFilter("q", "")} style={{ color: "var(--ink-4)" }}><X size={12} /></button>}
+              </div>
+              <button
+                type="button"
+                onClick={() => setFilterOpen(true)}
+                className="relative flex h-[42px] w-[42px] items-center justify-center rounded-[14px] border transition-colors hover:border-[var(--blue)]"
+                style={{ background: "var(--card)", borderColor: "var(--line-soft)", color: "var(--ink-2)" }}
+              >
+                <Filter size={15} />
+                {activeFilterCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--blue)] text-[9px] font-bold text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Toolbar: count + sort */}
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-black text-slate-950 dark:text-white">
-                <span className="text-blue-600">{filteredPapers.length}</span> papers found
-              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[13px]" style={{ color: "var(--ink-3)" }}>
+                  <span className="font-bold" style={{ color: "var(--ink-1)" }}>{filteredPapers.length}</span> papers found
+                </p>
+                {!loading && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--blue-soft)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--blue)]">
+                    <FileText size={10} /> {stats.total} total
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <select
                   value={filters.sort}
                   onChange={(e) => updateFilter("sort", e.target.value as SortValue)}
-                  className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none transition focus:border-blue-400 dark:border-white/10 dark:bg-slate-900 dark:text-white"
+                  className="h-9 rounded-[10px] border px-3 text-[12px] font-semibold outline-none transition"
+                  style={{ background: "var(--card)", borderColor: "var(--line-soft)", color: "var(--ink-2)" }}
                 >
                   {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
-                <button
-                  type="button"
-                  onClick={() => setFilterOpen(true)}
-                  className="relative inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-600 dark:border-white/10 dark:bg-slate-900 dark:text-white"
-                >
-                  <Filter className="h-3.5 w-3.5" /> Filters
-                  {activeFilterCount > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-black text-white">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </button>
                 {/* View mode toggle */}
-                <div className="flex h-9 items-center overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900">
+                <div className="flex h-9 items-center overflow-hidden rounded-[10px] border" style={{ borderColor: "var(--line-soft)", background: "var(--card)" }}>
                   <button
                     type="button"
                     onClick={() => setViewMode("grid")}
                     title="Card view"
-                    className={`flex h-full w-9 items-center justify-center transition ${viewMode === "grid" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"}`}
+                    className={`flex h-full w-9 items-center justify-center transition`}
+                    style={{ background: viewMode === "grid" ? "var(--blue)" : "transparent", color: viewMode === "grid" ? "#fff" : "var(--ink-4)" }}
                   >
-                    <LayoutGrid className="h-3.5 w-3.5" />
+                    <LayoutGrid size={13} />
                   </button>
                   <button
                     type="button"
                     onClick={() => setViewMode("list")}
                     title="List view"
-                    className={`flex h-full w-9 items-center justify-center transition ${viewMode === "list" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"}`}
+                    className={`flex h-full w-9 items-center justify-center transition`}
+                    style={{ background: viewMode === "list" ? "var(--blue)" : "transparent", color: viewMode === "list" ? "#fff" : "var(--ink-4)" }}
                   >
-                    <List className="h-3.5 w-3.5" />
+                    <List size={14} />
                   </button>
                 </div>
               </div>
             </div>
-            <FilterChips filters={filters} onChange={updateFilter} onReset={resetFilters} />
-          </div>
 
-          {error && (
-            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-              {error} — showing sample data.
-            </div>
-          )}
-
-          {/* Papers grid / list */}
-          <div className="mt-5">
-            {loading ? (
-              <LoadingGrid />
-            ) : filteredPapers.length === 0 ? (
-              <EmptyState onReset={resetFilters} />
-            ) : (
-              <>
-                {viewMode === "grid" ? (
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {visiblePapers.map((paper) => (
-                      <PyqCard key={paper.id} paper={paper} bookmarked={bookmarks.has(paper.id)} onBookmark={() => toggleBookmark(paper.id)} onRequireAuth={requireAuth} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {visiblePapers.map((paper) => (
-                      <PyqRow key={paper.id} paper={paper} bookmarked={bookmarks.has(paper.id)} onBookmark={() => toggleBookmark(paper.id)} onRequireAuth={requireAuth} />
-                    ))}
-                  </div>
-                )}
-                <div ref={sentinelRef} className="h-4" />
-                {visibleCount < filteredPapers.length && (
-                  <div className="mt-6 flex justify-center">
-                    <button
-                      type="button"
-                      onClick={() => setVisibleCount((c) => c + 9)}
-                      className="inline-flex h-12 items-center gap-2 rounded-xl border-2 border-blue-200 bg-white px-6 text-sm font-black text-blue-700 transition hover:bg-blue-50 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"
-                    >
-                      Load {Math.min(9, filteredPapers.length - visibleCount)} more papers
-                    </button>
-                  </div>
-                )}
-              </>
+            {/* Active filter chips */}
+            {activeFilterCount > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {Object.entries(filters).filter(([k, v]) => k !== "sort" && v && v !== defaultFilters[k as keyof Filters]).map(([key, value]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => updateFilter(key as keyof Filters, defaultFilters[key as keyof Filters])}
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors hover:opacity-80"
+                    style={{ background: "var(--blue-soft)", color: "var(--blue)" }}
+                  >
+                    {value} <X size={10} />
+                  </button>
+                ))}
+                <button type="button" onClick={resetFilters} className="text-[11px] font-semibold hover:underline" style={{ color: "var(--ink-4)" }}>
+                  Clear all
+                </button>
+              </div>
             )}
+            
+            {error && (
+              <div className="rounded-[14px] border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-[13px] font-semibold text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+                {error} — showing sample data.
+              </div>
+            )}
+
+            {/* Papers grid / list */}
+            <div>
+              {loading ? (
+                <LoadingGrid />
+              ) : filteredPapers.length === 0 ? (
+                <EmptyState onReset={resetFilters} />
+              ) : (
+                <>
+                  {viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      {visiblePapers.map((paper) => (
+                        <PyqCard key={paper.id} paper={paper} bookmarked={bookmarks.has(paper.id)} onBookmark={() => toggleBookmark(paper.id)} onRequireAuth={requireAuth} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {visiblePapers.map((paper) => (
+                        <PyqRow key={paper.id} paper={paper} bookmarked={bookmarks.has(paper.id)} onBookmark={() => toggleBookmark(paper.id)} onRequireAuth={requireAuth} />
+                      ))}
+                    </div>
+                  )}
+                  <div ref={sentinelRef} className="h-4" />
+                  {visibleCount < filteredPapers.length && (
+                    <div className="mt-6 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setVisibleCount((c) => c + 9)}
+                        className="inline-flex h-11 items-center gap-2 rounded-[14px] border-2 px-6 text-[13px] font-semibold transition-colors hover:border-[var(--blue)] hover:text-[var(--blue)]"
+                        style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}
+                      >
+                        Load {Math.min(9, filteredPapers.length - visibleCount)} more papers
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── Below-grid extras ───────────────────────────── */}
       <div className="mx-auto max-w-[1440px] px-4 pb-8 pt-8 sm:px-6 lg:px-8">
-        <AnalyticsCharts papers={papers} />
-        <RecentActivity papers={papers.filter((p) => p.completionPercentage > 0).slice(0, 4)} bookmarks={bookmarks.size} />
-        <PremiumCTA />
       </div>
 
       {/* Footer SEO band */}
       <SeoSection onSelect={(v) => updateFilter("q", v)} />
 
-      {/* Right-slide filter drawer */}
-      <FilterDrawer
+      {/* Mobile filter drawer */}
+      <MobileFilterDrawer
         open={filterOpen}
         filters={filters}
         exams={exams}
@@ -553,42 +725,41 @@ function PyqAllPageInner() {
 }
 
 /* ─── Hero Section ───────────────────────────────────── */
-
 function HeroSection({ stats, onRequireAuth }: {
   stats: { total: number; attempts: number; exams: number; years: number };
   onRequireAuth: (href: string, e: React.MouseEvent) => void;
 }) {
   return (
-    <section className="bg-white border-b border-[#e6e6e6]">
+    <section style={{ background: "var(--card)", borderBottom: "1px solid var(--line-soft)" }}>
       <div className="mx-auto grid max-w-[1440px] gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8 lg:py-20">
         {/* Left */}
         <div>
-          <p className="text-[11px] font-normal uppercase mb-5 text-black"
-             style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
+          <p className="text-[11px] font-normal uppercase mb-5"
+             style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px", color: "var(--ink-3)" }}>
             PYQ Library
           </p>
-          <h1 className="max-w-2xl text-[36px] sm:text-[48px] lg:text-[56px] leading-[1.10] text-black"
-              style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
+          <h1 className="max-w-2xl text-[36px] sm:text-[48px] lg:text-[56px] leading-[1.10]"
+              style={{ fontWeight: 300, letterSpacing: "-0.96px", color: "var(--ink-1)" }}>
             Previous Year<br />Question Papers
           </h1>
-          <p className="mt-5 max-w-xl text-[17px] leading-[1.45] text-[#6b7280]"
-             style={{ fontWeight: 300, letterSpacing: "-0.26px" }}>
+          <p className="mt-5 max-w-xl text-[17px] leading-[1.45]"
+             style={{ fontWeight: 300, letterSpacing: "-0.26px", color: "var(--ink-3)" }}>
             Solve real exam papers for SSC, Banking, Railway, State PSC, Police, UPSC &amp; more — with live timer, detailed solutions and AI analytics.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
               href="/dashboard/pyq?tab=attempts"
               onClick={(e) => onRequireAuth("/dashboard/pyq?tab=attempts", e)}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black hover:bg-[#1a1a1a] text-white text-[15px] font-medium transition-colors"
-              style={{ fontWeight: 480, letterSpacing: "-0.10px" }}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-white text-[15px] font-medium transition-colors hover:opacity-85"
+              style={{ background: "var(--ink-1)", fontWeight: 480, letterSpacing: "-0.10px" }}
             >
               My PYQ Attempts <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/dashboard/plans"
               onClick={(e) => onRequireAuth("/dashboard/plans", e)}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white border border-[#e6e6e6] text-black text-[15px] font-medium hover:bg-[#f7f7f5] transition-colors"
-              style={{ fontWeight: 480, letterSpacing: "-0.10px" }}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full border text-[15px] font-medium transition-colors hover:bg-[var(--surface-hover)]"
+              style={{ background: "var(--bg)", borderColor: "var(--line)", color: "var(--ink-1)", fontWeight: 480, letterSpacing: "-0.10px" }}
             >
               View Plans
             </Link>
@@ -609,166 +780,60 @@ function HeroSection({ stats, onRequireAuth }: {
 
 function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
-    <div className="rounded-[16px] border border-[#e6e6e6] bg-[#f7f7f5] p-5 hover:border-black transition-colors duration-200">
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[8px] bg-black text-white">
+    <div className="rounded-[16px] border p-5 transition-colors hover:border-[var(--ink-1)]" style={{ background: "var(--bg-secondary)", borderColor: "var(--line-soft)" }}>
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[8px] text-white" style={{ background: "var(--ink-1)" }}>
         <Icon className="h-5 w-5" />
       </div>
-      <p className="text-[28px] font-black tracking-tight text-black tabular-nums leading-none">{value}</p>
-      <p className="mt-1.5 text-[11px] font-normal uppercase text-[#6b7280]"
-         style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>{label}</p>
+      <p className="text-[28px] font-black tracking-tight tabular-nums leading-none" style={{ color: "var(--ink-1)" }}>{value}</p>
+      <p className="mt-1.5 text-[11px] font-normal uppercase"
+         style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px", color: "var(--ink-3)" }}>{label}</p>
     </div>
   );
 }
 
-/* ─── Trending Carousel ──────────────────────────────── */
-
-function TrendingCarousel({ papers }: { papers: PyqPaper[] }) {
-  const BADGE_CONFIG = [
-    { label: "Topper Pick", color: "bg-amber-500 text-white" },
-    { label: "Trending", color: "bg-rose-500 text-white" },
-    { label: "Most Solved", color: "bg-blue-600 text-white" },
-    { label: "Must Attempt", color: "bg-emerald-600 text-white" },
-  ];
-
-  return (
-    <section className="mb-6 rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-widest text-amber-600">Hot This Week</p>
-          <h2 className="mt-0.5 text-xl font-black text-slate-950 dark:text-white">Trending & Most Attempted</h2>
-        </div>
-        <Flame className="h-6 w-6 text-amber-500" />
-      </div>
-      <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none]">
-        {(papers.length ? papers : fallbackPapers().slice(0, 4)).map((paper, i) => {
-          const badge = BADGE_CONFIG[i % BADGE_CONFIG.length];
-          return (
-            <Link
-              key={paper.id}
-              href={`/dashboard/pyq/${paper.id}`}
-              className="flex min-w-[240px] max-w-[260px] shrink-0 flex-col gap-2 rounded-2xl border border-slate-100 bg-gradient-to-b from-slate-50 to-white p-4 transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg dark:border-white/8 dark:from-slate-800/50 dark:to-slate-900/50"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black ${badge.color}`}>
-                  <Flame className="h-2.5 w-2.5" /> {badge.label}
-                </span>
-                <span className="text-[10px] font-bold text-slate-400">{paper.year}</span>
-              </div>
-              <h3 className="line-clamp-2 text-sm font-black leading-snug text-slate-950 dark:text-white">{paper.title}</h3>
-              <div className="mt-auto flex items-center gap-3 text-[11px] font-bold text-slate-500">
-                <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-blue-500" />{paper.attempts.toLocaleString()}</span>
-                <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-amber-400 text-amber-400" />{paper.rating}</span>
-                <span className="ml-auto">{paper.totalQuestions}Q</span>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-/* ─── Category Discovery Grid (dynamic) ─────────────── */
-
-function CategoryDiscoveryGrid({ papers, onSelectCategory, activeCategory }: {
-  papers: PyqPaper[];
-  onSelectCategory: (v: string) => void;
-  activeCategory: string;
-}) {
-  const categoryCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    papers.forEach((p) => {
-      if (p.category) counts.set(p.category, (counts.get(p.category) || 0) + 1);
-    });
-    return counts;
-  }, [papers]);
-
-  const items = CATEGORY_DISCOVERY.map((item) => ({
-    ...item,
-    count: categoryCounts.get(item.category) ?? item.count,
-    hasData: categoryCounts.has(item.category),
-  }));
-
-  return (
-    <section className="mb-6 rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
-      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-widest text-blue-600">Browse by Category</p>
-          <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">Previous Year Papers by Exam</h2>
-        </div>
-        <Link href="/exams" className="inline-flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700">
-          View all exams <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeCategory === item.category;
-          return (
-            <button
-              key={item.name}
-              type="button"
-              onClick={() => onSelectCategory(isActive ? "All" : item.category)}
-              className={`group flex flex-col items-center gap-2.5 rounded-2xl border p-4 text-center transition-all duration-200 hover:-translate-y-1 ${
-                isActive
-                  ? "border-blue-300 bg-blue-50 shadow-lg shadow-blue-900/10 dark:border-blue-500/40 dark:bg-blue-500/15"
-                  : "border-slate-100 bg-slate-50/50 hover:border-blue-200 hover:bg-white hover:shadow-lg dark:border-white/8 dark:bg-white/4"
-              }`}
-            >
-              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${item.gradient} text-white shadow-md`}>
-                <Icon className="h-5 w-5" />
-              </div>
-              <div>
-                <p className={`text-xs font-black ${isActive ? "text-blue-700 dark:text-blue-300" : "text-slate-800 dark:text-white"}`}>{item.name}</p>
-                <p className="mt-0.5 text-[10px] font-bold text-slate-400">
-                  {item.hasData ? `${item.count} papers` : `${item.count}+ papers`}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 /* ─── PYQ Card (grid view) ───────────────────────────── */
-
 function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqPaper; bookmarked: boolean; onBookmark: () => void; onRequireAuth?: (href: string, e: React.MouseEvent) => void }) {
   const locked = paper.isPremium && paper.completionPercentage === 0;
   return (
-    <article className="group flex flex-col overflow-hidden rounded-[16px] border border-[#e6e6e6] bg-white hover:border-black transition-colors duration-200">
+    <article className="group flex flex-col overflow-hidden rounded-[16px] border transition-colors duration-200 hover:-translate-y-0.5 hover:border-[var(--blue)]"
+             style={{ background: "var(--card)", borderColor: "var(--line-soft)", boxShadow: "var(--shadow-xs, 0 1px 4px rgba(0,0,0,.05))" }}>
       {/* Neutral banner */}
-      <div className="relative h-[64px] bg-[#f7f7f5] overflow-hidden flex items-center justify-center border-b border-[#e6e6e6]">
-        <span className="text-2xl font-black text-[#e6e6e6] select-none">PYQ</span>
+      <div className="relative h-[64px] overflow-hidden flex items-center justify-center border-b"
+           style={{ background: "var(--bg-secondary)", borderColor: "var(--line-soft)" }}>
+        <span className="text-2xl font-black select-none" style={{ color: "var(--line)" }}>PYQ</span>
         <div className="absolute bottom-2 left-3 flex gap-1.5">
-          <span className="rounded-full bg-black px-2 py-0.5 text-[9px] font-medium text-white">{paper.year}</span>
-          {paper.isNew && <span className="rounded-full bg-[#e6e6e6] px-2 py-0.5 text-[9px] font-medium text-[#6b7280]">New</span>}
-          {paper.isPremium && <span className="rounded-full bg-[#e6e6e6] px-2 py-0.5 text-[9px] font-medium text-[#6b7280]">Premium</span>}
+          <span className="rounded-full px-2 py-0.5 text-[9px] font-medium" style={{ background: "var(--ink-1)", color: "var(--bg)" }}>{paper.year}</span>
+          {paper.isNew && <span className="rounded-full px-2 py-0.5 text-[9px] font-medium" style={{ background: "var(--line)", color: "var(--ink-2)" }}>New</span>}
+          {paper.isPremium && <span className="rounded-full px-2 py-0.5 text-[9px] font-medium" style={{ background: "var(--line)", color: "var(--ink-2)" }}>Premium</span>}
         </div>
         <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5">
-          <span className="rounded-[6px] bg-white border border-[#e6e6e6] px-2 py-0.5 text-[9px] font-medium text-[#6b7280]">
+          <span className="rounded-[6px] border px-2 py-0.5 text-[9px] font-medium" style={{ background: "var(--card)", borderColor: "var(--line-soft)", color: "var(--ink-3)" }}>
             {paper.paperType}
           </span>
           <button
             type="button"
             onClick={onBookmark}
-            className={`flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors ${bookmarked ? "bg-black border-black text-white" : "bg-white border-[#e6e6e6] text-[#6b7280] hover:border-black hover:text-black"}`}
+            className={`flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors ${bookmarked ? "hover:opacity-90" : ""}`}
+            style={{ 
+              background: bookmarked ? "var(--ink-1)" : "var(--card)", 
+              borderColor: bookmarked ? "var(--ink-1)" : "var(--line-soft)", 
+              color: bookmarked ? "var(--bg)" : "var(--ink-3)" 
+            }}
           >
-            <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-white" : ""}`} />
+            <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-current" : ""}`} />
           </button>
         </div>
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-[10px] font-normal uppercase text-[#6b7280] mb-1"
-           style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>{paper.examName}</p>
-        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-black">
+        <p className="text-[10px] font-normal uppercase mb-1"
+           style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px", color: "var(--ink-3)" }}>{paper.examName}</p>
+        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug" style={{ color: "var(--ink-1)" }}>
           {paper.title}
         </h3>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          <Tag tone={paper.difficulty === "Hard" ? "red" : paper.difficulty === "Moderate" ? "amber" : "green"}>{paper.difficulty}</Tag>
+          <Tag tone={paper.difficulty === "Hard" ? "red" : paper.difficulty === "Moderate" ? "amber" : "slate"}>{paper.difficulty}</Tag>
           <Tag>{paper.subject}</Tag>
           <Tag>{paper.language}</Tag>
         </div>
@@ -779,17 +844,17 @@ function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqP
           <MetricChip icon={Clock3} value={`${paper.duration}m`} label="Duration" />
         </div>
 
-        <div className="mt-3 rounded-[8px] bg-[#f7f7f5] border border-[#e6e6e6] px-3 py-2">
-          <div className="flex items-center justify-between text-[11px] text-[#6b7280]">
+        <div className="mt-3 rounded-[8px] border px-3 py-2" style={{ background: "var(--bg-secondary)", borderColor: "var(--line-soft)" }}>
+          <div className="flex items-center justify-between text-[11px]" style={{ color: "var(--ink-3)" }}>
             <span>{paper.attempts.toLocaleString()} attempts</span>
-            <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-[#6b7280] text-[#6b7280]" />{paper.rating}</span>
+            <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-current" />{paper.rating}</span>
           </div>
           {paper.completionPercentage > 0 && (
             <div className="mt-2">
-              <div className="h-1.5 overflow-hidden rounded-full bg-[#e6e6e6]">
-                <div className="h-full rounded-full bg-black" style={{ width: `${paper.completionPercentage}%` }} />
+              <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "var(--line-soft)" }}>
+                <div className="h-full rounded-full" style={{ width: `${paper.completionPercentage}%`, background: "var(--ink-1)" }} />
               </div>
-              <p className="mt-1 text-[10px] font-medium text-[#6b7280]">{paper.completionPercentage}% completed</p>
+              <p className="mt-1 text-[10px] font-medium" style={{ color: "var(--ink-3)" }}>{paper.completionPercentage}% completed</p>
             </div>
           )}
         </div>
@@ -799,8 +864,8 @@ function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqP
             <Link
               href="/dashboard/plans"
               onClick={(e) => onRequireAuth?.("/dashboard/plans", e)}
-              className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-black text-[13px] font-medium text-white transition-colors hover:bg-[#1a1a1a]"
-              style={{ fontWeight: 480 }}
+              className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] font-medium transition-opacity hover:opacity-85"
+              style={{ background: "var(--ink-1)", color: "var(--bg)", fontWeight: 480 }}
             >
               <Zap className="h-3.5 w-3.5" /> Unlock
             </Link>
@@ -808,25 +873,26 @@ function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqP
             <Link
               href={`/dashboard/pyq/${paper.id}`}
               onClick={(e) => onRequireAuth?.(`/dashboard/pyq/${paper.id}`, e)}
-              className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-black text-[13px] font-medium text-white transition-colors hover:bg-[#1a1a1a]"
-              style={{ fontWeight: 480 }}
+              className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] font-medium transition-opacity hover:opacity-85"
+              style={{ background: "var(--ink-1)", color: "var(--bg)", fontWeight: 480 }}
             >
-              <Play className="h-3.5 w-3.5 fill-white" />
-              {paper.completionPercentage ? "Continue" : "Start Solving"}
+              <Play className="h-3.5 w-3.5 fill-current" />
+              {paper.completionPercentage ? "Continue" : "Start"}
             </Link>
           )}
           <Link
             href={`/dashboard/pyq/${paper.id}`}
             onClick={(e) => onRequireAuth?.(`/dashboard/pyq/${paper.id}`, e)}
-            className="flex h-10 items-center justify-center rounded-full border border-[#e6e6e6] px-3 text-[13px] font-medium text-black transition-colors hover:border-black hover:bg-[#f7f7f5]"
-            style={{ fontWeight: 480 }}
+            className="flex h-10 items-center justify-center rounded-full border px-3 text-[13px] font-medium transition-colors hover:bg-[var(--surface-hover)]"
+            style={{ borderColor: "var(--line)", color: "var(--ink-1)", fontWeight: 480 }}
           >
             Details
           </Link>
           {paper.pdfUrl && paper.pdfUrl !== "#" && (
             <a
               href={paper.pdfUrl}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e6e6e6] text-[#6b7280] transition-colors hover:border-black hover:text-black"
+              className="flex h-10 w-10 items-center justify-center rounded-full border transition-colors hover:bg-[var(--surface-hover)]"
+              style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}
               aria-label="Download PDF"
             >
               <Download className="h-3.5 w-3.5" />
@@ -839,22 +905,22 @@ function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqP
 }
 
 /* ─── PYQ Row (list view) ────────────────────────────── */
-
 function PyqRow({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqPaper; bookmarked: boolean; onBookmark: () => void; onRequireAuth?: (href: string, e: React.MouseEvent) => void }) {
   const locked = paper.isPremium && paper.completionPercentage === 0;
   return (
-    <article className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-blue-200 hover:shadow-md dark:border-white/8 dark:bg-slate-900">
+    <article className="group flex items-center gap-4 rounded-[16px] border px-4 py-3 transition hover:border-[var(--blue)]"
+             style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
       <div className={`h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br ${paper.bannerGradient} flex items-center justify-center`}>
         <FileText className="h-5 w-5 text-white" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          <h3 className="truncate text-sm font-black text-slate-950 group-hover:text-blue-700 dark:text-white">{paper.title}</h3>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-600 dark:bg-white/10 dark:text-slate-300">{paper.year}</span>
-          {paper.isNew && <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-black text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">New</span>}
-          {paper.isPremium && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-black text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">Premium</span>}
+          <h3 className="truncate text-sm font-semibold transition-colors group-hover:text-[var(--blue)]" style={{ color: "var(--ink-1)" }}>{paper.title}</h3>
+          <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ background: "var(--bg-secondary)", color: "var(--ink-3)" }}>{paper.year}</span>
+          {paper.isNew && <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ background: "var(--blue-soft)", color: "var(--blue)" }}>New</span>}
+          {paper.isPremium && <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ background: "rgba(245, 158, 11, 0.1)", color: "#d97706" }}>Premium</span>}
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] font-bold text-slate-500">
+        <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] font-semibold" style={{ color: "var(--ink-4)" }}>
           <span>{paper.examName}</span>
           <span>{paper.totalQuestions}Q · {paper.duration}m · {paper.marks}M</span>
           <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-amber-400 text-amber-400" />{paper.rating}</span>
@@ -863,14 +929,19 @@ function PyqRow({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqPa
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <button type="button" onClick={onBookmark} className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${bookmarked ? "border-blue-300 bg-blue-50 text-blue-600 dark:border-blue-500/40 dark:bg-blue-500/15" : "border-slate-200 text-slate-400 hover:border-blue-200 hover:text-blue-600 dark:border-white/10"}`}>
-          <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-blue-600" : ""}`} />
+        <button type="button" onClick={onBookmark} className={`flex h-8 w-8 items-center justify-center rounded-lg transition`}
+                style={{
+                  background: bookmarked ? "var(--ink-1)" : "transparent",
+                  color: bookmarked ? "var(--bg)" : "var(--ink-3)",
+                }}>
+          <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-current" : ""}`} />
         </button>
         {locked ? (
           <Link
             href="/dashboard/plans"
             onClick={(e) => onRequireAuth?.("/dashboard/plans", e)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-950"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl px-4 text-xs font-semibold transition-opacity hover:opacity-85"
+            style={{ background: "var(--ink-1)", color: "var(--bg)" }}
           >
             <Zap className="h-3 w-3" /> Unlock
           </Link>
@@ -878,39 +949,30 @@ function PyqRow({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqPa
           <Link
             href={`/dashboard/pyq/${paper.id}`}
             onClick={(e) => onRequireAuth?.(`/dashboard/pyq/${paper.id}`, e)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-blue-600 px-4 text-xs font-black text-white transition hover:bg-blue-700"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl px-4 text-xs font-semibold transition-opacity hover:opacity-85"
+            style={{ background: "var(--blue)", color: "#fff" }}
           >
-            <Play className="h-3 w-3 fill-white" /> {paper.completionPercentage ? "Continue" : "Solve"}
+            <Play className="h-3 w-3 fill-current" /> {paper.completionPercentage ? "Continue" : "Solve"}
           </Link>
         )}
-        <Link
-          href={`/dashboard/pyq/${paper.id}`}
-          onClick={(e) => onRequireAuth?.(`/dashboard/pyq/${paper.id}`, e)}
-          className="hidden h-9 items-center rounded-xl border-2 border-slate-200 px-3 text-xs font-black text-slate-700 transition hover:border-blue-300 hover:text-blue-700 dark:border-white/10 dark:text-slate-200 sm:inline-flex"
-        >
-          Details
-        </Link>
       </div>
     </article>
   );
 }
 
 function Tag({ children, tone = "slate" }: { children: React.ReactNode; tone?: "slate" | "green" | "amber" | "red" }) {
-  const styles = {
-    slate: "bg-slate-100 text-slate-600 dark:bg-white/8 dark:text-slate-400",
-    green: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
-    amber: "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
-    red: "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
-  };
-  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${styles[tone]}`}>{children}</span>;
+  const isSlate = tone === "slate";
+  const styles = isSlate ? { background: "var(--bg-secondary)", color: "var(--ink-3)" } : {};
+  const tailwind = isSlate ? "" : tone === "green" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : tone === "amber" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-rose-500/10 text-rose-600 dark:text-rose-400";
+  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${tailwind}`} style={styles}>{children}</span>;
 }
 
 function MetricChip({ icon: Icon, value, label }: { icon: React.ElementType; value: React.ReactNode; label: string }) {
   return (
-    <div className="rounded-xl border border-slate-100 bg-white p-2 text-center dark:border-white/8 dark:bg-white/4">
-      <Icon className="mx-auto h-3.5 w-3.5 text-blue-600" />
-      <p className="mt-0.5 text-xs font-black text-slate-950 dark:text-white">{value}</p>
-      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+    <div className="rounded-xl border p-2 text-center" style={{ background: "var(--bg-secondary)", borderColor: "var(--line-soft)" }}>
+      <Icon className="mx-auto h-3.5 w-3.5" style={{ color: "var(--blue)" }} />
+      <p className="mt-0.5 text-xs font-bold" style={{ color: "var(--ink-1)" }}>{value}</p>
+      <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "var(--ink-4)" }}>{label}</p>
     </div>
   );
 }
@@ -989,9 +1051,8 @@ function FilterGroup({ title, options, value, onChange, defaultOpen = false }: {
   );
 }
 
-/* ─── Right-slide Filter Drawer ──────────────────────── */
-
-function FilterDrawer(props: {
+/* ─── Mobile Filter Drawer ──────────────────────── */
+function MobileFilterDrawer(props: {
   open: boolean;
   filters: Filters;
   exams: string[];
@@ -1039,6 +1100,7 @@ function FilterDrawer(props: {
               <FilterGroup title="Subject" options={["All", ...SUBJECTS]} value={props.filters.subject} onChange={(v) => props.onChange("subject", v)} />
               <FilterGroup title="Difficulty" options={["All", ...DIFFICULTIES]} value={props.filters.difficulty} onChange={(v) => props.onChange("difficulty", v)} />
               <FilterGroup title="Language" options={["All", ...LANGUAGES]} value={props.filters.language} onChange={(v) => props.onChange("language", v)} />
+              <FilterGroup title="Collection" options={["All", "Trending", "Popular"]} value={props.filters.collection} onChange={(v) => props.onChange("collection", v)} defaultOpen />
               <FilterGroup title="Access Type" options={["All", "Free", "Premium"]} value={props.filters.access} onChange={(v) => props.onChange("access", v)} defaultOpen />
               <FilterGroup title="Attempt Status" options={["All", "Attempted", "Unattempted"]} value={props.filters.status} onChange={(v) => props.onChange("status", v)} />
               <FilterGroup title="Solved Status" options={["All", "Solved", "Unsolved"]} value={props.filters.solved} onChange={(v) => props.onChange("solved", v)} />
@@ -1071,155 +1133,26 @@ function FilterDrawer(props: {
   );
 }
 
-/* ─── Analytics Charts ───────────────────────────────── */
-
-function AnalyticsCharts({ papers }: { papers: PyqPaper[] }) {
-  const yearCounts = YEARS.slice(0, 6).map((year) => ({
-    year,
-    count: papers.filter((p) => String(p.year) === year).length || Math.max(1, Number(year) % 7),
-  }));
-  const maxCount = Math.max(...yearCounts.map((i) => i.count), 1);
-  const subjects = SUBJECTS.slice(0, 5).map((subject, i) => ({ subject, value: 38 + i * 11 }));
-
-  return (
-    <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-      <div className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-blue-600">Analytics</p>
-            <h2 className="mt-0.5 text-xl font-black text-slate-950 dark:text-white">Yearly question trends</h2>
-          </div>
-          <LineChart className="h-6 w-6 text-blue-600" />
-        </div>
-        <div className="mt-6 flex h-48 items-end gap-3">
-          {yearCounts.map((item) => (
-            <div key={item.year} className="flex flex-1 flex-col items-center gap-2">
-              <motion.div
-                initial={{ height: 0 }} whileInView={{ height: `${(item.count / maxCount) * 100}%` }}
-                viewport={{ once: true }}
-                className="w-full rounded-t-2xl bg-gradient-to-t from-blue-600 to-cyan-400"
-              />
-              <span className="text-xs font-black text-slate-500">{item.year}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-violet-600">Weightage</p>
-            <h2 className="mt-0.5 text-xl font-black text-slate-950 dark:text-white">Topic distribution</h2>
-          </div>
-          <BarChart3 className="h-6 w-6 text-violet-600" />
-        </div>
-        <div className="mt-6 space-y-4">
-          {subjects.map((item) => (
-            <div key={item.subject}>
-              <div className="flex justify-between text-xs font-black text-slate-500">
-                <span>{item.subject}</span><span>{item.value}%</span>
-              </div>
-              <div className="mt-1.5 h-2 rounded-full bg-slate-100 dark:bg-white/10">
-                <motion.div
-                  initial={{ width: 0 }} whileInView={{ width: `${item.value}%` }}
-                  viewport={{ once: true }}
-                  className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-400"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Recent Activity ────────────────────────────────── */
-
-function RecentActivity({ papers, bookmarks }: { papers: PyqPaper[]; bookmarks: number }) {
-  return (
-    <section className="mt-6 rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-widest text-emerald-600">Recent Activity</p>
-          <h2 className="mt-0.5 text-xl font-black text-slate-950 dark:text-white">Continue where you left off</h2>
-        </div>
-        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">{bookmarks} saved</span>
-      </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        {(papers.length ? papers : fallbackPapers().slice(0, 4)).map((p) => (
-          <Link key={p.id} href={`/dashboard/pyq/${p.id}`} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 transition hover:border-emerald-200 hover:bg-emerald-50 dark:border-white/8 dark:bg-white/4">
-            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black text-slate-950 dark:text-white">{p.title}</p>
-              <div className="mt-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-white/10">
-                <div className="h-full rounded-full bg-emerald-500" style={{ width: `${p.completionPercentage || 35}%` }} />
-              </div>
-            </div>
-            <ArrowRight className="h-4 w-4 text-slate-400" />
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ─── Premium CTA ────────────────────────────────────── */
-
-function PremiumCTA() {
-  return (
-    <section className="mt-6 overflow-hidden rounded-[32px] bg-slate-950 p-6 text-white shadow-2xl shadow-blue-950/20 md:p-8">
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-center">
-        <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 px-3 py-1 text-xs font-black text-amber-300">
-            <Zap className="h-3 w-3" /> Premium Pass
-          </span>
-          <h2 className="mt-4 text-3xl font-black tracking-tight md:text-4xl">Unlock Complete ExamNurture Pass</h2>
-          <p className="mt-3 max-w-2xl text-sm font-medium leading-7 text-slate-300">
-            Every premium PYQ, AI explanations, rank prediction, downloadable PDFs, advanced analytics, and smart revision plans.
-          </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {["Unlock all PYQs", "AI solutions & explanations", "Rank prediction", "Advanced analytics"].map((item) => (
-              <div key={item} className="flex items-center gap-2 text-sm font-bold text-slate-200">
-                <BookOpenCheck className="h-4 w-4 text-emerald-400" /> {item}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="rounded-3xl border border-white/10 bg-white/10 p-5">
-          <p className="text-sm font-bold text-slate-300">Everything included</p>
-          <p className="mt-2 text-4xl font-black">One plan</p>
-          <Link
-            href="/dashboard/plans"
-            className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black text-slate-950 transition hover:bg-blue-50"
-          >
-            Unlock Complete Pass <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ─── SEO Footer Section ─────────────────────────────── */
-
 function SeoSection({ onSelect }: { onSelect: (v: string) => void }) {
   return (
-    <section className="border-t border-slate-200 bg-slate-100 pb-28 pt-10 dark:border-white/8 dark:bg-slate-950 sm:pb-10">
+    <section className="border-t pb-28 pt-10 sm:pb-10" style={{ background: "var(--bg-secondary)", borderColor: "var(--line-soft)" }}>
       <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
-        <p className="text-xs font-black uppercase tracking-widest text-blue-600">Popular Searches</p>
-        <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">Previous Year Papers by Exam</h2>
+        <p className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--blue)" }}>Popular Searches</p>
+        <h2 className="mt-1 text-xl font-black" style={{ color: "var(--ink-1)" }}>Previous Year Papers by Exam</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {SEO_GROUPS.map((group) => (
-            <div key={group.title} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/8 dark:bg-slate-900">
-              <h3 className="text-sm font-black text-slate-950 dark:text-white">{group.title}</h3>
+            <div key={group.title} className="rounded-2xl border p-4 shadow-sm" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+              <h3 className="text-sm font-black" style={{ color: "var(--ink-1)" }}>{group.title}</h3>
               <div className="mt-2.5 flex flex-wrap gap-1.5">
                 {group.links.map((link) => (
                   <button
                     key={link}
                     type="button"
                     onClick={() => onSelect(link)}
-                    className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600 transition hover:border-blue-300 hover:bg-blue-600 hover:text-white dark:border-white/8 dark:bg-white/4 dark:text-slate-400"
+                    className="rounded-full border px-2.5 py-1 text-[11px] font-bold transition hover:opacity-85"
+                    style={{ background: "var(--bg-secondary)", borderColor: "var(--line-soft)", color: "var(--ink-2)" }}
                   >
                     {link}
                   </button>
@@ -1228,8 +1161,8 @@ function SeoSection({ onSelect }: { onSelect: (v: string) => void }) {
             </div>
           ))}
         </div>
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/8 dark:bg-slate-900">
-          <h3 className="text-base font-black text-slate-950 dark:text-white">Frequently Asked Questions</h3>
+        <div className="mt-6 rounded-2xl border p-5 shadow-sm" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+          <h3 className="text-base font-black" style={{ color: "var(--ink-1)" }}>Frequently Asked Questions</h3>
           <div className="mt-3 grid gap-4 md:grid-cols-2">
             {[
               ["Why solve previous year papers?", "They reveal real exam pattern, question style, speed pressure, and repeated topics — the fastest way to prepare."],
@@ -1237,9 +1170,9 @@ function SeoSection({ onSelect }: { onSelect: (v: string) => void }) {
               ["Are PYQs enough for preparation?", "Use them with concepts, mock tests, and revision. PYQs are best for pattern mastery and identifying weak areas."],
               ["Can I re-attempt papers?", "Yes! Premium users can re-attempt, compare scores across attempts, and track accuracy trends over time."],
             ].map(([q, a]) => (
-              <div key={q} className="rounded-xl bg-slate-50 p-3 dark:bg-white/4">
-                <p className="text-sm font-black text-slate-950 dark:text-white">{q}</p>
-                <p className="mt-1 text-xs font-medium leading-5 text-slate-500 dark:text-slate-400">{a}</p>
+              <div key={q} className="rounded-xl p-3" style={{ background: "var(--bg-secondary)" }}>
+                <p className="text-sm font-black" style={{ color: "var(--ink-1)" }}>{q}</p>
+                <p className="mt-1 text-xs font-medium leading-5" style={{ color: "var(--ink-3)" }}>{a}</p>
               </div>
             ))}
           </div>
@@ -1250,21 +1183,18 @@ function SeoSection({ onSelect }: { onSelect: (v: string) => void }) {
 }
 
 /* ─── Loading & Empty States ─────────────────────────── */
-
 function LoadingGrid() {
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {Array.from({ length: 8 }, (_, i) => (
-        <div key={i} className="overflow-hidden rounded-3xl border border-slate-100 bg-white dark:border-white/8 dark:bg-slate-900">
-          <div className="h-[72px] animate-pulse bg-slate-100 dark:bg-white/8" />
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className="overflow-hidden rounded-[16px] border" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+          <div className="h-[64px] animate-pulse" style={{ background: "var(--bg-secondary)" }} />
           <div className="space-y-3 p-4">
-            <div className="h-3 w-2/3 animate-pulse rounded-full bg-slate-100 dark:bg-white/8" />
-            <div className="h-4 w-3/4 animate-pulse rounded-full bg-slate-100 dark:bg-white/8" />
-            <div className="flex gap-2">
-              {[1, 2, 3].map((j) => <div key={j} className="h-5 w-14 animate-pulse rounded-full bg-slate-100 dark:bg-white/8" />)}
+            <div className="h-3 w-2/3 animate-pulse rounded-full" style={{ background: "var(--bg-secondary)" }} />
+            <div className="h-4 w-3/4 animate-pulse rounded-full" style={{ background: "var(--bg-secondary)" }} />
+            <div className="flex gap-2 pt-2">
+              {[1, 2, 3].map((j) => <div key={j} className="h-5 w-14 animate-pulse rounded-full" style={{ background: "var(--bg-secondary)" }} />)}
             </div>
-            <div className="h-8 animate-pulse rounded-xl bg-slate-100 dark:bg-white/8" />
-            <div className="h-10 animate-pulse rounded-xl bg-slate-100 dark:bg-white/8" />
           </div>
         </div>
       ))}
@@ -1274,14 +1204,15 @@ function LoadingGrid() {
 
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (
-    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center dark:border-white/10 dark:bg-slate-900">
-      <FileDown className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" />
-      <h3 className="mt-4 text-xl font-black text-slate-950 dark:text-white">No papers found</h3>
-      <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">Try removing some filters or broadening your search.</p>
+    <div className="rounded-[24px] border border-dashed p-12 text-center" style={{ background: "var(--card)", borderColor: "var(--line)" }}>
+      <FileDown className="mx-auto h-12 w-12" style={{ color: "var(--ink-4)" }} />
+      <h3 className="mt-4 text-xl font-black" style={{ color: "var(--ink-1)" }}>No papers found</h3>
+      <p className="mt-2 text-sm font-medium" style={{ color: "var(--ink-3)" }}>Try removing some filters or broadening your search.</p>
       <button
         type="button"
         onClick={onReset}
-        className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-black text-white transition hover:bg-blue-700"
+        className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl px-6 text-[13px] font-semibold transition hover:opacity-90"
+        style={{ background: "var(--blue)", color: "#fff" }}
       >
         <RotateCcw className="h-4 w-4" /> Reset filters
       </button>

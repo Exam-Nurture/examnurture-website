@@ -81,12 +81,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           __html: `(function() {
             try {
               var theme = localStorage.getItem('theme') || 'system';
-              var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              if (theme === 'dark' || (theme === 'system' && supportDarkMode)) {
-                document.documentElement.classList.add('dark');
-              } else {
-                document.documentElement.classList.remove('dark');
-              }
+              var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+              var isDark = theme === 'dark' || (theme === 'system' && prefersDark);
+              var resolved = isDark ? 'dark' : 'light';
+              document.documentElement.classList.add(resolved);
+              document.documentElement.style.colorScheme = resolved;
             } catch (e) {}
           })();`
         }} />

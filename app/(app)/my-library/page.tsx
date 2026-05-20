@@ -29,7 +29,7 @@ export default function MyLibraryPage() {
           </p>
         </div>
         <Link
-          href="/library"
+          href="/blog"
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-[var(--bg)]"
           style={{ color: "var(--blue)", borderColor: "var(--blue)", borderWidth: 1.5 }}
         >
@@ -140,7 +140,7 @@ export default function MyLibraryPage() {
           <BookOpen className="w-8 h-8 mb-2" style={{ color: "var(--ink-4)" }} />
           <p className="font-semibold text-sm" style={{ color: "var(--ink-3)" }}>Article saving coming soon</p>
           <Link
-            href="/library"
+            href="/blog"
             className="mt-3 flex items-center gap-1.5 text-sm font-semibold transition-colors"
             style={{ color: "var(--blue)" }}
           >

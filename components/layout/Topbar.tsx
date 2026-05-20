@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell, Search, LogOut, ChevronDown,
-  Sparkles, ClipboardList, FileText, BookOpen, Library,
+  Sparkles, ClipboardList, FileText, Library,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/lib/auth-context";
@@ -30,14 +30,6 @@ const FREE_ITEMS = [
     bg:    "bg-[var(--blue-soft)]",
   },
   {
-    label: "Free Courses",
-    href:  "/dashboard/series?filter=free",
-    icon:  BookOpen,
-    desc:  "Structured courses, no paywall",
-    color: "text-[var(--blue)]",
-    bg:    "bg-[var(--blue-soft)]",
-  },
-  {
     label: "Free Study Material",
     href:  "/blog?filter=free",
     icon:  Library,
@@ -53,17 +45,15 @@ const NAV_BEFORE_EXAMS = [
 ];
 
 const NAV_AFTER_EXAMS = [
-  { href: "/dashboard/pyq",        label: "Previous Year Papers" },
-  { href: "/dashboard/mentorship", label: "Mentorship"           },
+  { href: "/dashboard/pyq", label: "Previous Year Papers" },
 ];
 
 /** Map routes → human-readable page titles for breadcrumb */
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard":  "Dashboard",
   "/dashboard/series":     "Test Series",
-  "/dashboard/pyq":        "Previous Year Papers",
-  "/dashboard/mentorship": "Mentorship",
-  "/dashboard/analytics":  "Analytics",
+  "/dashboard/pyq":       "Previous Year Papers",
+  "/dashboard/analytics": "Analytics",
   "/dashboard/schedule":   "Schedule",
   "/exams":      "Browse Exams",
   "/blog":    "Nurture Library",

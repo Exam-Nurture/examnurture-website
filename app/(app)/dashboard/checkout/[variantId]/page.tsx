@@ -153,7 +153,7 @@ export default function CheckoutPage() {
             try {
               await apiVerifyOrder({ orderId, razorpayPaymentId: response.razorpay_payment_id, razorpaySignature: response.razorpay_signature });
               setSuccess(true);
-              setTimeout(() => router.push("/dashboard/mentorship"), 2500);
+              setTimeout(() => router.push("/dashboard"), 2500);
               resolve();
             } catch (e: any) {
               reject(new Error(e.message || "Payment verification failed"));
@@ -185,7 +185,7 @@ export default function CheckoutPage() {
       });
       setDevModal(null);
       setSuccess(true);
-      setTimeout(() => router.push("/dashboard/mentorship"), 2500);
+      setTimeout(() => router.push("/dashboard"), 2500);
     } catch (e: any) {
       setError(e.message || "Could not complete payment");
       setDevModal(null);
@@ -498,7 +498,7 @@ export default function CheckoutPage() {
             Contact support
           </a>{" "}
           ·{" "}
-          <Link href="/mentorship" className="underline hover:opacity-70" style={{ color: "var(--blue)" }}>
+          <Link href="/contact" className="underline hover:opacity-70" style={{ color: "var(--blue)" }}>
             Back to programs
           </Link>
         </motion.div>

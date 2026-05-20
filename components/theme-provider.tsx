@@ -11,15 +11,16 @@ interface ThemeProviderState {
 
 const ThemeContext = React.createContext<ThemeProviderState | undefined>(undefined);
 
-export function ThemeProvider({ 
-  children, 
-  defaultTheme = "system" 
-}: { 
-  children: React.ReactNode, 
-  defaultTheme?: Theme,
-  attribute?: string,
-  enableSystem?: boolean,
-  disableTransitionOnChange?: boolean
+export function ThemeProvider({
+  children,
+  defaultTheme = "system",
+  disableTransitionOnChange = false,
+}: {
+  children: React.ReactNode;
+  defaultTheme?: Theme;
+  attribute?: string;
+  enableSystem?: boolean;
+  disableTransitionOnChange?: boolean;
 }) {
   const [theme, setTheme] = React.useState<Theme>(() => {
     if (typeof window !== "undefined") {
@@ -30,17 +31,29 @@ export function ThemeProvider({
 
   const applyTheme = React.useCallback((newTheme: Theme) => {
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
 
-    if (newTheme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(newTheme);
+    // Briefly disable all CSS transitions to avoid colour-flash during switch
+    if (disableTransitionOnChange) {
+      const style = document.createElement("style");
+      style.textContent = "*,*::before,*::after{transition:none!important}";
+      document.head.appendChild(style);
+      // Re-enable after the browser has painted the new frame
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => { document.head.removeChild(style); });
+      });
     }
-    
+
+    const resolvedTheme =
+      newTheme === "system"
+        ? window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+        : newTheme;
+
+    root.classList.remove("light", "dark");
+    root.classList.add(resolvedTheme);
+    // Keep native browser UI (inputs, scrollbars, autofill) in sync
+    root.style.colorScheme = resolvedTheme;
     localStorage.setItem("theme", newTheme);
-  }, []);
+  }, [disableTransitionOnChange]);
 
   React.useEffect(() => {
     applyTheme(theme);
@@ -48,7 +61,6 @@ export function ThemeProvider({
     if (theme === "system") {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
       const handleChange = () => applyTheme("system");
-      
       mediaQuery.addEventListener("change", handleChange);
       return () => mediaQuery.removeEventListener("change", handleChange);
     }

@@ -8,7 +8,7 @@ import {
   Search, Library, X, Zap, Newspaper, BookMarked,
   User, FileText, CreditCard,
   GraduationCap, Mail, BarChart3,
-  Home, MoreHorizontal,
+  Home,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
@@ -25,14 +25,10 @@ const examsNav = [
 ];
 
 const learnNav = [
-  { name: "Current News",    href: "/library?tab=news",    icon: Newspaper,  desc: "Daily current affairs digest"       },
+  { name: "Current News",    href: "/blog?tab=news",    icon: Newspaper,  desc: "Daily current affairs digest"       },
   { name: "Daily Quiz",      href: "/daily-quiz",          icon: Zap,        desc: "5-question daily practice set"      },
-  { name: "Nurture Library", href: "/library",             icon: Library,    desc: "Full study library & notes"         },
-  { name: "Books & Magazine",href: "/library?tab=books",   icon: BookMarked, desc: "Recommended books & magazines"      },
-];
-
-const moreNav = [
-  { name: "Contact", href: "/contact", icon: Mail, desc: "Get in touch with us" },
+  { name: "Nurture Library", href: "/blog",             icon: Library,    desc: "Full study library & notes"         },
+  { name: "Books & Magazine",href: "/blog?tab=books",   icon: BookMarked, desc: "Recommended books & magazines"      },
 ];
 
 /* ── Inner component that safely reads searchParams ── */
@@ -70,7 +66,6 @@ export default function MarketingHeader() {
   const [isHidden,       setIsHidden]       = useState(false);
   const [showUserMenu,   setShowUserMenu]   = useState(false);
   const [showExamsMenu,  setShowExamsMenu]  = useState(false);
-  const [showMoreMenu,   setShowMoreMenu]   = useState(false);
   const [showSearch,     setShowSearch]     = useState(false);
   const [searchQuery,    setSearchQuery]    = useState("");
   const [showAuthModal,  setShowAuthModal]  = useState(false);
@@ -128,7 +123,6 @@ export default function MarketingHeader() {
     setShowUserMenu(false);
     setShowSearch(false);
     setShowExamsMenu(false);
-    setShowMoreMenu(false);
     setMobileTab(null);
   }, [pathname]);
 
@@ -138,7 +132,6 @@ export default function MarketingHeader() {
       if (e.key === "Escape") {
         setShowSearch(false);
         setShowUserMenu(false);
-        setShowMoreMenu(false);
         setMobileTab(null);
       }
     };
@@ -157,8 +150,7 @@ export default function MarketingHeader() {
   const handleLogout = async () => { await logout(); router.push("/"); };
 
   const isExamsActive = pathname === "/exams" || pathname.startsWith("/exams/");
-  const isLibraryActive = pathname.startsWith("/blog") || pathname.startsWith("/library");
-  const isMoreActive  = moreNav.some((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
+  const isLibraryActive = pathname.startsWith("/blog");
 
   const toggleMobileTab = (tab: typeof mobileTab) =>
     setMobileTab(prev => prev === tab ? null : tab);
@@ -180,9 +172,9 @@ export default function MarketingHeader() {
         <button
           type="button"
           className={`flex items-center gap-1 px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
-            isActive || show 
-              ? "text-blue-600 bg-blue-50/80 dark:bg-blue-900/20" 
-              : "text-[var(--ink-2)] hover:text-blue-600 hover:bg-blue-50/60 dark:hover:bg-blue-900/10"
+            isActive || show
+              ? "text-[var(--blue)] bg-[var(--blue-soft)]"
+              : "text-[var(--ink-2)] hover:text-[var(--blue)] hover:bg-[var(--blue-soft)]"
           }`}
         >
           {trigger}
@@ -196,7 +188,7 @@ export default function MarketingHeader() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.97 }}
               transition={{ duration: 0.15, ease: "easeOut" as const }}
-              className={`absolute left-1/2 -translate-x-1/2 top-full mt-2 bg-[var(--card)] backdrop-blur-xl rounded-2xl shadow-xl border border-[var(--line-soft)] overflow-hidden z-50 py-2 ${wide ? "w-72" : "w-64"}`}
+              className={`absolute left-1/2 -translate-x-1/2 top-full mt-2 bg-[rgba(255,255,255,0.98)] dark:bg-[rgba(26,31,41,0.98)] backdrop-blur-2xl rounded-[20px] border border-[var(--line-soft)] dark:border-[rgba(255,255,255,0.07)] overflow-hidden z-50 py-2 shadow-[0_8px_32px_rgba(32,34,40,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.75),0_0_0_1px_rgba(255,255,255,0.05)_inset] ${wide ? "w-72" : "w-64"}`}
             >
               {items.map((item) => {
                 const Icon = item.icon;
@@ -205,15 +197,15 @@ export default function MarketingHeader() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`flex items-start gap-3 px-4 py-3 group/item transition-colors ${active ? "bg-blue-50 dark:bg-blue-900/20" : "hover:bg-[var(--bg)]"}`}
+                    className={`flex items-start gap-3 px-4 py-3 group/item transition-colors ${active ? "bg-[var(--blue-soft)]" : "hover:bg-[var(--bg)]"}`}
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${
-                      active ? "bg-blue-600 text-white" : "bg-[var(--bg)] text-[var(--ink-4)] group-hover/item:bg-blue-100 dark:group-hover/item:bg-blue-900/40 group-hover/item:text-blue-600"
+                      active ? "bg-[var(--blue)] text-white" : "bg-[var(--bg)] text-[var(--ink-4)] group-hover/item:bg-[var(--blue-soft)] group-hover/item:text-[var(--blue)]"
                     }`}>
                       <Icon className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className={`text-sm font-semibold ${active ? "text-blue-600" : "text-[var(--ink-1)]"}`}>{item.name}</p>
+                      <p className={`text-sm font-semibold ${active ? "text-[var(--blue)]" : "text-[var(--ink-1)]"}`}>{item.name}</p>
                       <p className="text-xs text-[var(--ink-4)] mt-0.5">{item.desc}</p>
                     </div>
                   </Link>
@@ -233,9 +225,9 @@ export default function MarketingHeader() {
       <Link
         href={href}
         className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
-          active 
-            ? "text-blue-600 bg-blue-50/80 dark:bg-blue-900/20" 
-            : "text-[var(--ink-2)] hover:text-blue-600 hover:bg-blue-50/60 dark:hover:bg-blue-900/10"
+          active
+            ? "text-[var(--blue)] bg-[var(--blue-soft)]"
+            : "text-[var(--ink-2)] hover:text-[var(--blue)] hover:bg-[var(--blue-soft)]"
         }`}
       >
         {children}
@@ -257,7 +249,7 @@ export default function MarketingHeader() {
           const active = pathname.startsWith(item.href.split("?")[0]);
           const activeClasses = accent === "amber"
             ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
-            : "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800";
+            : "bg-[var(--blue-soft)] text-[var(--blue)] border-[var(--blue-soft)]";
           return (
             <Link
               key={item.href}
@@ -271,7 +263,7 @@ export default function MarketingHeader() {
             >
               <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
                 active
-                  ? accent === "amber" ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                  ? accent === "amber" ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "bg-[var(--blue-soft)] text-[var(--blue)]"
                   : "bg-[var(--card)] text-[var(--ink-4)] shadow-sm"
               }`}>
                 <Icon className="w-3.5 h-3.5" />
@@ -294,7 +286,11 @@ export default function MarketingHeader() {
 
       {/* ── Main Header — flat DocuSeal style ── */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 bg-[var(--card)] border-b border-[var(--line-soft)] transition-transform duration-500 ${isHidden ? "-translate-y-full" : "translate-y-0"}`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-500 ${isHidden ? "-translate-y-full" : "translate-y-0"} ${
+          isScrolled
+            ? "bg-[rgba(251,251,251,0.92)] dark:bg-[rgba(18,21,28,0.92)] border-b border-[var(--line-soft)] backdrop-blur-2xl shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:shadow-[0_1px_0_rgba(255,255,255,0.04),0_2px_20px_rgba(0,0,0,0.5)]"
+            : "bg-[rgba(251,251,251,0.85)] dark:bg-[rgba(11,13,18,0.85)] border-b border-[var(--line-soft)] backdrop-blur-xl"
+        }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative w-full">
@@ -305,7 +301,7 @@ export default function MarketingHeader() {
               <img src="/examnurture-logo.jpg" alt="ExamNurture" className="h-9 w-9 rounded-xl object-cover shadow-sm" />
               <span className="font-bold text-[17px] tracking-tight hidden sm:block" style={{ fontFamily: "var(--font-sora, sans-serif)" }}>
                 <span className="text-[var(--ink-1)]">Exam</span>
-                <span className="text-blue-600">Nurture</span>
+                <span className="text-[var(--blue)]">Nurture</span>
               </span>
             </Link>
 
@@ -325,15 +321,7 @@ export default function MarketingHeader() {
 
                 <NavLink href="/pyq/all">Previous Year Papers</NavLink>
                 <NavLink href="/blog">Blog</NavLink>
-                <NavDropdown
-                  trigger="More"
-                  items={moreNav}
-                  isActive={isMoreActive}
-                  show={showMoreMenu}
-                  onEnter={() => setShowMoreMenu(true)}
-                  onLeave={() => setShowMoreMenu(false)}
-                  wide
-                />
+                <NavLink href="/contact">Contact</NavLink>
 
               </div>
             </div>
@@ -353,9 +341,9 @@ export default function MarketingHeader() {
                       animate={{ width: 220, opacity: 1 }}
                       exit={{ width: 36, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--card)] backdrop-blur-md border border-blue-400 shadow-md"
+                      className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--card)] backdrop-blur-md border border-[var(--blue)] shadow-md"
                     >
-                      <Search className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <Search className="w-4 h-4 text-[var(--blue)] flex-shrink-0" />
                       <input
                         ref={searchRef}
                         value={searchQuery}
@@ -371,7 +359,7 @@ export default function MarketingHeader() {
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                       onClick={() => setShowSearch(true)}
                       title="Search (⌘K)"
-                      className="p-2 rounded-full text-[var(--ink-3)] hover:text-blue-600 hover:bg-[var(--card)] transition-all"
+                      className="p-2 rounded-full text-[var(--ink-3)] hover:text-[var(--blue)] hover:bg-[var(--card)] transition-all"
                     >
                       <Search className="w-[18px] h-[18px]" />
                     </motion.button>
@@ -408,7 +396,7 @@ export default function MarketingHeader() {
                     {user.avatarUrl ? (
                       <img src={user.avatarUrl} alt={displayName} className="w-7 h-7 rounded-full object-cover" />
                     ) : (
-                      <span className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold bg-[var(--blue)]">
+                      <span className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold bg-[var(--blue)] shadow-sm">
                         {initials}
                       </span>
                     )}
@@ -423,7 +411,7 @@ export default function MarketingHeader() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.97 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-2 w-56 bg-[var(--card)] backdrop-blur-xl rounded-2xl shadow-2xl border border-[var(--line-soft)] overflow-hidden py-2 z-50"
+                        className="absolute right-0 top-full mt-2 w-56 bg-[rgba(255,255,255,0.98)] dark:bg-[rgba(26,31,41,0.98)] backdrop-blur-2xl rounded-[20px] border border-[var(--line-soft)] dark:border-[rgba(255,255,255,0.07)] overflow-hidden py-2 z-50 shadow-[0_8px_32px_rgba(32,34,40,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.75),0_0_0_1px_rgba(255,255,255,0.05)_inset]"
                       >
                         <div className="px-4 py-3 border-b border-[var(--line-soft)] mb-1">
                           <p className="text-sm font-bold text-[var(--ink-1)] truncate">{displayName}</p>
@@ -455,7 +443,7 @@ export default function MarketingHeader() {
               ) : (
                 <div className="hidden md:flex items-center">
                   <button onClick={() => setShowAuthModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-[var(--ink-2)] hover:text-blue-600 hover:bg-[var(--bg)]/60 rounded-full transition-all"
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-[var(--ink-2)] hover:text-[var(--blue)] hover:bg-[var(--bg)]/60 rounded-full transition-all"
                   >
                     <LogIn className="w-4 h-4" />Sign In
                   </button>
@@ -525,7 +513,7 @@ export default function MarketingHeader() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
               transition={{ duration: 0.22, ease: "easeOut" as const }}
-              className="mb-3 bg-[var(--card)]/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-[var(--line-soft)] p-4 pointer-events-auto"
+              className="mb-3 bg-[rgba(255,255,255,0.97)] dark:bg-[rgba(26,31,41,0.97)] backdrop-blur-2xl rounded-[24px] shadow-2xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)_inset] border border-[var(--line-soft)] dark:border-[rgba(255,255,255,0.07)] p-4 pointer-events-auto"
             >
               <p className="text-[10px] font-bold text-[var(--ink-4)] uppercase tracking-widest mb-3 flex items-center gap-1.5">
                 <GraduationCap className="w-3 h-3" /> Exams
@@ -534,28 +522,6 @@ export default function MarketingHeader() {
             </motion.div>
           )}
 
-          {mobileTab === "more" && (
-            <motion.div
-              key="more-panel"
-              initial={{ opacity: 0, y: 16, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 16, scale: 0.97 }}
-              transition={{ duration: 0.22, ease: "easeOut" as const }}
-              className="mb-3 bg-[var(--card)]/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-[var(--line-soft)] p-4 pointer-events-auto"
-            >
-              <p className="text-[10px] font-bold text-[var(--ink-4)] uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                <MoreHorizontal className="w-3 h-3" /> More
-              </p>
-              <MobileNavGrid items={moreNav} accent="blue" />
-              {/* Get App button */}
-              <a href={PLAYSTORE_URL} target="_blank" rel="noopener noreferrer"
-                className="mt-3 flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[var(--blue)] hover:bg-[var(--blue-ink)] text-white text-sm font-bold transition-colors"
-                onClick={() => setMobileTab(null)}
-              >
-                <Smartphone className="w-4 h-4" /> Get App
-              </a>
-            </motion.div>
-          )}
 
           {mobileTab === "account" && (
             <motion.div
@@ -564,7 +530,7 @@ export default function MarketingHeader() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
               transition={{ duration: 0.22, ease: "easeOut" as const }}
-              className="mb-3 bg-[var(--card)]/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-[var(--line-soft)] p-4 pointer-events-auto"
+              className="mb-3 bg-[rgba(255,255,255,0.97)] dark:bg-[rgba(26,31,41,0.97)] backdrop-blur-2xl rounded-[24px] shadow-2xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)_inset] border border-[var(--line-soft)] dark:border-[rgba(255,255,255,0.07)] p-4 pointer-events-auto"
             >
               {user ? (
                 <>
@@ -577,7 +543,7 @@ export default function MarketingHeader() {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-[var(--ink-1)] truncate">{displayName}</p>
-                      <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600/20 text-blue-600 dark:text-blue-400 uppercase tracking-wide">{planLabel}</span>
+                      <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--blue-soft)] text-[var(--blue)] uppercase tracking-wide">{planLabel}</span>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 mb-3">
@@ -609,7 +575,7 @@ export default function MarketingHeader() {
                     <p className="text-xs text-[var(--ink-4)] mt-1">Sign in to track your progress and access all tests</p>
                   </div>
                   <button onClick={() => setShowAuthModal(true)}
-                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/20"
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-[var(--blue)] text-white font-bold shadow-lg shadow-[var(--blue)]/20"
                   >
                     <LogIn className="w-4 h-4" /> Sign In / Sign Up
                   </button>
@@ -620,7 +586,7 @@ export default function MarketingHeader() {
         </AnimatePresence>
 
         {/* ── Mobile Navigation Bar ── */}
-        <div className="bg-[var(--glass)] backdrop-blur-2xl border border-[var(--line-soft)] rounded-[24px] shadow-2xl flex items-center justify-around p-1.5 ring-1 ring-black/5 pointer-events-auto">
+        <div className="bg-[rgba(251,251,251,0.92)] dark:bg-[rgba(18,21,28,0.93)] backdrop-blur-2xl border border-[var(--line-soft)] dark:border-[rgba(255,255,255,0.07)] rounded-[28px] shadow-2xl dark:shadow-[0_4px_32px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.05)_inset] flex items-center justify-around p-1.5 pointer-events-auto">
           
           {/* Home */}
           <Link
@@ -629,11 +595,11 @@ export default function MarketingHeader() {
             className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all"
           >
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-              pathname === "/" ? "bg-blue-600 text-white shadow-md shadow-blue-500/30" : "text-[var(--ink-4)]"
+              pathname === "/" ? "bg-[var(--blue)] text-white shadow-md shadow-[var(--blue)]/30" : "text-[var(--ink-4)]"
             }`}>
               <Home className="w-4 h-4" />
             </div>
-            <span className={`text-[10px] font-semibold ${pathname === "/" ? "text-blue-600" : "text-[var(--ink-4)]"}`}>Home</span>
+            <span className={`text-[10px] font-semibold ${pathname === "/" ? "text-[var(--blue)]" : "text-[var(--ink-4)]"}`}>Home</span>
           </Link>
 
           {/* Exams */}
@@ -643,13 +609,13 @@ export default function MarketingHeader() {
           >
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
               mobileTab === "exams" || (mobileTab === null && isExamsActive)
-                ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
+                ? "bg-[var(--blue)] text-white shadow-md shadow-[var(--blue)]/30"
                 : "text-[var(--ink-4)]"
             }`}>
               <GraduationCap className="w-4 h-4" />
             </div>
             <span className={`text-[10px] font-semibold ${
-              mobileTab === "exams" || (mobileTab === null && isExamsActive) ? "text-blue-600" : "text-[var(--ink-4)]"
+              mobileTab === "exams" || (mobileTab === null && isExamsActive) ? "text-[var(--blue)]" : "text-[var(--ink-4)]"
             }`}>Exams</span>
           </button>
 
@@ -660,31 +626,30 @@ export default function MarketingHeader() {
             className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all"
           >
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-              isLibraryActive ? "bg-blue-600 text-white shadow-md shadow-blue-500/30" : "text-[var(--ink-4)]"
+              isLibraryActive ? "bg-[var(--blue)] text-white shadow-md shadow-[var(--blue)]/30" : "text-[var(--ink-4)]"
             }`}>
               <Library className="w-4 h-4" />
             </div>
             <span className={`text-[10px] font-semibold ${
-              isLibraryActive ? "text-blue-600" : "text-[var(--ink-4)]"
+              isLibraryActive ? "text-[var(--blue)]" : "text-[var(--ink-4)]"
             }`}>Blog</span>
           </Link>
 
-          {/* More */}
-          <button
-            onClick={() => toggleMobileTab("more")}
+          {/* Contact */}
+          <Link
+            href="/contact"
+            onClick={() => setMobileTab(null)}
             className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all"
           >
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-              mobileTab === "more" || (mobileTab === null && isMoreActive)
-                ? "bg-slate-700 text-white shadow-md shadow-slate-700/30"
-                : "text-[var(--ink-4)]"
+              pathname === "/contact" ? "bg-[var(--blue)] text-white shadow-md shadow-[var(--blue)]/30" : "text-[var(--ink-4)]"
             }`}>
-              <MoreHorizontal className="w-4 h-4" />
+              <Mail className="w-4 h-4" />
             </div>
             <span className={`text-[10px] font-semibold ${
-              mobileTab === "more" || (mobileTab === null && isMoreActive) ? "text-slate-700" : "text-[var(--ink-4)]"
-            }`}>More</span>
-          </button>
+              pathname === "/contact" ? "text-[var(--blue)]" : "text-[var(--ink-4)]"
+            }`}>Contact</span>
+          </Link>
 
           {/* Account */}
           <button
@@ -693,7 +658,7 @@ export default function MarketingHeader() {
           >
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all overflow-hidden ${
               mobileTab === "account"
-                ? "ring-2 ring-blue-500 ring-offset-1"
+                ? "ring-2 ring-[var(--blue)] ring-offset-1"
                 : ""
             }`}>
               {user?.avatarUrl ? (
@@ -704,13 +669,13 @@ export default function MarketingHeader() {
                 </span>
               ) : (
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                  mobileTab === "account" ? "bg-blue-600 text-white" : "text-[var(--ink-4)]"
+                  mobileTab === "account" ? "bg-[var(--blue)] text-white" : "text-[var(--ink-4)]"
                 }`}>
                   <User className="w-4 h-4" />
                 </div>
               )}
             </div>
-            <span className={`text-[10px] font-semibold ${mobileTab === "account" ? "text-blue-600" : "text-[var(--ink-4)]"}`}>
+            <span className={`text-[10px] font-semibold ${mobileTab === "account" ? "text-[var(--blue)]" : "text-[var(--ink-4)]"}`}>
               {user ? displayName.split(" ")[0] || "Me" : "Sign In"}
             </span>
           </button>
