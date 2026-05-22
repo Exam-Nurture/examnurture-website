@@ -413,8 +413,8 @@ function FeaturesSection() {
     <section className="py-24 lg:py-28 bg-white dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-6 lg:px-8">
 
-        {/* Left-aligned header — Figma style (not always centered) */}
-        <div className="mb-14 max-w-2xl">
+        {/* Centered header */}
+        <div className="mb-14 max-w-2xl mx-auto text-center">
           <h2
             className="text-[40px] sm:text-[52px] lg:text-[64px] leading-[1.10] text-[#2C2C2E] dark:text-[var(--ink-1)]"
             style={{ fontWeight: 300, letterSpacing: "-0.96px" }}
@@ -423,8 +423,8 @@ function FeaturesSection() {
           </h2>
         </div>
 
-        {/* feature-illustration-tile grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* feature-illustration-tile grid (2x2 centered) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {features.map((f, i) => (
             <Link key={f.title} href={f.href} className="group">
               <div className="bg-[#EAE8EC] dark:bg-[var(--card)] rounded-[16px] p-6 h-full flex flex-col hover:bg-[#CBCDD5] dark:hover:bg-[rgba(255,255,255,0.04)] transition-colors duration-200 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] dark:border dark:border-[rgba(255,255,255,0.06)]">
