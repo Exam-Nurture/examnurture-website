@@ -3,36 +3,30 @@
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, ChevronRight, GraduationCap, Clock, Calendar, Users, FlaskConical,
-  FileText, BookOpen, BarChart3, ChevronDown, Award, Search, Sparkles, AlertCircle,
-  PlayCircle, CheckCircle2, Star, Link as LinkIcon
+  ArrowLeft, ArrowRight, ChevronRight, GraduationCap, Calendar, Users, FlaskConical,
+  FileText, BookOpen, BarChart3, ChevronDown, Search, Sparkles, AlertCircle,
+  PlayCircle, CheckCircle2, Star, Link as LinkIcon, MapPin, Building2,
 } from "lucide-react";
-import { findExam, getBoardForExam, getStateForExam, getAllExams, CatalogueExam, ExamDate, ExamFAQ } from "@/lib/data/examCatalogue";
+import { findExam, getBoardForExam, getStateForExam, getAllExams, CatalogueExam } from "@/lib/data/examCatalogue";
 import { useAuth } from "@/lib/auth-context";
+import { apiGetTestSeries, apiGetPYQPapers, apiGetBlogs, type PublicBlogPost } from "@/lib/api";
+import { Newspaper } from "lucide-react";
 
-// Helper for generic scrolling
 function scrollToSection(id: string) {
-  const element = document.getElementById(id);
-  if (element) {
-    // Add offset for sticky header + tabs
-    const y = element.getBoundingClientRect().top + window.scrollY - 140;
-    window.scrollTo({ top: y, behavior: 'smooth' });
-  }
+  const el = document.getElementById(id);
+  if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 140, behavior: "smooth" });
 }
 
-/* ═══════════════════════════════════════════════
-   COMPONENTS
-═══════════════════════════════════════════════ */
+/* ── Shared primitives ── */
 
 function SectionHeading({ title, icon: Icon, color }: { title: string; icon: any; color: string }) {
   return (
     <div className="flex items-center gap-3 mb-6">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}15`, color }}>
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}18`, color }}>
         <Icon size={20} />
       </div>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
+      <h2 className="text-[22px] font-bold" style={{ color: "var(--ink-1)" }}>{title}</h2>
     </div>
   );
 }
@@ -40,21 +34,21 @@ function SectionHeading({ title, icon: Icon, color }: { title: string; icon: any
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: any; color: string }) {
   if (!value) return null;
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow">
+    <div className="border rounded-2xl p-4 flex flex-col items-center text-center" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
       <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: `${color}15`, color }}>
         <Icon size={18} />
       </div>
-      <span className="text-xl font-extrabold text-gray-900 dark:text-white leading-none mb-1">{value}</span>
-      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
+      <span className="text-xl font-extrabold leading-none mb-1" style={{ color: "var(--ink-1)" }}>{value}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--ink-4)" }}>{label}</span>
     </div>
   );
 }
 
-function PremiumBanner({ exam, isPaid }: { exam: CatalogueExam, isPaid: boolean }) {
+function PremiumBanner({ exam, isPaid, testCount, pyqCount }: { exam: CatalogueExam; isPaid: boolean; testCount: number; pyqCount: number }) {
   if (isPaid) return null;
   return (
-    <div className="mt-10 p-6 rounded-3xl relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 shadow-xl shadow-blue-500/20">
-      <div className="absolute top-0 right-0 p-8 opacity-10">
+    <div className="mt-10 p-6 rounded-3xl relative overflow-hidden shadow-xl" style={{ background: "linear-gradient(135deg, #0D287E 0%, #1D4ED8 100%)" }}>
+      <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
         <Sparkles size={120} />
       </div>
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -63,17 +57,33 @@ function PremiumBanner({ exam, isPaid }: { exam: CatalogueExam, isPaid: boolean 
             <Star size={12} className="fill-current" /> Premium Access
           </span>
           <h3 className="text-2xl font-bold text-white mb-2">Unlock {exam.shortName} Pro</h3>
-          <p className="text-blue-100 max-w-lg">
-            Get unlimited access to all {exam.testCount} mock tests, {exam.pyqCount} previous year papers, AI analytics, and personalized guidance.
+          <p className="text-white/70 max-w-lg">
+            Unlimited access to all {testCount} mock tests, {pyqCount} previous year papers, AI analytics, and personalized guidance.
           </p>
         </div>
-        <Link href="/dashboard/plans" className="shrink-0 w-full md:w-auto px-8 py-4 bg-white text-blue-600 rounded-xl font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
+        <Link
+          href="/dashboard/plans"
+          className="shrink-0 w-full md:w-auto px-8 py-4 bg-white rounded-xl font-bold hover:bg-white/90 transition-all flex items-center justify-center gap-2"
+          style={{ color: "#0D287E" }}
+        >
           View Plans <ChevronRight size={18} />
         </Link>
       </div>
     </div>
   );
 }
+
+/* ── NAV TABS ── */
+
+const NAV_TABS = [
+  { id: "overview",  label: "Overview" },
+  { id: "dates",     label: "Important Dates" },
+  { id: "pattern",   label: "Exam Pattern" },
+  { id: "syllabus",  label: "Syllabus" },
+  { id: "materials", label: "Practice Materials" },
+  { id: "news",      label: "Latest News" },
+  { id: "faqs",      label: "FAQs" },
+];
 
 /* ═══════════════════════════════════════════════
    MAIN PAGE
@@ -91,48 +101,78 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
   const state = getStateForExam(exam);
   if (!board || !state) return notFound();
 
-  const boardColor = board.color || "#3B82F6";
+  const boardColor = board.color || "#0D287E";
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Filter out other exams from the same board
+  // Live counts
+  const [liveCounts, setLiveCounts] = useState<{ tests: number | null; pyqs: number | null }>({ tests: null, pyqs: null });
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      apiGetTestSeries({ examId: exam.id, limit: 1 }).catch(() => null) as Promise<any>,
+      apiGetPYQPapers({ examId: exam.id, limit: 1 }).catch(() => null) as Promise<any>,
+    ]).then(([ts, pyq]) => {
+      if (cancelled) return;
+      setLiveCounts({
+        tests: ts?.total ?? ts?.items?.length ?? null,
+        pyqs:  pyq?.total ?? pyq?.items?.length ?? null,
+      });
+    });
+    return () => { cancelled = true; };
+  }, [exam.id]);
+  const liveTestCount = liveCounts.tests ?? exam.testCount;
+  const livePyqCount  = liveCounts.pyqs  ?? exam.pyqCount;
+
+  // Latest exam news
+  const [news, setNews] = useState<PublicBlogPost[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    apiGetBlogs({ limit: 8 })
+      .then(res => {
+        if (cancelled) return;
+        const all = res.items ?? [];
+        const examKeys = [exam.shortName?.toLowerCase(), exam.name.toLowerCase()].filter(Boolean) as string[];
+        const matched = all.filter(p => {
+          const blob = `${p.title} ${p.tags} ${p.category}`.toLowerCase();
+          return examKeys.some(k => blob.includes(k));
+        });
+        setNews((matched.length > 0 ? matched : all).slice(0, 4));
+      })
+      .catch(() => setNews([]))
+      .finally(() => { if (!cancelled) setNewsLoading(false); });
+    return () => { cancelled = true; };
+  }, [exam.id, exam.name, exam.shortName]);
+
   const relatedExams = getAllExams().filter(e => e.boardId === board.id && e.id !== exam.id);
 
+  // Scroll-spy
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ["overview", "dates", "pattern", "syllabus", "materials", "faqs"];
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const id = sections[i];
-        const element = document.getElementById(id);
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          // Adjust offset as needed (160px from the top is usually safe for sticky headers)
-          if (rect.top <= 160) {
-            setActiveTab(id);
-            break;
-          }
-        }
+      const ids = NAV_TABS.map(t => t.id);
+      for (let i = ids.length - 1; i >= 0; i--) {
+        const el = document.getElementById(ids[i]);
+        if (el && el.getBoundingClientRect().top <= 160) { setActiveTab(ids[i]); break; }
       }
     };
-
-    // Run once on mount to set initial tab, and then add listener
     handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
-      
-      {/* ── HERO SECTION ── */}
-      <section className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 pt-10 pb-16 relative overflow-hidden">
-        {/* Decorative background blob */}
-        <div className="absolute top-0 right-0 w-[800px] h-[600px] rounded-full blur-[120px] opacity-10 pointer-events-none transform translate-x-1/3 -translate-y-1/4" style={{ backgroundColor: boardColor }}></div>
-        
+    <div className="min-h-screen pb-20" style={{ background: "var(--bg)" }}>
+
+      {/* ── HERO ── */}
+      <section className="border-b pt-10 pb-16 relative overflow-hidden" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+        {/* Ambient glow */}
+        <div className="absolute top-0 right-0 w-[600px] h-[400px] rounded-full blur-[120px] opacity-8 pointer-events-none transform translate-x-1/3 -translate-y-1/4" style={{ backgroundColor: boardColor }} />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
-          
+
           {/* Breadcrumbs */}
-          <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-8 overflow-x-auto whitespace-nowrap pb-2 scrollbar-hide">
-            <Link href="/exams" className="hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-1">
+          <nav className="flex items-center gap-2 text-sm mb-8 overflow-x-auto whitespace-nowrap pb-2 scrollbar-hide" style={{ color: "var(--ink-3)" }}>
+            <Link href="/exams" className="hover:underline flex items-center gap-1" style={{ color: "var(--ink-3)" }}>
               <ArrowLeft size={14} /> Exams
             </Link>
             <ChevronRight size={14} />
@@ -140,71 +180,72 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
             <ChevronRight size={14} />
             <span className="font-medium" style={{ color: boardColor }}>{board.name}</span>
             <ChevronRight size={14} />
-            <span className="text-gray-900 dark:text-white font-semibold">{exam.shortName}</span>
+            <span className="font-semibold" style={{ color: "var(--ink-1)" }}>{exam.shortName}</span>
           </nav>
 
           <div className="flex flex-col lg:flex-row gap-10 items-start">
             <div className="flex-1">
-              {/* Board Badge */}
-              <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl border mb-5" style={{ backgroundColor: `${boardColor}10`, borderColor: `${boardColor}20`, color: boardColor }}>
+              {/* Board badge */}
+              <div
+                className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl border mb-5"
+                style={{ backgroundColor: `${boardColor}10`, borderColor: `${boardColor}25`, color: boardColor }}
+              >
                 <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-black text-white" style={{ backgroundColor: boardColor }}>
                   {board.name.slice(0, 2)}
                 </div>
                 <span className="text-xs font-bold uppercase tracking-wider">{board.fullName}</span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-5">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-5" style={{ color: "var(--ink-1)" }}>
                 {exam.name}
               </h1>
-
-              <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed max-w-3xl">
+              <p className="text-lg mb-8 leading-relaxed max-w-3xl" style={{ color: "var(--ink-2)" }}>
                 {exam.description || `Prepare for ${exam.name} with our comprehensive test series, previous year papers, and detailed study notes designed by experts.`}
               </p>
 
               <div className="flex flex-wrap gap-4 items-center">
-                <Link href={`/dashboard/series?exam=${exam.id}`} className="px-8 py-4 rounded-xl text-white font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2" style={{ backgroundColor: boardColor, "--tw-shadow-color": `${boardColor}40` } as React.CSSProperties}>
+                <Link
+                  href={`/dashboard/series?exam=${exam.id}`}
+                  className="px-8 py-4 rounded-xl text-white font-bold transition-all hover:-translate-y-0.5 flex items-center gap-2"
+                  style={{ backgroundColor: boardColor, boxShadow: `0 8px 24px ${boardColor}35` }}
+                >
                   <FlaskConical size={18} /> Start Free Test
                 </Link>
-                <Link href={`/dashboard/pyq?exam=${exam.id}`} className="px-8 py-4 rounded-xl font-bold bg-white dark:bg-gray-900 border-2 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-2" style={{ borderColor: `${boardColor}30` }}>
+                <Link
+                  href={`/dashboard/pyq?exam=${exam.id}`}
+                  className="px-8 py-4 rounded-xl font-bold border-2 transition-all flex items-center gap-2"
+                  style={{ background: "var(--bg)", borderColor: `${boardColor}30`, color: "var(--ink-1)" }}
+                >
                   <FileText size={18} /> View PYQs
                 </Link>
               </div>
             </div>
 
-            {/* Right side stat grid */}
-            <div className="w-full lg:w-[400px] shrink-0 grid grid-cols-2 gap-3">
-               <StatCard label="Test Series" value={exam.testCount} icon={FlaskConical} color="#3B82F6" />
-               <StatCard label="PYQ Papers" value={exam.pyqCount} icon={FileText} color="#8B5CF6" />
-               <StatCard label="Study Notes" value={exam.notesCount} icon={BookOpen} color="#10B981" />
-               <StatCard label="Difficulty" value={exam.difficulty || "Moderate"} icon={BarChart3} color="#F59E0B" />
+            {/* Stat grid */}
+            <div className="w-full lg:w-[360px] shrink-0 grid grid-cols-2 gap-3">
+              <StatCard label="Test Series"  value={liveTestCount}         icon={FlaskConical} color="#0D287E" />
+              <StatCard label="PYQ Papers"   value={livePyqCount}          icon={FileText}     color="#7C3AED" />
+              <StatCard label="Study Notes"  value={exam.notesCount}       icon={BookOpen}     color="#059669" />
+              <StatCard label="Difficulty"   value={exam.difficulty || "Moderate"} icon={BarChart3} color="#D97706" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── MOBILE STICKY NAV TABS ── */}
-      <div className="lg:hidden sticky top-16 z-40 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      {/* ── MOBILE NAV TABS ── */}
+      <div className="lg:hidden sticky top-16 z-40 border-b backdrop-blur-xl" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex overflow-x-auto scrollbar-hide py-3 gap-2 sm:gap-6 items-center">
-            {[
-              { id: "overview", label: "Overview" },
-              { id: "dates", label: "Important Dates" },
-              { id: "pattern", label: "Exam Pattern" },
-              { id: "syllabus", label: "Syllabus" },
-              { id: "materials", label: "Practice Materials" },
-              { id: "faqs", label: "FAQs" },
-            ].map((tab) => (
+          <div className="flex overflow-x-auto scrollbar-hide py-3 gap-2 items-center">
+            {NAV_TABS.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  scrollToSection(tab.id);
-                }}
-                className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                  activeTab === tab.id 
-                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md" 
-                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white"
-                }`}
+                onClick={() => { setActiveTab(tab.id); scrollToSection(tab.id); }}
+                className="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                style={
+                  activeTab === tab.id
+                    ? { background: "#0D287E", color: "#fff" }
+                    : { color: "var(--ink-3)", background: "transparent" }
+                }
               >
                 {tab.label}
               </button>
@@ -214,29 +255,20 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-12 flex flex-col lg:flex-row gap-8 lg:gap-10 items-start">
-        
-        {/* ── LEFT NAV SIDEBAR ── */}
+
+        {/* ── LEFT SIDEBAR ── */}
         <aside className="hidden lg:block w-56 shrink-0 sticky top-[100px]">
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-4 shadow-sm space-y-1">
-            {[
-              { id: "overview", label: "Overview" },
-              { id: "dates", label: "Important Dates" },
-              { id: "pattern", label: "Exam Pattern" },
-              { id: "syllabus", label: "Syllabus" },
-              { id: "materials", label: "Practice Materials" },
-              { id: "faqs", label: "FAQs" },
-            ].map((tab) => (
+          <div className="border rounded-3xl p-4 space-y-1" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+            {NAV_TABS.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  scrollToSection(tab.id);
-                }}
-                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                  activeTab === tab.id 
-                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md" 
-                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-                }`}
+                onClick={() => { setActiveTab(tab.id); scrollToSection(tab.id); }}
+                className="w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all"
+                style={
+                  activeTab === tab.id
+                    ? { background: "#0D287E", color: "#fff" }
+                    : { color: "var(--ink-3)", background: "transparent" }
+                }
               >
                 {tab.label}
               </button>
@@ -250,21 +282,21 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
           {/* ── OVERVIEW ── */}
           <section id="overview" className="scroll-mt-32">
             <SectionHeading title="Exam Overview" icon={Search} color={boardColor} />
-            <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 md:p-8 border border-gray-200 dark:border-gray-800 shadow-sm">
+            <div className="border rounded-3xl p-6 md:p-8" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                 {[
-                  { label: "Conducting Body", value: exam.conductingBody || board.fullName },
-                  { label: "Exam Frequency", value: exam.frequency || "Annual" },
-                  { label: "Mode of Exam", value: exam.mode || "Online/Offline" },
-                  { label: "Exam Languages", value: exam.languages?.join(", ") || "English, Hindi" },
+                  { label: "Conducting Body",    value: exam.conductingBody || board.fullName },
+                  { label: "Exam Frequency",     value: exam.frequency || "Annual" },
+                  { label: "Mode of Exam",        value: exam.mode || "Online/Offline" },
+                  { label: "Exam Languages",      value: exam.languages?.join(", ") || "English, Hindi" },
                   { label: "Eligibility Criteria", value: exam.eligibility },
-                  { label: "Selection Stages", value: exam.stages?.join(" ➔ ") || "Written ➔ Interview" },
+                  { label: "Selection Stages",    value: exam.stages?.join(" ➔ ") || "Written ➔ Interview" },
                   { label: "Applicants (Approx)", value: exam.applicants || "Varies" },
-                  { label: "Vacancy Trend", value: exam.vacancyTrend || "Not available" },
+                  { label: "Vacancy Trend",       value: exam.vacancyTrend || "Not available" },
                 ].map((item, i) => (
-                  <div key={i} className="flex flex-col border-b border-gray-100 dark:border-gray-800 pb-4 last:border-0 last:pb-0 md:[&:nth-last-child(-n+2)]:border-0 md:[&:nth-last-child(-n+2)]:pb-0">
-                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{item.label}</span>
-                    <span className="text-base font-bold text-gray-900 dark:text-white">{item.value}</span>
+                  <div key={i} className="flex flex-col border-b pb-4 last:border-0 last:pb-0 md:[&:nth-last-child(-n+2)]:border-0 md:[&:nth-last-child(-n+2)]:pb-0" style={{ borderColor: "var(--line-soft)" }}>
+                    <span className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--ink-4)" }}>{item.label}</span>
+                    <span className="text-base font-bold" style={{ color: "var(--ink-1)" }}>{item.value}</span>
                   </div>
                 ))}
               </div>
@@ -274,31 +306,32 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
           {/* ── IMPORTANT DATES ── */}
           <section id="dates" className="scroll-mt-32">
             <SectionHeading title="Important Dates" icon={Calendar} color={boardColor} />
-            <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 md:p-8 border border-gray-200 dark:border-gray-800 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-8 bottom-0 w-px bg-gray-100 dark:bg-gray-800 hidden md:block"></div>
-              
+            <div className="border rounded-3xl p-6 md:p-8 relative overflow-hidden" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+              <div className="absolute top-0 left-8 bottom-0 w-px hidden md:block" style={{ background: "var(--line-soft)" }} />
               <div className="space-y-8 relative">
-                {(exam.importantDates || [
-                  { label: "Next Expected Date", date: exam.nextDate || "TBA", status: "upcoming" }
-                ]).map((dateObj, i) => (
+                {(exam.importantDates || [{ label: "Next Expected Date", date: exam.nextDate || "TBA", status: "upcoming" }]).map((dateObj, i) => (
                   <div key={i} className="flex flex-col md:flex-row gap-4 md:gap-8 relative">
-                    {/* Timeline dot */}
-                    <div className="hidden md:flex absolute -left-[5px] top-1.5 w-3 h-3 rounded-full bg-white dark:bg-gray-900 border-2 shadow-sm"
-                         style={{ borderColor: dateObj.status === "completed" ? "#10B981" : dateObj.status === "ongoing" ? "#F59E0B" : "#3B82F6" }}>
-                    </div>
-                    
+                    <div
+                      className="hidden md:flex absolute -left-[5px] top-1.5 w-3 h-3 rounded-full border-2"
+                      style={{
+                        background: "var(--card)",
+                        borderColor: dateObj.status === "completed" ? "#059669" : dateObj.status === "ongoing" ? "#D97706" : "#0D287E",
+                      }}
+                    />
                     <div className="md:w-32 shrink-0">
-                      <span className="inline-block px-3 py-1 rounded-lg text-xs font-bold"
-                            style={{ 
-                              backgroundColor: dateObj.status === "completed" ? "rgba(16, 185, 129, 0.1)" : dateObj.status === "ongoing" ? "rgba(245, 158, 11, 0.1)" : "rgba(59, 130, 246, 0.1)",
-                              color: dateObj.status === "completed" ? "#10B981" : dateObj.status === "ongoing" ? "#F59E0B" : "#3B82F6"
-                            }}>
+                      <span
+                        className="inline-block px-3 py-1 rounded-lg text-xs font-bold"
+                        style={{
+                          backgroundColor: dateObj.status === "completed" ? "rgba(5,150,105,0.12)" : dateObj.status === "ongoing" ? "rgba(217,119,6,0.12)" : "rgba(13,40,126,0.10)",
+                          color: dateObj.status === "completed" ? "#059669" : dateObj.status === "ongoing" ? "#D97706" : "#0D287E",
+                        }}
+                      >
                         {dateObj.status.toUpperCase()}
                       </span>
                     </div>
-                    <div className="flex-1 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700/50">
-                      <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{dateObj.label}</h4>
-                      <p className="text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2">
+                    <div className="flex-1 rounded-2xl p-5 border" style={{ background: "var(--bg)", borderColor: "var(--line-soft)" }}>
+                      <h4 className="text-lg font-bold mb-1" style={{ color: "var(--ink-1)" }}>{dateObj.label}</h4>
+                      <p className="font-medium flex items-center gap-2" style={{ color: "var(--ink-3)" }}>
                         <Calendar size={14} /> {dateObj.date}
                       </p>
                     </div>
@@ -312,21 +345,21 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
           <section id="pattern" className="scroll-mt-32 space-y-12">
             <div>
               <SectionHeading title="Exam Pattern" icon={BarChart3} color={boardColor} />
-              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
-                <div className="absolute -right-10 -bottom-10 opacity-10">
+              <div className="rounded-3xl p-8 text-white shadow-xl relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0D287E 0%, #1D4ED8 100%)" }}>
+                <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
                   <BarChart3 size={200} />
                 </div>
-                <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><CheckCircle2 className="text-green-400" /> Structure overview</h3>
-                    <p className="text-gray-300 leading-relaxed text-lg">{exam.pattern}</p>
-                    {exam.selectionRatio && (
-                      <div className="mt-6 inline-flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md">
-                        <Users size={16} className="text-blue-400" />
-                        <span className="font-semibold">Selection Ratio: {exam.selectionRatio}</span>
-                      </div>
-                    )}
-                  </div>
+                <div className="relative z-10">
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <CheckCircle2 className="text-green-300" /> Structure overview
+                  </h3>
+                  <p className="text-white/80 leading-relaxed text-lg">{exam.pattern}</p>
+                  {exam.selectionRatio && (
+                    <div className="mt-6 inline-flex items-center gap-2 bg-white/15 px-4 py-2 rounded-xl">
+                      <Users size={16} className="text-blue-200" />
+                      <span className="font-semibold">Selection Ratio: {exam.selectionRatio}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -335,11 +368,15 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
               <SectionHeading title="Key Subjects" icon={BookOpen} color={boardColor} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {exam.subjects.map((sub, i) => (
-                  <div key={i} className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 flex items-center gap-4 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group cursor-default shadow-sm">
-                    <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 group-hover:text-blue-500 transition-colors">
+                  <div
+                    key={i}
+                    className="p-5 rounded-2xl border flex items-center gap-4 cursor-default group transition-colors"
+                    style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
+                  >
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-colors" style={{ background: "var(--bg)", color: "var(--ink-4)" }}>
                       <BookOpen size={20} />
                     </div>
-                    <span className="font-bold text-gray-900 dark:text-white text-lg">{sub}</span>
+                    <span className="font-bold text-lg" style={{ color: "var(--ink-1)" }}>{sub}</span>
                   </div>
                 ))}
               </div>
@@ -349,24 +386,24 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
           {/* ── PRACTICE MATERIALS ── */}
           <section id="materials" className="scroll-mt-32">
             <SectionHeading title="Practice & Preparation" icon={PlayCircle} color={boardColor} />
-            <div className="grid grid-cols-3 gap-5 overflow-x-auto" style={{ minWidth: 0 }}>
+            <div className="flex flex-col gap-3">
               {[
                 {
                   icon: FlaskConical,
                   title: "Test Series",
                   desc: `Full-length tests and sectionals based on the latest ${exam.shortName} pattern.`,
-                  count: `${exam.testCount} Tests`,
-                  accentColor: "#3B82F6",
-                  iconBg: "#EFF6FF",
+                  count: `${liveTestCount} Tests`,
+                  accentColor: "#0D287E",
+                  iconBg: "rgba(13,40,126,0.10)",
                   href: `/dashboard/series?exam=${exam.id}`,
                 },
                 {
                   icon: FileText,
                   title: "Previous Papers",
                   desc: "Official question papers from past years with detailed solutions.",
-                  count: `${exam.pyqCount} Papers`,
+                  count: `${livePyqCount} Papers`,
                   accentColor: "#7C3AED",
-                  iconBg: "#F5F3FF",
+                  iconBg: "rgba(124,58,237,0.10)",
                   href: `/dashboard/pyq?exam=${exam.id}`,
                 },
                 {
@@ -375,50 +412,109 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
                   desc: "Concise revision notes, formula sheets, and subject-wise guides.",
                   count: `${exam.notesCount} PDF notes`,
                   accentColor: "#059669",
-                  iconBg: "#ECFDF5",
+                  iconBg: "rgba(5,150,105,0.10)",
                   href: `/blog?exam=${exam.id}`,
                 },
               ].map((card) => (
-                <div
+                <Link
                   key={card.title}
-                  className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-7 flex flex-col group hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 min-w-[200px]"
-                  style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}
+                  href={card.href}
+                  className="flex items-center gap-5 border rounded-2xl p-5 transition-all group hover:-translate-y-0.5"
+                  style={{ background: "var(--card)", borderColor: "var(--line-soft)", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
                 >
                   {/* Icon */}
                   <div
-                    className="w-[72px] h-[72px] rounded-2xl flex items-center justify-center mb-8 transition-transform duration-300 group-hover:scale-110"
+                    className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center transition-transform duration-200 group-hover:scale-110"
                     style={{ backgroundColor: card.iconBg }}
                   >
-                    <card.icon size={30} style={{ color: card.accentColor }} />
+                    <card.icon size={26} style={{ color: card.accentColor }} />
                   </div>
 
                   {/* Text */}
-                  <h3 className="text-[19px] font-bold text-gray-900 dark:text-white mb-3 leading-snug">
-                    {card.title}
-                  </h3>
-                  <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed flex-1 mb-8">
-                    {card.desc}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[17px] font-bold mb-1" style={{ color: "var(--ink-1)" }}>{card.title}</h3>
+                    <p className="text-sm leading-relaxed" style={{ color: "var(--ink-3)" }}>{card.desc}</p>
+                  </div>
 
-                  {/* Footer */}
-                  <div className="flex items-center justify-between mt-auto">
-                    <span className="text-[14px] font-extrabold" style={{ color: card.accentColor }}>
+                  {/* Count + arrow */}
+                  <div className="flex-shrink-0 flex items-center gap-3">
+                    <span className="text-sm font-extrabold hidden sm:block" style={{ color: card.accentColor }}>
                       {card.count}
                     </span>
-                    <Link
-                      href={card.href}
-                      className="w-11 h-11 rounded-full text-white flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
-                      style={{
-                        backgroundColor: card.accentColor,
-                        boxShadow: `0 6px 18px ${card.accentColor}50`,
-                      }}
+                    <div
+                      className="w-9 h-9 rounded-full text-white flex items-center justify-center transition-transform duration-200 group-hover:scale-110"
+                      style={{ backgroundColor: card.accentColor, boxShadow: `0 4px 12px ${card.accentColor}40` }}
                     >
-                      <ArrowRight size={18} />
-                    </Link>
+                      <ArrowRight size={16} />
+                    </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
+          </section>
+
+          {/* ── LATEST NEWS ── */}
+          <section id="news" className="scroll-mt-32">
+            <SectionHeading title="Latest News & Updates" icon={Newspaper} color={boardColor} />
+            {newsLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-32 rounded-2xl animate-pulse" style={{ background: "var(--card)" }} />
+                ))}
+              </div>
+            ) : news.length === 0 ? (
+              <div className="rounded-2xl border-2 border-dashed p-8 text-center" style={{ borderColor: "var(--line-soft)" }}>
+                <Newspaper className="w-8 h-8 mx-auto mb-2 opacity-40" style={{ color: "var(--ink-4)" }} />
+                <p className="text-sm" style={{ color: "var(--ink-4)" }}>
+                  No recent updates for {exam.shortName} yet. Check back soon.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {news.map(post => (
+                    <Link
+                      key={post.id}
+                      href={`/blog/${post.slug}`}
+                      className="group block border rounded-2xl p-5 transition-all hover:-translate-y-0.5"
+                      style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded"
+                          style={{ background: `${boardColor}15`, color: boardColor }}
+                        >
+                          {post.category || "News"}
+                        </span>
+                        {post.publishedAt && (
+                          <span className="text-[11px]" style={{ color: "var(--ink-4)" }}>
+                            {new Date(post.publishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-bold text-[15px] line-clamp-2 mb-1.5 transition-colors" style={{ color: "var(--ink-1)" }}>
+                        {post.title}
+                      </h3>
+                      {post.excerpt && (
+                        <p className="text-[13px] line-clamp-2" style={{ color: "var(--ink-3)" }}>{post.excerpt}</p>
+                      )}
+                      <div className="mt-3 flex items-center text-[12px] font-bold" style={{ color: boardColor }}>
+                        Read more <ArrowRight size={14} className="ml-1 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                <div className="mt-5 text-center">
+                  <Link
+                    href={`/blog?q=${encodeURIComponent(exam.shortName || exam.name)}`}
+                    className="inline-flex items-center gap-1 text-sm font-bold hover:underline"
+                    style={{ color: boardColor }}
+                  >
+                    View all {exam.shortName} updates <ChevronRight size={16} />
+                  </Link>
+                </div>
+              </>
+            )}
           </section>
 
           {/* ── FAQS ── */}
@@ -427,14 +523,18 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
               <SectionHeading title="Frequently Asked Questions" icon={AlertCircle} color={boardColor} />
               <div className="space-y-4">
                 {exam.faqs.map((faq, i) => (
-                  <details key={i} className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl [&_summary::-webkit-details-marker]:hidden shadow-sm">
-                    <summary className="flex items-center justify-between cursor-pointer p-6 font-bold text-gray-900 dark:text-white">
+                  <details
+                    key={i}
+                    className="group border rounded-2xl [&_summary::-webkit-details-marker]:hidden"
+                    style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
+                  >
+                    <summary className="flex items-center justify-between cursor-pointer p-6 font-bold" style={{ color: "var(--ink-1)" }}>
                       {faq.q}
-                      <span className="transition group-open:rotate-180 text-gray-400 dark:text-gray-500 shrink-0 ml-4">
+                      <span className="transition group-open:rotate-180 shrink-0 ml-4" style={{ color: "var(--ink-4)" }}>
                         <ChevronDown size={20} />
                       </span>
                     </summary>
-                    <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 leading-relaxed">
+                    <div className="px-6 pb-6 leading-relaxed" style={{ color: "var(--ink-2)" }}>
                       {faq.a}
                     </div>
                   </details>
@@ -444,59 +544,73 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
           )}
 
           {/* ── PREMIUM CTA ── */}
-          <PremiumBanner exam={exam} isPaid={isPaid} />
+          <PremiumBanner exam={exam} isPaid={isPaid} testCount={liveTestCount} pyqCount={livePyqCount} />
 
         </div>
 
         {/* ── RIGHT SIDEBAR ── */}
-        <aside className="w-full lg:w-80 shrink-0 space-y-8 lg:sticky lg:top-[140px]">
-          
-          {/* Quick Links */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm">
-            <h3 className="text-xs font-extrabold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-5">Quick Actions</h3>
-            <div className="space-y-2">
-              <Link href={`/dashboard/series?exam=${exam.id}`} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                <span className="font-bold text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 flex items-center gap-3">
-                  <FlaskConical size={16} className="text-blue-500" /> Start Test Series
-                </span>
-                <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-              </Link>
-              <Link href={`/dashboard/pyq?exam=${exam.id}`} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                <span className="font-bold text-gray-700 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 flex items-center gap-3">
-                  <FileText size={16} className="text-purple-500" /> Solve PYQs
-                </span>
-                <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-purple-600 dark:group-hover:text-purple-400" />
-              </Link>
-              <Link href={`/blog?exam=${exam.id}`} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                <span className="font-bold text-gray-700 dark:text-gray-300 group-hover:text-green-600 dark:group-hover:text-green-400 flex items-center gap-3">
-                  <BookOpen size={16} className="text-green-500" /> Study Notes
-                </span>
-                <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-green-600 dark:group-hover:text-green-400" />
-              </Link>
-              {exam.syllabusUrl && (
-                <a href={exam.syllabusUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                  <span className="font-bold text-gray-700 dark:text-gray-300 group-hover:text-orange-600 dark:group-hover:text-orange-400 flex items-center gap-3">
-                    <LinkIcon size={16} className="text-orange-500" /> Official Syllabus
-                  </span>
-                  <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-orange-600 dark:group-hover:text-orange-400" />
-                </a>
-              )}
+        <aside className="w-full lg:w-72 shrink-0 space-y-6 lg:sticky lg:top-[140px]">
+
+          {/* Quick Actions */}
+          <div className="border rounded-3xl p-5" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+            <h3 className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: "var(--ink-4)" }}>Quick Actions</h3>
+            <div className="space-y-1">
+              {[
+                { href: `/dashboard/series?exam=${exam.id}`, icon: FlaskConical, label: "Start Test Series",  color: "#0D287E" },
+                { href: `/dashboard/pyq?exam=${exam.id}`,    icon: FileText,     label: "Solve PYQs",         color: "#7C3AED" },
+                { href: `/blog?exam=${exam.id}`,              icon: BookOpen,     label: "Study Notes",        color: "#059669" },
+                ...(exam.syllabusUrl ? [{ href: exam.syllabusUrl, icon: LinkIcon, label: "Official Syllabus", color: "#D97706", external: true }] : []),
+              ].map((link: any) => (
+                link.external ? (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl transition-colors group"
+                    style={{ color: "var(--ink-2)" }}
+                  >
+                    <span className="font-bold flex items-center gap-3" style={{ color: "var(--ink-2)" }}>
+                      <link.icon size={16} style={{ color: link.color }} /> {link.label}
+                    </span>
+                    <ChevronRight size={16} style={{ color: "var(--ink-4)" }} />
+                  </a>
+                ) : (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className="flex items-center justify-between p-3 rounded-xl transition-colors group"
+                  >
+                    <span className="font-bold flex items-center gap-3" style={{ color: "var(--ink-2)" }}>
+                      <link.icon size={16} style={{ color: link.color }} /> {link.label}
+                    </span>
+                    <ChevronRight size={16} style={{ color: "var(--ink-4)" }} />
+                  </Link>
+                )
+              ))}
             </div>
           </div>
 
           {/* Related Exams */}
           {relatedExams.length > 0 && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm">
-              <h3 className="text-xs font-extrabold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-5">More from {board.name}</h3>
+            <div className="border rounded-3xl p-5" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+              <h3 className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: "var(--ink-4)" }}>More from {board.name}</h3>
               <div className="space-y-4">
                 {relatedExams.map(relExam => (
                   <Link key={relExam.id} href={`/exams/${relExam.id}`} className="flex items-start gap-4 group">
-                    <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 border border-gray-100 dark:border-gray-700 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors shrink-0">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center border flex-shrink-0 transition-colors"
+                      style={{ background: "var(--bg)", borderColor: "var(--line-soft)", color: "var(--ink-4)" }}
+                    >
                       <GraduationCap size={18} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight mb-1">{relExam.name}</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{relExam.testCount} tests · {relExam.pyqCount} pyqs</p>
+                      <h4 className="font-bold text-sm leading-tight mb-1 transition-colors" style={{ color: "var(--ink-1)" }}>
+                        {relExam.name}
+                      </h4>
+                      <p className="text-xs" style={{ color: "var(--ink-4)" }}>
+                        {relExam.testCount} tests · {relExam.pyqCount} pyqs
+                      </p>
                     </div>
                   </Link>
                 ))}
@@ -509,9 +623,4 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
       </div>
     </div>
   );
-}
-
-// Ensure we have ArrowRight available since it's used in the cards but wasn't imported from lucide-react in the main list above (I'll add it inline here or import it)
-function ArrowRight(props: any) {
-  return <svg xmlns="http://www.w3.org/2000/svg" width={props.size} height={props.size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>;
 }

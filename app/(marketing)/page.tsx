@@ -9,6 +9,7 @@ import {
   BookOpen,
   Star,
   CheckCircle,
+  ChevronLeft,
   ChevronRight,
   FileText,
   GraduationCap,
@@ -64,32 +65,32 @@ const features = [
   { icon: GraduationCap, title: "Exams",                   desc: "Browse all exams — syllabus, exam pattern, eligibility, important dates, and preparation resources.",             href: "/exams" },
 ];
 
-const examCategories = [
-  { name: "JPSC Prelims", tag: "State PSC",    slug: "jpsc-prelims", state: "Jharkhand",      board: "JPSC",   numTests: 18, numPYQ: 40 },
-  { name: "SBI PO",       tag: "Banking",      slug: "sbi-po",       state: "National",       board: "SBI",    numTests: 20, numPYQ: 60 },
-  { name: "IBPS PO",      tag: "Banking",      slug: "ibps-po",      state: "National",       board: "IBPS",   numTests: 15, numPYQ: 55 },
-  { name: "SSC CGL",      tag: "SSC",          slug: "ssc-cgl",      state: "National",       board: "SSC",    numTests: 25, numPYQ: 70 },
-  { name: "Railway NTPC", tag: "Railway",      slug: "rrb-ntpc",     state: "National",       board: "RRB",    numTests: 14, numPYQ: 45 },
-  { name: "Daroga SI",    tag: "Police",       slug: "up-si",        state: "Uttar Pradesh",  board: "UPPBPB", numTests: 12, numPYQ: 30 },
-  { name: "RBI Grade B",  tag: "Banking",      slug: "rbi-grade-b",  state: "National",       board: "RBI",    numTests: 10, numPYQ: 35 },
-  { name: "UET",          tag: "Engineering",  slug: null,           state: "Jharkhand",      board: "JAC",    numTests: 12, numPYQ: 50 },
+/* ── Fallback static data (used if API is unreachable) ── */
+const FALLBACK_FEATURED_EXAMS = [
+  { name: "JPSC Prelims", tag: "State PSC",    slug: "jpsc-prelims", state: "Jharkhand",      board: "JPSC",   description: "Prepare for Jharkhand Public Service Commission Prelims with full-length test series, previous year papers, and expert study materials.", numTests: 18, numPYQ: 40 },
+  { name: "SBI PO",       tag: "Banking",      slug: "sbi-po",       state: "National",       board: "SBI",    description: "Master the State Bank of India Probationary Officer exam with comprehensive mock tests and detailed solutions.", numTests: 20, numPYQ: 60 },
+  { name: "IBPS PO",      tag: "Banking",      slug: "ibps-po",      state: "National",       board: "IBPS",   description: "Crack IBPS PO with our extensive test series, PYQ practice, and specialized banking preparation materials.", numTests: 15, numPYQ: 55 },
+  { name: "SSC CGL",      tag: "SSC",          slug: "ssc-cgl",      state: "National",       board: "SSC",    description: "Comprehensive preparation for Staff Selection Commission Combined Graduate Level with all-India level resources.", numTests: 25, numPYQ: 70 },
+  { name: "Railway NTPC", tag: "Railway",      slug: "rrb-ntpc",     state: "National",       board: "RRB",    description: "RRB NTPC exam preparation with CBT-style tests, previous year papers, and detailed solutions.", numTests: 14, numPYQ: 45 },
+  { name: "Daroga SI",    tag: "Police",       slug: "up-si",        state: "Uttar Pradesh",  board: "UPPBPB", description: "Uttar Pradesh Police Sub-Inspector preparation with specialized coaching materials and mock tests.", numTests: 12, numPYQ: 30 },
+  { name: "RBI Grade B",  tag: "Banking",      slug: "rbi-grade-b",  state: "National",       board: "RBI",    description: "Reserve Bank of India Grade B officer exam preparation with expert guidance and performance analytics.", numTests: 10, numPYQ: 35 },
+  { name: "UET",          tag: "Engineering",  slug: null,           state: "Jharkhand",      board: "JAC",    description: "Engineering entrance exam preparation with structured courses and practice tests.", numTests: 12, numPYQ: 50 },
 ];
 
-const examDescriptions: Record<string, string> = {
-  "JPSC Prelims":  "Prepare for Jharkhand Public Service Commission Prelims with full-length test series, previous year papers, and expert study materials.",
-  "SBI PO":        "Master the State Bank of India Probationary Officer exam with comprehensive mock tests and detailed solutions.",
-  "IBPS PO":       "Crack IBPS PO with our extensive test series, PYQ practice, and specialized banking preparation materials.",
-  "SSC CGL":       "Comprehensive preparation for Staff Selection Commission Combined Graduate Level with all-India level resources.",
-  "Railway NTPC":  "RRB NTPC exam preparation with CBT-style tests, previous year papers, and detailed solutions.",
-  "Daroga SI":     "Uttar Pradesh Police Sub-Inspector preparation with specialized coaching materials and mock tests.",
-  "RBI Grade B":   "Reserve Bank of India Grade B officer exam preparation with expert guidance and performance analytics.",
-  "UET":           "Engineering entrance exam preparation with structured courses and practice tests.",
-};
-
-const testimonials = [
+const FALLBACK_TESTIMONIALS = [
   { name: "Priya Sharma", role: "JPSC Prelims 2024 — Cleared",        initials: "PS", text: "ExamNurture's CBT interface and analytics helped me identify my weak areas. I improved from 45% to 78% in just 3 months of focused practice." },
   { name: "Rahul Kumar",  role: "SBI PO 2024 — Selected",             initials: "RK", text: "The PYQ section is outstanding. Real exam papers with detailed solutions. This platform made my banking exam prep so much easier." },
   { name: "Anjali Singh", role: "SSC CGL 2024 — Tier 1 Qualified",    initials: "AS", text: "Being able to see my progress in real-time was game changing. The analytics showed exactly where I needed to improve." },
+];
+
+const FALLBACK_FAQS = [
+  { question: "What exams does ExamNurture cover?", answer: "ExamNurture covers a wide range of competitive exams including JPSC Prelims & Mains, SBI PO, IBPS PO, RBI Grade B, SSC CGL, Railway NTPC, Daroga SI, UET, and many more state and central government exams." },
+  { question: "Is ExamNurture free to use?", answer: "Yes! ExamNurture offers a free tier with access to a selection of mock tests and PYQ papers. Premium plans unlock unlimited test series, full PYQ archives, AI analytics, and real-time percentile ranking." },
+  { question: "How are the mock tests structured?", answer: "All mock tests use a CBT (Computer-Based Test) interface that mirrors the actual exam — question palette, auto-timer, section switching, and negative marking. Results are instant with detailed subject-wise analysis." },
+  { question: "How does the AI weak-area analysis work?", answer: "After each test, our AI analyses your response patterns across topics and difficulty levels. It identifies your weakest areas and suggests targeted practice sets, helping you prioritise study time effectively." },
+  { question: "Can I access ExamNurture on my phone?", answer: "Absolutely. ExamNurture works on any browser on mobile or desktop. We also have an Android app on the Play Store with offline support for downloaded tests." },
+  { question: "How often are PYQ papers added?", answer: "Previous Year Question papers are added within days of each official exam. Our content team also back-fills older papers so you get the most complete archive available." },
+  { question: "I'm a beginner — where should I start?", answer: "Start with our Exam page, pick your target exam, and browse the syllabus and exam pattern. Then take a diagnostic mock test to benchmark yourself, and let the AI recommendations guide your study plan from there." },
 ];
 
 const planHighlights = [
@@ -99,6 +100,53 @@ const planHighlights = [
   "Real-time Percentile",
   "Detailed Solutions",
 ];
+
+/* ── Dynamic data hooks (fetch from Test_Backend, fallback to static) ── */
+
+interface FeaturedExam {
+  name: string; tag: string; slug: string | null; state: string | null;
+  board: string | null; description: string | null; numTests: number; numPYQ: number;
+}
+
+function useFeaturedExams(): FeaturedExam[] {
+  const [data, setData] = useState<FeaturedExam[]>(FALLBACK_FEATURED_EXAMS);
+  useEffect(() => {
+    fetch(`${API_URL}/featured-exams`)
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((items) => { if (items?.length) setData(items); })
+      .catch(() => { /* keep fallback */ });
+  }, []);
+  return data;
+}
+
+interface TestimonialData {
+  name: string; role: string; initials: string; text: string;
+  rating?: number; avatarUrl?: string | null;
+}
+
+function useTestimonials(): TestimonialData[] {
+  const [data, setData] = useState<TestimonialData[]>(FALLBACK_TESTIMONIALS);
+  useEffect(() => {
+    fetch(`${API_URL}/testimonials`)
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((items) => { if (items?.length) setData(items); })
+      .catch(() => { /* keep fallback */ });
+  }, []);
+  return data;
+}
+
+interface FAQData { question: string; answer: string; }
+
+function useFAQs(): FAQData[] {
+  const [data, setData] = useState<FAQData[]>(FALLBACK_FAQS);
+  useEffect(() => {
+    fetch(`${API_URL}/faqs`)
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((items) => { if (items?.length) setData(items); })
+      .catch(() => { /* keep fallback */ });
+  }, []);
+  return data;
+}
 
 /* ── Stats ── */
 interface PlatformStats {
@@ -409,7 +457,7 @@ function FeaturesSection() {
    EXAM CATEGORIES — lime color-block section (#dceeb1)
    Rounded 24px on desktop · full-bleed below 768px
 ───────────────────────────────────────────────────────────── */
-function ExamCategoriesSection() {
+function ExamCategoriesSection({ examCategories }: { examCategories: FeaturedExam[] }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [trackX, setTrackX]       = useState(0);
   const viewportRef    = useRef<HTMLDivElement | null>(null);
@@ -467,8 +515,8 @@ function ExamCategoriesSection() {
           </div>
 
           {/* Pill tab bar — active = black (pricing-tab-selected), inactive = white */}
-          <div ref={tabContainerRef} className="overflow-x-auto scrollbar-hide mb-8">
-            <div className="flex gap-2 min-w-min py-1">
+          <div ref={tabContainerRef} className="flex overflow-x-auto scrollbar-hide mb-8 justify-center">
+            <div className="flex gap-2 py-1 flex-shrink-0">
               {examCategories.map((ex, idx) => (
                 <button
                   key={ex.name}
@@ -550,7 +598,7 @@ function ExamCategoriesSection() {
                         className="text-[18px] text-[#666872] dark:text-[var(--ink-2)] leading-[1.45] mb-8 max-w-2xl"
                         style={{ fontWeight: 330, letterSpacing: "-0.26px" }}
                       >
-                        {examDescriptions[exam.name] || "Comprehensive preparation with full-length test series, previous year papers, and expert study materials."}
+                        {exam.description || "Comprehensive preparation with full-length test series, previous year papers, and expert study materials."}
                       </p>
 
                       <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
@@ -587,22 +635,40 @@ function ExamCategoriesSection() {
             </motion.div>
           </div>
 
-          {/* Dots — black/black-20 on lime bg */}
-          <div className="flex items-center gap-2 mt-7">
-            {examCategories.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => goTo(idx)}
-                className={`rounded-full transition-all duration-300 ${
-                  activeIdx === idx
-                    ? "w-7 h-2 bg-[#0D287E] dark:bg-[var(--blue)]"
-                    : "w-2 h-2 bg-[#CBCDD5] dark:bg-[var(--ink-4)] hover:bg-[#8D8D8F] dark:hover:bg-[var(--ink-3)]"
-                }`}
-              />
-            ))}
+          {/* Dots + prev/next arrows — centered */}
+          <div className="flex items-center justify-center gap-4 mt-7">
+            <button
+              onClick={() => goTo(activeIdx - 1)}
+              disabled={activeIdx === 0}
+              className="w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[var(--card)] border border-[#EAE8EC] dark:border-[var(--line-soft)] hover:bg-[#EAE8EC] dark:hover:bg-[var(--bg)] disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 text-[#2C2C2E] dark:text-[var(--ink-1)]" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              {examCategories.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => goTo(idx)}
+                  className={`rounded-full transition-all duration-300 ${
+                    activeIdx === idx
+                      ? "w-7 h-2 bg-[#0D287E] dark:bg-[var(--blue)]"
+                      : "w-2 h-2 bg-[#CBCDD5] dark:bg-[var(--ink-4)] hover:bg-[#8D8D8F] dark:hover:bg-[var(--ink-3)]"
+                  }`}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={() => goTo(activeIdx + 1)}
+              disabled={activeIdx === examCategories.length - 1}
+              className="w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[var(--card)] border border-[#EAE8EC] dark:border-[var(--line-soft)] hover:bg-[#EAE8EC] dark:hover:bg-[var(--bg)] disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight className="w-4 h-4 text-[#2C2C2E] dark:text-[var(--ink-1)]" />
+            </button>
           </div>
 
-          <div className="mt-8">
+          <div className="mt-8 flex justify-center">
             <BtnSecondary href="/exams">Browse All Exams <ArrowRight className="w-4 h-4" /></BtnSecondary>
           </div>
 
@@ -615,7 +681,7 @@ function ExamCategoriesSection() {
 /* ─────────────────────────────────────────────────────────────
    TESTIMONIALS — cream color-block section (#f4ecd6)
 ───────────────────────────────────────────────────────────── */
-function TestimonialsSection() {
+function TestimonialsSection({ testimonials }: { testimonials: TestimonialData[] }) {
   return (
     <section className="py-5 bg-white dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -672,38 +738,9 @@ function TestimonialsSection() {
    FAQ — white canvas, clean accordion (SuperKalam-style)
    Each item is a standalone rounded card with chevron toggle
 ───────────────────────────────────────────────────────────── */
-const FAQ_ITEMS = [
-  {
-    q: "What exams does ExamNurture cover?",
-    a: "ExamNurture covers a wide range of competitive exams including JPSC Prelims & Mains, SBI PO, IBPS PO, RBI Grade B, SSC CGL, Railway NTPC, Daroga SI, UET, and many more state and central government exams.",
-  },
-  {
-    q: "Is ExamNurture free to use?",
-    a: "Yes! ExamNurture offers a free tier with access to a selection of mock tests and PYQ papers. Premium plans unlock unlimited test series, full PYQ archives, AI analytics, and real-time percentile ranking.",
-  },
-  {
-    q: "How are the mock tests structured?",
-    a: "All mock tests use a CBT (Computer-Based Test) interface that mirrors the actual exam — question palette, auto-timer, section switching, and negative marking. Results are instant with detailed subject-wise analysis.",
-  },
-  {
-    q: "How does the AI weak-area analysis work?",
-    a: "After each test, our AI analyses your response patterns across topics and difficulty levels. It identifies your weakest areas and suggests targeted practice sets, helping you prioritise study time effectively.",
-  },
-  {
-    q: "Can I access ExamNurture on my phone?",
-    a: "Absolutely. ExamNurture works on any browser on mobile or desktop. We also have an Android app on the Play Store with offline support for downloaded tests.",
-  },
-  {
-    q: "How often are PYQ papers added?",
-    a: "Previous Year Question papers are added within days of each official exam. Our content team also back-fills older papers so you get the most complete archive available.",
-  },
-  {
-    q: "I'm a beginner — where should I start?",
-    a: "Start with our Exam page, pick your target exam, and browse the syllabus and exam pattern. Then take a diagnostic mock test to benchmark yourself, and let the AI recommendations guide your study plan from there.",
-  },
-];
+/* FAQ_ITEMS is now fetched dynamically via useFAQs() hook */
 
-function FAQSection() {
+function FAQSection({ faqItems }: { faqItems: FAQData[] }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   return (
@@ -722,7 +759,7 @@ function FAQSection() {
 
         {/* Accordion list */}
         <div className="flex flex-col gap-3">
-          {FAQ_ITEMS.map((item, idx) => {
+          {faqItems.map((item, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div
@@ -741,7 +778,7 @@ function FAQSection() {
                     className="text-[17px] text-[#2C2C2E] dark:text-[var(--ink-1)] leading-[1.45] pr-4"
                     style={{ fontWeight: isOpen ? 600 : 400, letterSpacing: "-0.14px" }}
                   >
-                    {item.q}
+                    {item.question}
                   </span>
                   <ChevronDown
                     className={`w-5 h-5 text-[#CBCDD5] dark:text-[var(--ink-4)] flex-shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180 !text-[#8D8D8F] dark:!text-[var(--ink-2)]" : ""}`}
@@ -756,7 +793,7 @@ function FAQSection() {
                     className="px-6 pb-6 text-[16px] text-[#8D8D8F] dark:text-[var(--ink-3)] leading-[1.60]"
                     style={{ fontWeight: 330, letterSpacing: "-0.14px" }}
                   >
-                    {item.a}
+                    {item.answer}
                   </p>
                 </div>
               </div>
@@ -853,15 +890,20 @@ export default function LandingPage() {
   const openLogin = useCallback(() => setShowModal(true), []);
   const { stats, loading } = useStats();
 
+  /* Dynamic marketing content — fetched from Test_Backend, falls back to static */
+  const featuredExams = useFeaturedExams();
+  const testimonials = useTestimonials();
+  const faqItems = useFAQs();
+
   return (
     <div className="min-h-screen bg-white dark:bg-[var(--bg)]">
       {showModal && <AuthModal onClose={() => setShowModal(false)} next="/dashboard" />}
       <HeroSection onLogin={openLogin} stats={stats} />
       <MarqueeStrip />
       <FeaturesSection />
-      <ExamCategoriesSection />
-      <TestimonialsSection />
-      <FAQSection />
+      <ExamCategoriesSection examCategories={featuredExams} />
+      <TestimonialsSection testimonials={testimonials} />
+      <FAQSection faqItems={faqItems} />
       <CTASection stats={stats} loading={loading} />
     </div>
   );

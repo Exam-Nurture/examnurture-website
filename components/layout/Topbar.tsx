@@ -54,7 +54,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/series":     "Test Series",
   "/dashboard/pyq":       "Previous Year Papers",
   "/dashboard/analytics": "Analytics",
-  "/dashboard/schedule":   "Schedule",
   "/exams":      "Browse Exams",
   "/blog":    "Nurture Library",
   "/dashboard/plans":      "Upgrade Plan",

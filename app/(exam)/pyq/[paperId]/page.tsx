@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import TestPortal from "@/components/exam/TestPortal";
 import ResultView, { AttemptResult } from "@/components/exam/ResultView";
-import { apiGetPYQPaperById, apiGetPYQQuestions, apiSubmitPYQAttempt, apiGetPYQAttemptResult } from "@/lib/api";
+import { apiGetPYQPaperById, apiGetPYQQuestions, apiSubmitPYQAttempt, apiGetPYQAttemptResult, apiEmailReport } from "@/lib/api";
 import type { Question } from "@/components/exam/QuestionViewer";
 
 type Phase = "loading" | "active" | "result" | "error";
@@ -37,6 +37,7 @@ export default function PYQExamPage() {
   const [questions, setQuestions]     = useState<Question[]>([]);
   const [result, setResult]           = useState<AttemptResult | null>(null);
   const [userAnswers, setUserAnswers] = useState<Record<string, number>>({});
+  const [attemptId, setAttemptId]     = useState<string | null>(null);
   const [error, setError]             = useState("");
 
   // Auth guard
@@ -50,7 +51,7 @@ export default function PYQExamPage() {
   useEffect(() => {
     if (authLoading || !user || !paperId) return;
 
-    const attemptId = searchParams.get("attemptId");
+    const qsAttemptId = searchParams.get("attemptId");
 
     const load = async () => {
       try {
@@ -62,8 +63,9 @@ export default function PYQExamPage() {
         const qs = rawQs.map(mapQ);
         setQuestions(qs);
 
-        if (attemptId) {
-          const res: any = await apiGetPYQAttemptResult(attemptId);
+        if (qsAttemptId) {
+          setAttemptId(qsAttemptId);
+          const res: any = await apiGetPYQAttemptResult(qsAttemptId);
           setResult({
             totalQuestions: qs.length,
             correct:        res.correct      ?? 0,
@@ -106,6 +108,7 @@ export default function PYQExamPage() {
     setUserAnswers(answers);
     try {
       const res: any = await apiSubmitPYQAttempt(paperId!, answers, timeTakenSec);
+      if (res.attemptId || res.id) setAttemptId(res.attemptId ?? res.id);
       setResult({
         totalQuestions: questions.length,
         correct:        res.correct     ?? 0,
@@ -167,6 +170,7 @@ export default function PYQExamPage() {
           userAnswers={userAnswers}
           testTitle={paperData ? `${paperData.year} — ${paperData.title}` : undefined}
           onBack={() => router.push("/dashboard/pyq")}
+          onEmailReport={attemptId ? () => apiEmailReport({ attemptId, kind: "pyq" }).then(() => {}) : undefined}
         />
       </div>
     );

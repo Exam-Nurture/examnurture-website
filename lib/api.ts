@@ -332,9 +332,28 @@ export async function apiCancelSubscription() {
 
 /* ── Exams / Boards ─────────────────────────────── */
 
-export async function apiGetBoards(params?: { tier?: number }) {
+export interface ApiBoardExam {
+  id: string; name: string; shortName: string; hasTests: boolean; hasPYQ: boolean; tier: number;
+}
+
+export interface ApiBoard {
+  id: string; name: string; shortName: string; tint: string; colorSoft?: string;
+  state?: { id: number; name: string } | null;
+  exams?: ApiBoardExam[];
+}
+
+export interface ApiState {
+  id: number; name: string;
+  boards: Pick<ApiBoard, "id" | "name" | "shortName" | "tint" | "colorSoft">[];
+}
+
+export async function apiGetStates(): Promise<ApiState[]> {
+  return apiFetch<ApiState[]>("/states");
+}
+
+export async function apiGetBoards(params?: { tier?: number }): Promise<ApiBoard[]> {
   const qs = params?.tier ? `?tier=${params.tier}` : "";
-  return apiFetch(`/boards${qs}`);
+  return apiFetch<ApiBoard[]>(`/boards${qs}`);
 }
 
 export async function apiGetExams(params?: { board?: string; tier?: number }) {
@@ -380,6 +399,18 @@ export async function apiSubmitAttempt(
 
 export async function apiGetAttemptResult(attemptId: string) {
   return apiFetch(`/attempts/${attemptId}/result`);
+}
+
+/* ── Email Report ────────────────────────────────
+ * POST /reports/email — backend sends a beautiful HTML report
+ * to the user's registered email for the given attempt.
+ * `kind` distinguishes test-series, PYQ, and daily-quiz attempts.
+ */
+export async function apiEmailReport(params: { attemptId: string; kind: "test" | "pyq" | "daily-quiz" }) {
+  return apiFetch(`/reports/email`, {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
 }
 
 /* ── PYQ Papers ─────────────────────────────────── */

@@ -1,72 +1,132 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, GraduationCap, ArrowRight, ChevronRight, MapPin, Building2, Flame, SlidersHorizontal, X, Check } from "lucide-react";
-import { STATES, BOARDS, getAllExams, CatalogueState, CatalogueBoard, CatalogueExam } from "@/lib/data/examCatalogue";
+import { Search, GraduationCap, ArrowRight, ChevronRight, SlidersHorizontal, X, Check } from "lucide-react";
+import { apiGetBoards, type ApiBoard } from "@/lib/api";
+
+/* ── Emoji map: presentation-only, state names come from the backend ── */
+const STATE_EMOJI: Record<string, string> = {
+  "Central Government": "🏛",
+  "Jharkhand":          "🌿",
+  "Bihar":              "🏺",
+  "Uttar Pradesh":      "⚡",
+  "Rajasthan":          "🏜",
+  "Madhya Pradesh":     "🦁",
+  "Maharashtra":        "🌊",
+  "Karnataka":          "🌸",
+  "Tamil Nadu":         "🏯",
+  "Gujarat":            "🦚",
+  "West Bengal":        "🎭",
+  "Andhra Pradesh":     "🌾",
+  "Telangana":          "💎",
+  "Kerala":             "🌴",
+  "Punjab":             "🌾",
+  "Haryana":            "🌻",
+  "Himachal Pradesh":   "🏔",
+  "Uttarakhand":        "🏔",
+  "Odisha":             "🎪",
+  "Assam":              "🍵",
+  "Chhattisgarh":       "🌿",
+  "Goa":                "🏖",
+  "Delhi":              "🗼",
+};
+
+function emojiFor(name: string) {
+  return STATE_EMOJI[name] ?? "📋";
+}
+
+/* ── Group boards by their state (or "Other" if no state linked) ── */
+interface StateGroup {
+  id: number | null;
+  name: string;
+  boards: ApiBoard[];
+}
+
+function groupByState(boards: ApiBoard[]): StateGroup[] {
+  const map = new Map<string, StateGroup>();
+
+  for (const board of boards) {
+    const key  = board.state ? String(board.state.id) : "__none__";
+    const name = board.state?.name ?? "Other";
+    if (!map.has(key)) map.set(key, { id: board.state?.id ?? null, name, boards: [] });
+    map.get(key)!.boards.push(board);
+  }
+
+  // Sort: real states alphabetically first, "Other" last
+  return [...map.values()].sort((a, b) => {
+    if (a.id === null) return 1;
+    if (b.id === null) return -1;
+    return a.name.localeCompare(b.name);
+  });
+}
 
 export default function AllExamsPage() {
-  const [search, setSearch] = useState("");
-  const [selectedStates, setSelectedStates] = useState<string[]>([]);
+  const [search, setSearch]             = useState("");
+  const [selectedStates, setSelectedStates] = useState<Array<number | null>>([]);
   const [selectedBoards, setSelectedBoards] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const toggleState = (id: string) => {
-    setSelectedStates(prev => 
-      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
-    );
-  };
+  const [boards, setBoards]   = useState<ApiBoard[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleBoard = (id: string) => {
-    setSelectedBoards(prev => 
-      prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]
-    );
-  };
+  useEffect(() => {
+    let cancelled = false;
+    apiGetBoards()
+      .then(data => { if (!cancelled) setBoards(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
-  const allExams = getAllExams();
+  /* Derive state groups + all exams once boards are loaded */
+  const stateGroups = useMemo(() => groupByState(boards), [boards]);
+  const allExams    = useMemo(() => boards.flatMap(b => (b.exams ?? []).map(e => ({ ...e, board: b }))), [boards]);
 
-  // Unified filtering logic
-  const filteredExams = search
+  const toggleState = (id: number | null) =>
+    setSelectedStates(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
+
+  const toggleBoard = (id: string) =>
+    setSelectedBoards(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
+
+  const isAllActive = selectedStates.length === 0;
+
+  /* Search: client-side filter over all exams */
+  const filteredExams = search.trim()
     ? allExams.filter(e =>
         e.name.toLowerCase().includes(search.toLowerCase()) ||
-        (e.shortName && e.shortName.toLowerCase().includes(search.toLowerCase()))
+        e.shortName.toLowerCase().includes(search.toLowerCase())
       )
     : null;
 
-  // Derive activeState for the quick-tabs (highlighted if only one state is selected)
-  const activeState = selectedStates.length === 1 ? selectedStates[0] : (selectedStates.length === 0 ? "all" : null);
-
-  // Filter states based on multi-select
-  const visibleStates = selectedStates.length > 0 
-    ? STATES.filter(s => selectedStates.includes(s.id))
-    : STATES;
+  /* Browse mode: which state groups to show */
+  const visibleGroups = selectedStates.length > 0
+    ? stateGroups.filter(g => selectedStates.includes(g.id))
+    : stateGroups;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
-      
-      {/* ── HERO SECTION ── */}
-      <section className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 pt-16 pb-20 relative overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-full bg-blue-500/5 blur-[120px] pointer-events-none"></div>
+    <div className="min-h-screen pb-20" style={{ background: "var(--bg)" }}>
 
+      {/* ── HERO ── */}
+      <section className="border-b pt-16 pb-20 relative overflow-hidden" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-full opacity-5 blur-[120px] pointer-events-none" style={{ background: "#0D287E" }} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative z-10 text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 tracking-tight">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 tracking-tight" style={{ color: "var(--ink-1)" }}>
             Find Your Target Exam
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Explore our comprehensive catalogue of government and competitive exams. Get access to detailed syllabus, important dates, mock tests, and previous year papers.
+          <p className="text-lg max-w-2xl mx-auto mb-10 leading-relaxed" style={{ color: "var(--ink-2)" }}>
+            Explore our comprehensive catalogue of government and competitive exams. Get access to syllabus, important dates, mock tests, and previous year papers.
           </p>
-
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto relative group">
+          <div className="max-w-2xl mx-auto relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              <Search className="h-5 w-5" style={{ color: "var(--ink-4)" }} />
             </div>
             <input
               type="text"
-              className="block w-full pl-12 pr-4 py-4 sm:text-lg border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 focus:border-blue-500 transition-all shadow-sm"
-              placeholder="Search for an exam (e.g., SSC CGL, IBPS PO)..."
+              className="block w-full pl-12 pr-4 py-4 sm:text-lg border-2 rounded-2xl focus:outline-none transition-all"
+              style={{ background: "var(--bg)", borderColor: "var(--line-soft)", color: "var(--ink-1)" }}
+              placeholder="Search for an exam (e.g., SSC CGL, IBPS PO)…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -76,175 +136,214 @@ export default function AllExamsPage() {
 
       {/* ── MAIN CONTENT ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-12 relative">
-        
-        {search && filteredExams ? (
+
+        {search.trim() && filteredExams ? (
           /* ── SEARCH RESULTS ── */
           <div className="space-y-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Search Results for "{search}"
+            <h2 className="text-xl font-bold" style={{ color: "var(--ink-1)" }}>
+              Search results for &ldquo;{search}&rdquo;
             </h2>
             {filteredExams.length === 0 ? (
-              <div className="bg-white dark:bg-gray-900 rounded-3xl p-12 text-center border border-gray-200 dark:border-gray-800">
-                <Search className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No exams found</h3>
-                <p className="text-gray-500 dark:text-gray-400">Try adjusting your search terms or browse by state below.</p>
+              <div className="border rounded-3xl p-12 text-center" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+                <Search className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: "var(--ink-4)" }} />
+                <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink-1)" }}>No exams found</h3>
+                <p style={{ color: "var(--ink-3)" }}>Try adjusting your search terms or browse by state below.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredExams.map((exam, idx) => {
-                  const board = BOARDS.find(b => b.id === exam.boardId);
-                  const state = STATES.find(s => s.id === exam.stateId);
-                  if (!board || !state) return null;
-                  
-                  return (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      key={exam.id}
+                {filteredExams.map((exam, idx) => (
+                  <motion.div
+                    key={exam.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.04 }}
+                  >
+                    <Link
+                      href={`/exams/${exam.id}`}
+                      className="block border rounded-3xl p-6 transition-all hover:-translate-y-0.5 group"
+                      style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
                     >
-                      <Link 
-                        href={`/exams/${exam.id}`}
-                        className="block bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all group"
+                      <span
+                        className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded inline-block mb-3"
+                        style={{ background: `${exam.board.tint}18`, color: exam.board.tint || "#0D287E" }}
                       >
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{state.abbr} · {board.name}</span>
-                          {exam.popular && <Flame size={14} className="text-orange-500" />}
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          {exam.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                          {exam.eligibility} · {exam.testCount} Tests
-                        </p>
-                        <div className="flex items-center text-sm font-bold text-blue-600 dark:text-blue-400">
-                          View Details <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
+                        {exam.board.shortName}
+                      </span>
+                      <h3 className="text-xl font-bold mb-2" style={{ color: "var(--ink-1)" }}>{exam.name}</h3>
+                      <p className="text-sm mb-6" style={{ color: "var(--ink-3)" }}>
+                        {[exam.hasTests && "Tests available", exam.hasPYQ && "PYQs available"].filter(Boolean).join(" · ") || "Coming soon"}
+                      </p>
+                      <div className="flex items-center text-sm font-bold" style={{ color: "#0D287E" }}>
+                        View Details <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
               </div>
             )}
           </div>
+
+        ) : loading ? (
+          /* ── SKELETON ── */
+          <div className="space-y-8">
+            <div className="flex gap-3">
+              {[100, 160, 120, 100, 140].map((w, i) => (
+                <div key={i} className="h-11 rounded-xl animate-pulse" style={{ width: w, background: "var(--card)" }} />
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-48 rounded-3xl animate-pulse" style={{ background: "var(--card)" }} />
+              ))}
+            </div>
+          </div>
+
         ) : (
           /* ── BROWSE BY STATE ── */
           <div className="space-y-12">
-            
-            {/* State Filter Tabs & Filter Button */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4">
-              <div className="flex overflow-x-auto scrollbar-hide gap-3 w-full sm:w-auto">
+
+            {/* State tabs + Filter button */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex overflow-x-auto scrollbar-hide gap-3 pb-1">
+                {/* All Exams */}
                 <button
-                  onClick={() => setSelectedStates([])}
-                  className={`shrink-0 px-6 py-3 rounded-xl text-sm font-bold transition-all ${
-                    activeState === "all" 
-                      ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md" 
-                      : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  }`}
+                  onClick={() => { setSelectedStates([]); setSelectedBoards([]); }}
+                  className="shrink-0 px-5 py-2.5 rounded-full text-sm font-bold transition-all"
+                  style={
+                    isAllActive
+                      ? { background: "#0D287E", color: "#fff" }
+                      : { background: "var(--card)", color: "var(--ink-2)", border: "1.5px solid var(--line-soft)" }
+                  }
                 >
                   All Exams
                 </button>
-                {STATES.map(state => (
+
+                {/* One tab per state, derived from boards data */}
+                {stateGroups.filter(g => g.id !== null).map(group => (
                   <button
-                    key={state.id}
-                    onClick={() => setSelectedStates([state.id])}
-                    className={`shrink-0 px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
-                      activeState === state.id 
-                        ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md" 
-                        : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    }`}
+                    key={group.id}
+                    onClick={() => { setSelectedStates([group.id]); setSelectedBoards([]); }}
+                    className="shrink-0 px-5 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2"
+                    style={
+                      selectedStates.includes(group.id)
+                        ? { background: "#0D287E", color: "#fff" }
+                        : { background: "var(--card)", color: "var(--ink-2)", border: "1.5px solid var(--line-soft)" }
+                    }
                   >
-                    <span>{state.emoji}</span> {state.name}
+                    <span>{emojiFor(group.name)}</span> {group.name}
                   </button>
                 ))}
               </div>
-              <button 
-                className={`w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all ${
-                  selectedStates.length > 0 || selectedBoards.length > 0
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
-                }`}
+
+              {/* Filter button */}
+              <button
+                className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all"
+                style={
+                  selectedBoards.length > 0
+                    ? { background: "#0D287E", color: "#fff" }
+                    : { background: "var(--card)", color: "var(--ink-2)", border: "1.5px solid var(--line-soft)" }
+                }
                 onClick={() => setIsFilterOpen(true)}
               >
-                <SlidersHorizontal size={16} className={selectedStates.length > 0 || selectedBoards.length > 0 ? "text-white" : "text-orange-400"} /> 
-                Filters {(selectedStates.length + selectedBoards.length) > 0 && `(${(selectedStates.length + selectedBoards.length)})`}
+                <SlidersHorizontal size={16} />
+                Filters
+                {selectedBoards.length > 0 && (
+                  <span className="ml-1 bg-white/20 px-1.5 py-0.5 rounded text-xs">{selectedBoards.length}</span>
+                )}
               </button>
             </div>
 
-            {/* Render grouped by State -> Board -> Exams */}
+            {/* State → Board → Exams */}
             <div className="space-y-16">
-              {visibleStates.map(state => {
-                const stateBoards = BOARDS.filter(b => 
-                  b.stateId === state.id && 
-                  b.exams.length > 0 &&
-                  (selectedBoards.length === 0 || selectedBoards.includes(b.id))
+              {visibleGroups.map(group => {
+                const groupBoards = group.boards.filter(b =>
+                  selectedBoards.length === 0 || selectedBoards.includes(b.id)
                 );
-                if (stateBoards.length === 0) return null;
+                if (groupBoards.length === 0) return null;
 
                 return (
-                  <div key={state.id} className="space-y-8">
-                    {/* State Header */}
-                    <div className="flex items-center gap-4 border-b border-gray-200 dark:border-gray-800 pb-4">
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style={{ backgroundColor: state.colorSoft }}>
-                        {state.emoji}
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                          {state.name}
-                        </h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{state.description}</p>
-                      </div>
-                    </div>
-
-                    {/* Boards Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {stateBoards.map(board => (
-                        <div key={board.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
-                          
-                          {/* Board Header */}
-                          <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4" style={{ backgroundColor: `${board.color}05` }}>
-                            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-sm" style={{ backgroundColor: board.color }}>
-                              {board.name.slice(0, 2)}
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-lg text-gray-900 dark:text-white leading-tight">{board.fullName}</h3>
-                              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: board.color }}>
-                                {board.name}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Exams List */}
-                          <div className="p-2 flex-1">
-                            {board.exams.map(exam => (
-                              <Link
-                                key={exam.id}
-                                href={`/exams/${exam.id}`}
-                                className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
-                              >
-                                <div>
-                                  <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center gap-2">
-                                    {exam.name}
-                                    {exam.popular && <Flame size={14} className="text-orange-500" />}
-                                  </h4>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    {exam.testCount} Tests · {exam.pyqCount} PYQs
-                                  </p>
-                                </div>
-                                <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                  <ChevronRight size={16} />
-                                </div>
-                              </Link>
-                            ))}
-                          </div>
-
+                  <div key={group.id ?? "__none__"} className="space-y-8">
+                    {/* State header */}
+                    {group.id !== null && (
+                      <div className="flex items-center gap-4 border-b pb-4" style={{ borderColor: "var(--line-soft)" }}>
+                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: "var(--card)" }}>
+                          {emojiFor(group.name)}
                         </div>
-                      ))}
-                    </div>
+                        <h2 className="text-2xl font-bold" style={{ color: "var(--ink-1)" }}>{group.name}</h2>
+                      </div>
+                    )}
 
+                    {/* Boards grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {groupBoards.map(board => {
+                        const boardExams = board.exams ?? [];
+                        if (boardExams.length === 0) return null;
+                        return (
+                          <div
+                            key={board.id}
+                            className="border rounded-3xl overflow-hidden flex flex-col"
+                            style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
+                          >
+                            {/* Board header */}
+                            <div
+                              className="p-5 border-b flex items-center gap-4"
+                              style={{ borderColor: "var(--line-soft)", background: `${board.tint}08` }}
+                            >
+                              <div
+                                className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-sm flex-shrink-0"
+                                style={{ backgroundColor: board.tint || "#0D287E" }}
+                              >
+                                {board.shortName.slice(0, 2)}
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-base leading-tight" style={{ color: "var(--ink-1)" }}>
+                                  {board.name}
+                                </h3>
+                                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: board.tint || "#0D287E" }}>
+                                  {board.shortName}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Exams list */}
+                            <div className="p-2 flex-1">
+                              {boardExams.map(exam => (
+                                <Link
+                                  key={exam.id}
+                                  href={`/exams/${exam.id}`}
+                                  className="flex items-center justify-between p-4 rounded-2xl transition-all group hover:bg-[var(--bg)]"
+                                >
+                                  <div>
+                                    <h4 className="font-bold" style={{ color: "var(--ink-1)" }}>
+                                      {exam.name}
+                                    </h4>
+                                    <p className="text-xs mt-0.5" style={{ color: "var(--ink-4)" }}>
+                                      {[exam.hasTests && "Tests", exam.hasPYQ && "PYQs"].filter(Boolean).join(" · ") || "Coming soon"}
+                                    </p>
+                                  </div>
+                                  <div
+                                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-110 group-hover:bg-[#0D287E] group-hover:text-white"
+                                    style={{ background: "var(--bg)", color: "var(--ink-3)" }}
+                                  >
+                                    <ChevronRight size={16} />
+                                  </div>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
+
+              {visibleGroups.every(g => g.boards.every(b => (b.exams ?? []).length === 0)) && (
+                <div className="border-2 border-dashed rounded-3xl p-16 text-center" style={{ borderColor: "var(--line-soft)" }}>
+                  <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: "var(--ink-4)" }} />
+                  <p className="font-medium" style={{ color: "var(--ink-3)" }}>No exams match the selected filters.</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -253,87 +352,79 @@ export default function AllExamsPage() {
         <AnimatePresence>
           {isFilterOpen && (
             <>
-              {/* Backdrop */}
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 onClick={() => setIsFilterOpen(false)}
                 className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
               />
-
-              {/* Drawer Content */}
               <motion.div
-                initial={{ x: "100%" }}
-                animate={{ x: 0 }}
-                exit={{ x: "100%" }}
+                initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed inset-y-0 right-0 w-full max-w-sm bg-white dark:bg-gray-900 shadow-2xl z-[101] flex flex-col"
+                className="fixed inset-y-0 right-0 w-full max-w-sm shadow-2xl z-[101] flex flex-col"
+                style={{ background: "var(--card)" }}
               >
-                {/* Header */}
-                <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: "var(--line-soft)" }}>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Filters</h2>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Refine your exam discovery</p>
+                    <h2 className="text-xl font-bold" style={{ color: "var(--ink-1)" }}>Filters</h2>
+                    <p className="text-xs mt-1" style={{ color: "var(--ink-3)" }}>Refine your exam discovery</p>
                   </div>
-                  <button 
-                    onClick={() => setIsFilterOpen(false)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                  >
-                    <X className="w-5 h-5 text-gray-500" />
+                  <button onClick={() => setIsFilterOpen(false)} className="p-2 rounded-full transition-colors" style={{ color: "var(--ink-3)" }}>
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Body */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
-                  
-                  {/* States Section */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Target States</h3>
-                    <div className="grid grid-cols-1 gap-2">
-                      {STATES.map(state => {
-                        const isSelected = selectedStates.includes(state.id);
-                        return (
-                          <button
-                            key={state.id}
-                            onClick={() => toggleState(state.id)}
-                            className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                              isSelected 
-                                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300" 
-                                : "border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 text-gray-600 dark:text-gray-400"
-                            }`}
-                          >
-                            <span className="flex items-center gap-2">
-                              <span>{state.emoji}</span> {state.name}
-                            </span>
-                            {isSelected && <Check size={16} className="text-blue-500" />}
-                          </button>
-                        );
-                      })}
+                  {/* State filter */}
+                  {stateGroups.filter(g => g.id !== null).length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--ink-4)" }}>State / Region</h3>
+                      <div className="flex flex-col gap-2">
+                        {stateGroups.filter(g => g.id !== null).map(group => {
+                          const isSel = selectedStates.includes(group.id);
+                          return (
+                            <button
+                              key={group.id}
+                              onClick={() => toggleState(group.id)}
+                              className="flex items-center justify-between p-3 rounded-xl border transition-all text-left"
+                              style={
+                                isSel
+                                  ? { border: "1px solid #0D287E", background: "rgba(13,40,126,0.08)", color: "#0D287E" }
+                                  : { borderColor: "var(--line-soft)", color: "var(--ink-2)", background: "var(--bg)" }
+                              }
+                            >
+                              <span className="flex items-center gap-2 font-medium">
+                                {emojiFor(group.name)} {group.name}
+                              </span>
+                              {isSel && <Check size={16} style={{ color: "#0D287E" }} />}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Boards Section */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Exam Boards</h3>
-                    <div className="grid grid-cols-1 gap-2">
-                      {(selectedStates.length > 0 
-                        ? BOARDS.filter(b => selectedStates.includes(b.stateId))
-                        : BOARDS
-                      ).filter(b => b.exams.length > 0).map(board => {
-                        const isSelected = selectedBoards.includes(board.id);
+                  {/* Board filter */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--ink-4)" }}>Exam Board</h3>
+                    <div className="flex flex-col gap-2">
+                      {(selectedStates.length > 0
+                        ? stateGroups.filter(g => selectedStates.includes(g.id)).flatMap(g => g.boards)
+                        : boards
+                      ).map(board => {
+                        const isSel = selectedBoards.includes(board.id);
                         return (
                           <button
                             key={board.id}
                             onClick={() => toggleBoard(board.id)}
-                            className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
-                              isSelected 
-                                ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300" 
-                                : "border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 text-gray-600 dark:text-gray-400"
-                            }`}
+                            className="flex items-center justify-between p-3 rounded-xl border text-left transition-all"
+                            style={
+                              isSel
+                                ? { border: `1px solid ${board.tint}`, background: `${board.tint}12`, color: board.tint }
+                                : { borderColor: "var(--line-soft)", color: "var(--ink-2)", background: "var(--bg)" }
+                            }
                           >
                             <span className="text-sm font-semibold">{board.name}</span>
-                            {isSelected && <Check size={16} className="text-orange-500" />}
+                            {isSel && <Check size={16} />}
                           </button>
                         );
                       })}
@@ -341,17 +432,18 @@ export default function AllExamsPage() {
                   </div>
                 </div>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-4 bg-gray-50/50 dark:bg-gray-900/50">
-                  <button 
+                <div className="p-6 border-t grid grid-cols-2 gap-4" style={{ borderColor: "var(--line-soft)", background: "var(--bg)" }}>
+                  <button
                     onClick={() => { setSelectedStates([]); setSelectedBoards([]); }}
-                    className="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 transition-all"
+                    className="px-4 py-3 border rounded-xl text-sm font-bold"
+                    style={{ borderColor: "var(--line-soft)", color: "var(--ink-3)", background: "var(--card)" }}
                   >
                     Clear All
                   </button>
-                  <button 
+                  <button
                     onClick={() => setIsFilterOpen(false)}
-                    className="px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-bold shadow-lg hover:shadow-xl transition-all"
+                    className="px-4 py-3 rounded-xl text-sm font-bold text-white"
+                    style={{ background: "#0D287E" }}
                   >
                     Apply Filters
                   </button>

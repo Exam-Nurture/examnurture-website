@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import TestPortal from "@/components/exam/TestPortal";
 import ResultView, { AttemptResult } from "@/components/exam/ResultView";
-import { apiGetTest, apiSubmitAttempt, apiGetAttemptResult } from "@/lib/api";
+import { apiGetTest, apiSubmitAttempt, apiGetAttemptResult, apiEmailReport } from "@/lib/api";
 import type { Question } from "@/components/exam/QuestionViewer";
 
 type Phase = "loading" | "auth" | "active" | "result" | "error";
@@ -37,6 +37,7 @@ export default function ExamPage() {
   const [questions, setQuestions]   = useState<Question[]>([]);
   const [result, setResult]         = useState<AttemptResult | null>(null);
   const [userAnswers, setUserAnswers] = useState<Record<string, number>>({});
+  const [attemptId, setAttemptId]   = useState<string | null>(null);
   const [error, setError]           = useState("");
 
   // Auth guard — redirect to login if not signed in
@@ -50,7 +51,7 @@ export default function ExamPage() {
   useEffect(() => {
     if (authLoading || !user || !testId) return;
 
-    const attemptId = searchParams.get("attemptId");
+    const qsAttemptId = searchParams.get("attemptId");
 
     const load = async () => {
       try {
@@ -59,9 +60,10 @@ export default function ExamPage() {
         const qs = (test.questions || []).map(mapQ);
         setQuestions(qs);
 
-        if (attemptId) {
+        if (qsAttemptId) {
+          setAttemptId(qsAttemptId);
           // Viewing a past result
-          const res: any = await apiGetAttemptResult(attemptId);
+          const res: any = await apiGetAttemptResult(qsAttemptId);
           setResult({
             totalQuestions: qs.length,
             correct:        res.correct    ?? 0,
@@ -105,6 +107,7 @@ export default function ExamPage() {
     setUserAnswers(answers);
     try {
       const res: any = await apiSubmitAttempt(testId!, answers, timeTakenSec);
+      if (res.attemptId || res.id) setAttemptId(res.attemptId ?? res.id);
       setResult({
         totalQuestions: questions.length,
         correct:        res.correct     ?? 0,
@@ -168,6 +171,7 @@ export default function ExamPage() {
           userAnswers={userAnswers}
           testTitle={testData?.title}
           onBack={() => router.push("/dashboard/series")}
+          onEmailReport={attemptId ? () => apiEmailReport({ attemptId, kind: "test" }).then(() => {}) : undefined}
         />
       </div>
     );

@@ -9,7 +9,7 @@ import { AdminTable, Pagination, Modal, Field, SelectField, Toggle } from "@/com
 
 const empty = (): Partial<AdminTestSeries> => ({
   examId: "", title: "", description: "", totalTests: 0,
-  tierRequired: 0, isPaid: false, isFeatured: false, isActive: true,
+  isPaid: false, isFeatured: false, isActive: true,
   price: 0,
 });
 
@@ -41,7 +41,7 @@ export default function AdminTestSeriesPage() {
     ev.preventDefault();
     setSaving(true);
     try {
-      const payload = { ...form, tierRequired: Number(form.tierRequired), price: Number(form.price), totalTests: Number(form.totalTests) };
+      const payload = { ...form, price: Number(form.price), totalTests: Number(form.totalTests) };
       if (modal === "create") await apiAdminCreateTestSeries(payload);
       else await apiAdminUpdateTestSeries(form.id!, payload);
       setModal(null);
@@ -67,7 +67,6 @@ export default function AdminTestSeriesPage() {
       )
     },
     { key: "totalTests", label: "Tests" },
-    { key: "tierRequired", label: "Tier", render: (s: AdminTestSeries) => `Tier ${s.tierRequired}` },
     { key: "price", label: "Price", render: (s: AdminTestSeries) => s.isPaid ? `₹${s.price}` : "Free" },
     {
       key: "isActive", label: "Active",
@@ -102,17 +101,14 @@ export default function AdminTestSeriesPage() {
                 style={{ border: "1.5px solid var(--line)", background: "var(--bg)", color: "var(--ink-1)" }} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <SelectField label="Tier Required" name="tierRequired" value={String(form.tierRequired ?? 0)}
-                onChange={(v) => set("tierRequired", parseInt(v))}
-                options={[0, 1, 2, 3].map((n) => ({ value: n, label: n === 0 ? "Free" : `Tier ${n}` }))} />
-              <Field label="Price (₹)" name="price" type="number" value={form.price ?? 0} onChange={(v) => set("price", parseFloat(v))} />
-            </div>
-            <Field label="Banner URL" name="bannerUrl" value={(form as Record<string, unknown>).bannerUrl as string ?? ""} onChange={(v) => set("bannerUrl" as keyof AdminTestSeries, v)} />
-            <div className="grid grid-cols-2 gap-3">
               <Toggle label="Is Paid" checked={form.isPaid ?? false} onChange={(v) => set("isPaid", v)} />
               <Toggle label="Featured" checked={form.isFeatured ?? false} onChange={(v) => set("isFeatured", v)} />
               <Toggle label="Active" checked={form.isActive ?? true} onChange={(v) => set("isActive", v)} />
             </div>
+            {form.isPaid && (
+              <Field label="Price (₹)" name="price" type="number" value={form.price ?? 0} onChange={(v) => set("price", parseFloat(v))} />
+            )}
+            <Field label="Banner URL" name="bannerUrl" value={(form as Record<string, unknown>).bannerUrl as string ?? ""} onChange={(v) => set("bannerUrl" as keyof AdminTestSeries, v)} />
             <div className="flex gap-2 pt-2">
               <button type="submit" disabled={saving} className="flex-1 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-60" style={{ background: "var(--blue)" }}>
                 {saving ? "Saving…" : "Save"}

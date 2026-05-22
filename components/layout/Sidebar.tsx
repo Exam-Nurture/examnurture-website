@@ -5,20 +5,19 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, BookOpen, FileText,
-  CalendarDays, Library, Menu,
+  Library, Menu,
   User, Zap, GraduationCap, BookMarked
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 /* ── Main nav items ── */
 const NAV_ITEMS = [
-  { href: "/dashboard",  label: "Dashboard",           icon: LayoutDashboard },
-  { href: "/exams",      label: "Browse Exams",        icon: GraduationCap   },
-  { href: "/dashboard/series",     label: "Test Series",         icon: BookOpen        },
-  { href: "/dashboard/pyq",        label: "Previous Year Papers",icon: FileText        },
-  { href: "/blog",    label: "Blog",                icon: Library         },
-  { href: "/dashboard/my-blog", label: "My Library",          icon: BookMarked      },
-  { href: "/dashboard/schedule",   label: "Schedule",            icon: CalendarDays    },
+  { href: "/dashboard",             label: "Dashboard",            icon: LayoutDashboard },
+  { href: "/exams",                 label: "Browse Exams",         icon: GraduationCap   },
+  { href: "/dashboard/series",      label: "Test Series",          icon: BookOpen        },
+  { href: "/dashboard/pyq",         label: "Previous Year Papers", icon: FileText        },
+  { href: "/blog",                  label: "Blog",                 icon: Library         },
+  { href: "/dashboard/my-blog",     label: "My Library",           icon: BookMarked      },
 ];
 
 const BOTTOM_ITEMS = [

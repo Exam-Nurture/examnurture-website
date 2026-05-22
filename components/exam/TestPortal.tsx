@@ -2,13 +2,19 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
-  Clock, ChevronLeft, ChevronRight, Grid3X3, X,
-  AlertTriangle, Send, Flag,
+  Clock, ChevronLeft, ChevronRight, X, AlertTriangle, Send,
+  Flag, RotateCcw, ArrowRight, Maximize2, Minimize2,
 } from "lucide-react";
 import QuestionViewer, { Question } from "./QuestionViewer";
+import { useAuth } from "@/lib/auth-context";
 
 /* ─── Types ─────────────────────────────────── */
-export type QuestionStatus = "unattempted" | "answered" | "marked" | "answered-marked";
+export type QuestionStatus =
+  | "not-visited"
+  | "not-answered"
+  | "answered"
+  | "marked"
+  | "answered-marked";
 
 export interface TestPortalProps {
   testId: string;
@@ -27,25 +33,35 @@ function formatTime(sec: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-/* ─── NTA-style 4-state bubble styles ─────────── */
-const BUBBLE_STYLE: Record<QuestionStatus, React.CSSProperties> = {
-  unattempted:       { background: "var(--card)",  color: "var(--ink-3)", border: "1.5px solid var(--line)" },
-  answered:          { background: "#16a34a",       color: "#fff",         border: "1.5px solid #16a34a" },
-  marked:            { background: "#7c3aed",       color: "#fff",         border: "1.5px solid #7c3aed" },
-  "answered-marked": { background: "#7c3aed",       color: "#fff",         border: "1.5px solid #16a34a",
-                       boxShadow: "inset 0 0 0 2px #16a34a" },
+/* ─── NTA-standard 5-state palette ─── */
+const STATUS_STYLE: Record<QuestionStatus, React.CSSProperties> = {
+  "not-visited":     { background: "#ffffff", color: "#6b7280", border: "1.5px solid #d1d5db" },
+  "not-answered":    { background: "#ef4444", color: "#ffffff", border: "1.5px solid #dc2626" },
+  "answered":        { background: "#16a34a", color: "#ffffff", border: "1.5px solid #15803d" },
+  "marked":          { background: "#7c3aed", color: "#ffffff", border: "1.5px solid #6d28d9" },
+  "answered-marked": { background: "#7c3aed", color: "#ffffff", border: "1.5px solid #15803d", boxShadow: "inset 0 0 0 2px #16a34a" },
 };
+
+const STATUS_INFO: { key: QuestionStatus; label: string; short: string }[] = [
+  { key: "answered",         label: "Answered",          short: "Answered"     },
+  { key: "not-answered",     label: "Not Answered",      short: "Not Ans"      },
+  { key: "marked",           label: "Marked for Review", short: "Marked"       },
+  { key: "answered-marked",  label: "Ans + Marked",      short: "Ans+Mark"     },
+  { key: "not-visited",      label: "Not Visited",       short: "Not Visited"  },
+];
 
 /* ─── Component ──────────────────────────────── */
 export default function TestPortal({ testId, title, durationSec, questions, onSubmit }: TestPortalProps) {
-  const [currentIdx, setCurrentIdx]         = useState(0);
-  const [answers, setAnswers]               = useState<Record<string, number>>({});
-  const [statuses, setStatuses]             = useState<Record<string, QuestionStatus>>({});
-  const [timeLeft, setTimeLeft]             = useState(durationSec);
-  const [showPanel, setShowPanel]           = useState(true);
-  const [showConfirm, setShowConfirm]       = useState(false);
-  const [submitting, setSubmitting]         = useState(false);
-  const [activeSectionIdx, setActiveSectionIdx] = useState(0);
+  const { user } = useAuth();
+  const [currentIdx, setCurrentIdx]               = useState(0);
+  const [answers, setAnswers]                     = useState<Record<string, number>>({});
+  const [visited, setVisited]                     = useState<Set<string>>(new Set());
+  const [markedForReview, setMarkedForReview]     = useState<Set<string>>(new Set());
+  const [timeLeft, setTimeLeft]                   = useState(durationSec);
+  const [showConfirm, setShowConfirm]             = useState(false);
+  const [submitting, setSubmitting]               = useState(false);
+  const [activeSectionIdx, setActiveSectionIdx]   = useState(0);
+  const [isFullscreen, setIsFullscreen]           = useState(false);
   const startedAt = useRef(Date.now());
 
   /* Build sections from question subjects */
@@ -60,16 +76,26 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
   }, [questions]);
 
   const hasMultipleSections = sections.length > 1;
-  const activeSection   = sections[activeSectionIdx] ?? sections[0];
-  const visibleIndices  = activeSection?.indices ?? questions.map((_, i) => i);
+  const activeSection  = sections[activeSectionIdx] ?? sections[0];
+  const visibleIndices = activeSection?.indices ?? questions.map((_, i) => i);
 
-  /* Auto-sync active section when navigating between questions */
+  /* Track visited when current question changes */
+  useEffect(() => {
+    const q = questions[currentIdx];
+    if (!q) return;
+    setVisited(prev => {
+      if (prev.has(q.id)) return prev;
+      const next = new Set(prev);
+      next.add(q.id);
+      return next;
+    });
+  }, [currentIdx, questions]);
+
+  /* Auto-sync active section when navigating questions */
   useEffect(() => {
     if (!hasMultipleSections) return;
     const idx = sections.findIndex(sec => sec.indices.includes(currentIdx));
-    if (idx !== -1 && idx !== activeSectionIdx) {
-      setActiveSectionIdx(idx);
-    }
+    if (idx !== -1 && idx !== activeSectionIdx) setActiveSectionIdx(idx);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIdx]);
 
@@ -81,33 +107,65 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft]);
 
+  /* Compute status for any question */
+  const getStatus = useCallback((q: Question): QuestionStatus => {
+    if (!visited.has(q.id)) return "not-visited";
+    const answered = answers[q.id] !== undefined;
+    const marked   = markedForReview.has(q.id);
+    if (answered && marked) return "answered-marked";
+    if (answered)            return "answered";
+    if (marked)              return "marked";
+    return "not-answered";
+  }, [answers, visited, markedForReview]);
+
+  /* Aggregate counts across whole test */
+  const counts = useMemo(() => {
+    const c: Record<QuestionStatus, number> = {
+      "not-visited": 0, "not-answered": 0, "answered": 0, "marked": 0, "answered-marked": 0,
+    };
+    questions.forEach(q => { c[getStatus(q)]++; });
+    return c;
+  }, [questions, getStatus]);
+
   const question = questions[currentIdx];
 
+  /* Actions */
   const handleSelect = useCallback((optionIndex: number) => {
     const q = questions[currentIdx];
     if (!q) return;
     setAnswers(prev => ({ ...prev, [q.id]: optionIndex }));
-    setStatuses(prev => ({
-      ...prev,
-      [q.id]: prev[q.id] === "marked" || prev[q.id] === "answered-marked"
-        ? "answered-marked"
-        : "answered",
-    }));
   }, [questions, currentIdx]);
 
-  const handleMark = useCallback(() => {
+  const handleSaveNext = () => {
+    if (currentIdx < questions.length - 1) setCurrentIdx(i => i + 1);
+  };
+
+  const handleMarkReviewNext = () => {
     const q = questions[currentIdx];
     if (!q) return;
-    setStatuses(prev => {
-      const cur = prev[q.id] ?? "unattempted";
-      let next: QuestionStatus;
-      if      (cur === "unattempted")    next = "marked";
-      else if (cur === "answered")       next = "answered-marked";
-      else if (cur === "marked")         next = "unattempted";
-      else                               next = "answered";
-      return { ...prev, [q.id]: next };
+    setMarkedForReview(prev => {
+      const next = new Set(prev);
+      next.add(q.id);
+      return next;
     });
-  }, [questions, currentIdx]);
+    if (currentIdx < questions.length - 1) setCurrentIdx(i => i + 1);
+  };
+
+  const handleClearResponse = () => {
+    const q = questions[currentIdx];
+    if (!q) return;
+    setAnswers(prev => {
+      const n = { ...prev };
+      delete n[q.id];
+      return n;
+    });
+    setMarkedForReview(prev => {
+      if (!prev.has(q.id)) return prev;
+      const next = new Set(prev);
+      next.delete(q.id);
+      return next;
+    });
+  };
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -116,16 +174,22 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
     setSubmitting(false);
   };
 
-  const answered    = Object.values(statuses).filter(s => s === "answered" || s === "answered-marked").length;
-  const marked      = Object.values(statuses).filter(s => s === "marked"   || s === "answered-marked").length;
-  const unattempted = questions.length - answered;
-  const isWarning   = timeLeft <= 300;
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen().catch(() => {});
+      setIsFullscreen(false);
+    }
+  };
+
+  const isWarning = timeLeft <= 300;
+  const initials = (user?.name || "Candidate")
+    .split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
   const getSectionAnswered = (sec: typeof sections[0]) =>
-    sec.indices.filter(idx => {
-      const s = statuses[questions[idx]?.id] ?? "unattempted";
-      return s === "answered" || s === "answered-marked";
-    }).length;
+    sec.indices.filter(idx => answers[questions[idx]?.id] !== undefined).length;
 
   if (!question) {
     return (
@@ -136,39 +200,56 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--card)" }}>
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--bg-secondary)" }}>
 
       {/* ── Top Bar ── */}
       <header
-        className="flex items-center justify-between px-4 md:px-6 h-14 shrink-0"
-        style={{ borderBottom: "1px solid var(--line-soft)", background: "var(--card)" }}
+        className="flex items-center justify-between px-4 md:px-5 h-14 shrink-0 z-10"
+        style={{ background: "var(--card)", borderBottom: "1px solid var(--line-soft)" }}
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="text-[14px] font-bold truncate" style={{ color: "var(--ink-1)" }}>
-            {title}
-          </span>
+        {/* Brand + test title */}
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-[12px] shrink-0"
+            style={{ background: "var(--blue)" }}
+          >
+            EN
+          </div>
+          <div className="min-w-0">
+            <p className="text-[13px] font-bold truncate leading-tight" style={{ color: "var(--ink-1)" }}>
+              {title}
+            </p>
+            {hasMultipleSections && (
+              <p className="text-[10px] leading-tight" style={{ color: "var(--ink-4)" }}>
+                Section: <span className="font-semibold" style={{ color: "var(--ink-3)" }}>{activeSection?.name}</span>
+              </p>
+            )}
+          </div>
         </div>
 
-        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-[15px] transition-colors ${
+        {/* Timer */}
+        <div className={`flex items-center gap-2 px-4 py-1.5 rounded-lg font-mono font-bold text-[15px] tabular-nums transition-colors ${
           isWarning
             ? "bg-red-50 text-red-600 border border-red-200 animate-pulse"
-            : "bg-[var(--bg)] text-[var(--ink-1)] border border-[var(--line-soft)]"
+            : "bg-[var(--bg-secondary)] text-[var(--ink-1)] border border-[var(--line-soft)]"
         }`}>
           <Clock className="w-4 h-4" />
           {formatTime(timeLeft)}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right actions */}
+        <div className="flex items-center gap-2 flex-1 justify-end">
           <button
-            onClick={() => setShowPanel(v => !v)}
-            className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-[var(--bg)]"
-            style={{ color: "var(--ink-2)", border: "1px solid var(--line-soft)" }}
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            className="hidden md:flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-[var(--bg-secondary)]"
+            style={{ color: "var(--ink-3)", border: "1px solid var(--line-soft)" }}
           >
-            <Grid3X3 className="w-4 h-4" /> Palette
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
           <button
             onClick={() => setShowConfirm(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-bold text-white transition-all hover:brightness-110"
             style={{ background: "var(--blue)" }}
           >
             <Send className="w-4 h-4" /> Submit
@@ -179,172 +260,230 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
       {/* ── Body ── */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* Question area */}
-        <main className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
-          <div className="max-w-3xl mx-auto">
-            <QuestionViewer
-              question={question}
-              questionNumber={currentIdx + 1}
-              totalQuestions={questions.length}
-              selectedIndex={answers[question.id] ?? null}
-              revealed={false}
-              onSelect={handleSelect}
-              onPrev={currentIdx > 0 ? () => setCurrentIdx(i => i - 1) : undefined}
-              onNext={currentIdx < questions.length - 1 ? () => setCurrentIdx(i => i + 1) : undefined}
-            />
-            <button
-              onClick={handleMark}
-              className={`mt-4 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                statuses[question.id] === "marked" || statuses[question.id] === "answered-marked"
-                  ? "bg-amber-50 border-amber-300 text-amber-600"
-                  : "border-[var(--line)] text-[var(--ink-3)] hover:bg-[var(--bg)]"
-              }`}
-            >
-              <Flag className="w-4 h-4" />
-              {statuses[question.id] === "marked" || statuses[question.id] === "answered-marked"
-                ? "Marked for Review"
-                : "Mark for Review"}
-            </button>
+        {/* Question column */}
+        <main className="flex-1 flex flex-col overflow-hidden">
+
+          {/* Scrollable question area */}
+          <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6" style={{ background: "var(--card)" }}>
+            <div className="max-w-3xl mx-auto">
+              <QuestionViewer
+                question={question}
+                questionNumber={currentIdx + 1}
+                totalQuestions={questions.length}
+                selectedIndex={answers[question.id] ?? null}
+                revealed={false}
+                onSelect={handleSelect}
+              />
+            </div>
+          </div>
+
+          {/* Bottom action bar */}
+          <div
+            className="shrink-0 px-4 md:px-6 py-3 flex flex-wrap items-center justify-between gap-2"
+            style={{ background: "var(--card)", borderTop: "1px solid var(--line-soft)" }}
+          >
+            {/* Left group: Mark + Clear */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleMarkReviewNext}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all hover:bg-violet-50"
+                style={{ color: "#7c3aed", border: "1.5px solid #c4b5fd" }}
+              >
+                <Flag className="w-3.5 h-3.5" /> Mark for Review &amp; Next
+              </button>
+              <button
+                onClick={handleClearResponse}
+                disabled={answers[question.id] === undefined}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]"
+                style={{ color: "var(--ink-2)", border: "1.5px solid var(--line)" }}
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Clear Response
+              </button>
+            </div>
+
+            {/* Right group: Prev + Save&Next */}
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
+                disabled={currentIdx === 0}
+                className="flex items-center gap-1 px-3 py-2 rounded-lg text-[13px] font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]"
+                style={{ color: "var(--ink-2)", border: "1.5px solid var(--line)" }}
+              >
+                <ChevronLeft className="w-4 h-4" /> Previous
+              </button>
+              <button
+                onClick={handleSaveNext}
+                disabled={currentIdx === questions.length - 1}
+                className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-[13px] font-bold text-white transition-all disabled:opacity-50 hover:brightness-110"
+                style={{ background: "var(--blue)" }}
+              >
+                Save &amp; Next <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </main>
 
-        {/* ── Question Palette sidebar ── */}
-        {showPanel && (
-          <aside
-            className="hidden md:flex flex-col w-72 shrink-0"
-            style={{ borderLeft: "1px solid var(--line-soft)", background: "var(--card)" }}
-          >
+        {/* ── Right sidebar ── */}
+        <aside
+          className="hidden lg:flex flex-col w-[300px] shrink-0"
+          style={{ borderLeft: "1px solid var(--line-soft)", background: "var(--card)" }}
+        >
 
-            {/* Stats strip */}
+          {/* User profile chip */}
+          <div
+            className="px-4 py-3 flex items-center gap-3 shrink-0"
+            style={{ borderBottom: "1px solid var(--line-soft)", background: "var(--bg-secondary)" }}
+          >
             <div
-              className="shrink-0 grid grid-cols-4 divide-x"
-              style={{ borderBottom: "1px solid var(--line-soft)" }}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-[13px] shrink-0"
+              style={{ background: "var(--blue)" }}
             >
-              {[
-                { value: answered,                             label: "Answered", dot: "#16a34a" },
-                { value: marked,                               label: "Marked",   dot: "#7c3aed" },
-                { value: questions.length - answered - marked, label: "Pending",  dot: "var(--line)" },
-                { value: questions.length,                     label: "Total",    dot: "var(--blue)" },
-              ].map(({ value, label, dot }) => (
-                <div key={label} className="flex flex-col items-center py-2.5 gap-0.5">
-                  <span className="text-[15px] font-black tabular-nums" style={{ color: "var(--ink-1)" }}>{value}</span>
-                  <span className="text-[9px] font-medium uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>{label}</span>
-                  <span className="w-3 h-0.5 rounded-full mt-0.5" style={{ background: dot }} />
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold truncate" style={{ color: "var(--ink-1)" }}>
+                {user?.name || "Candidate"}
+              </p>
+              <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--ink-4)" }}>
+                Candidate
+              </p>
+            </div>
+          </div>
+
+          {/* 5-state status grid */}
+          <div className="px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--line-soft)" }}>
+            <p className="text-[9px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "var(--ink-4)" }}>
+              Status Overview
+            </p>
+            <div className="grid grid-cols-5 gap-1.5">
+              {STATUS_INFO.map(({ key, short }) => (
+                <div key={key} className="flex flex-col items-center gap-1.5">
+                  <div
+                    className="w-9 h-9 rounded-md flex items-center justify-center text-[12px] font-bold tabular-nums"
+                    style={STATUS_STYLE[key]}
+                  >
+                    {counts[key]}
+                  </div>
+                  <span
+                    className="text-[8.5px] text-center leading-tight font-medium"
+                    style={{ color: "var(--ink-4)" }}
+                  >
+                    {short}
+                  </span>
                 </div>
               ))}
             </div>
+          </div>
 
-            {/* Section navigator — compact row with prev/next arrows */}
-            {hasMultipleSections && (
-              <div
-                className="shrink-0 flex items-center gap-2 px-3 py-2.5"
-                style={{ borderBottom: "1px solid var(--line-soft)", background: "var(--bg-secondary)" }}
+          {/* Section navigator (only when multiple sections) */}
+          {hasMultipleSections && (
+            <div
+              className="shrink-0 flex items-center gap-2 px-3 py-2.5"
+              style={{ borderBottom: "1px solid var(--line-soft)", background: "var(--bg-secondary)" }}
+            >
+              <button
+                onClick={() => setActiveSectionIdx(i => Math.max(0, i - 1))}
+                disabled={activeSectionIdx === 0}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-25 hover:bg-[var(--card)]"
+                style={{ color: "var(--ink-2)" }}
               >
-                <button
-                  onClick={() => setActiveSectionIdx(i => Math.max(0, i - 1))}
-                  disabled={activeSectionIdx === 0}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-25 hover:bg-[var(--card)]"
-                  style={{ color: "var(--ink-2)" }}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
 
-                <div className="flex-1 text-center min-w-0">
-                  <p className="text-[12px] font-bold truncate" style={{ color: "var(--ink-1)" }}>
-                    {activeSection?.name}
-                  </p>
-                  <p className="text-[10px]" style={{ color: "var(--ink-4)" }}>
-                    Section {activeSectionIdx + 1}/{sections.length}&nbsp;·&nbsp;{getSectionAnswered(activeSection)}/{activeSection?.indices.length} done
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setActiveSectionIdx(i => Math.min(sections.length - 1, i + 1))}
-                  disabled={activeSectionIdx === sections.length - 1}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-25 hover:bg-[var(--card)]"
-                  style={{ color: "var(--ink-2)" }}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            {/* Question grid */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="grid grid-cols-5 gap-2">
-                {visibleIndices.map(idx => {
-                  const q      = questions[idx];
-                  const status = statuses[q.id] ?? "unattempted";
-                  const isCur  = idx === currentIdx;
-                  return (
-                    <button
-                      key={q.id}
-                      onClick={() => setCurrentIdx(idx)}
-                      className="w-full aspect-square rounded-full text-[11px] font-bold transition-all flex items-center justify-center"
-                      style={{
-                        ...BUBBLE_STYLE[status],
-                        ...(isCur ? { outline: "2.5px solid var(--blue)", outlineOffset: "2px" } : {}),
-                      }}
-                    >
-                      {idx + 1}
-                    </button>
-                  );
-                })}
+              <div className="flex-1 text-center min-w-0">
+                <p className="text-[12px] font-bold truncate" style={{ color: "var(--ink-1)" }}>
+                  {activeSection?.name}
+                </p>
+                <p className="text-[10px]" style={{ color: "var(--ink-4)" }}>
+                  Section {activeSectionIdx + 1}/{sections.length}&nbsp;·&nbsp;{getSectionAnswered(activeSection)}/{activeSection?.indices.length} done
+                </p>
               </div>
 
-              {/* Legend */}
-              <div
-                className="mt-5 pt-4 grid grid-cols-2 gap-x-3 gap-y-2.5"
-                style={{ borderTop: "1px solid var(--line-soft)" }}
+              <button
+                onClick={() => setActiveSectionIdx(i => Math.min(sections.length - 1, i + 1))}
+                disabled={activeSectionIdx === sections.length - 1}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-25 hover:bg-[var(--card)]"
+                style={{ color: "var(--ink-2)" }}
               >
-                {[
-                  { style: BUBBLE_STYLE.answered,          label: "Answered"     },
-                  { style: BUBBLE_STYLE.marked,            label: "Marked"       },
-                  { style: BUBBLE_STYLE["answered-marked"], label: "Ans+Marked"  },
-                  { style: BUBBLE_STYLE.unattempted,       label: "Not answered" },
-                ].map(({ style, label }) => (
-                  <div key={label} className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full shrink-0" style={style} />
-                    <span className="text-[10px]" style={{ color: "var(--ink-3)" }}>{label}</span>
-                  </div>
-                ))}
-              </div>
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-          </aside>
-        )}
+          )}
+
+          {/* Question palette grid */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <p className="text-[9px] font-bold uppercase tracking-widest mb-3" style={{ color: "var(--ink-4)" }}>
+              Question Palette
+            </p>
+            <div className="grid grid-cols-5 gap-2">
+              {visibleIndices.map(idx => {
+                const q      = questions[idx];
+                const status = getStatus(q);
+                const isCur  = idx === currentIdx;
+                return (
+                  <button
+                    key={q.id}
+                    onClick={() => setCurrentIdx(idx)}
+                    className="aspect-square w-full rounded-md text-[12px] font-bold transition-all flex items-center justify-center hover:scale-105"
+                    style={{
+                      ...STATUS_STYLE[status],
+                      ...(isCur ? { outline: "2.5px solid var(--blue)", outlineOffset: "2px" } : {}),
+                    }}
+                  >
+                    {idx + 1}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bottom submit button */}
+          <div className="shrink-0 p-3" style={{ borderTop: "1px solid var(--line-soft)" }}>
+            <button
+              onClick={() => setShowConfirm(true)}
+              className="w-full flex items-center justify-center gap-1.5 py-3 rounded-lg text-sm font-bold text-white transition-all hover:brightness-110"
+              style={{ background: "var(--blue)" }}
+            >
+              <Send className="w-4 h-4" /> Submit Test
+            </button>
+          </div>
+        </aside>
       </div>
 
       {/* ── Submit Confirmation Modal ── */}
       {showConfirm && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div
-            className="w-full max-w-sm rounded-3xl p-6 shadow-2xl"
+            className="w-full max-w-md rounded-2xl p-6 shadow-2xl"
             style={{ background: "var(--card)", border: "1px solid var(--line-soft)" }}
           >
             <div className="flex items-start justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
                   <AlertTriangle className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <p className="font-bold text-[15px]" style={{ color: "var(--ink-1)" }}>Submit Test?</p>
-                  <p className="text-[12px]" style={{ color: "var(--ink-4)" }}>This action cannot be undone</p>
+                  <p className="font-bold text-[15px]" style={{ color: "var(--ink-1)" }}>Submit your test?</p>
+                  <p className="text-[12px]" style={{ color: "var(--ink-4)" }}>You won't be able to change answers after this.</p>
                 </div>
               </div>
-              <button onClick={() => setShowConfirm(false)} style={{ color: "var(--ink-4)" }}>
+              <button onClick={() => setShowConfirm(false)} className="shrink-0" style={{ color: "var(--ink-4)" }}>
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              {[
-                { label: "Answered",    value: answered,    color: "text-emerald-600" },
-                { label: "Marked",      value: marked,      color: "text-amber-600"   },
-                { label: "Unattempted", value: unattempted, color: "text-red-500"     },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="text-center p-3 rounded-xl" style={{ background: "var(--bg)" }}>
-                  <div className={`text-2xl font-black ${color}`}>{value}</div>
-                  <div className="text-[10px] font-medium mt-0.5" style={{ color: "var(--ink-4)" }}>{label}</div>
+            <div className="grid grid-cols-5 gap-2 mb-6">
+              {STATUS_INFO.map(({ key, short }) => (
+                <div key={key} className="text-center p-2 rounded-lg" style={{ background: "var(--bg-secondary)" }}>
+                  <div
+                    className="w-9 h-9 mx-auto mb-1 rounded-md flex items-center justify-center text-[12px] font-bold tabular-nums"
+                    style={STATUS_STYLE[key]}
+                  >
+                    {counts[key]}
+                  </div>
+                  <div className="text-[8.5px] font-medium leading-tight" style={{ color: "var(--ink-4)" }}>
+                    {short}
+                  </div>
                 </div>
               ))}
             </div>
@@ -352,7 +491,7 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 py-3 rounded-xl text-sm font-semibold border transition-all"
+                className="flex-1 py-3 rounded-xl text-sm font-semibold border transition-all hover:bg-[var(--bg-secondary)]"
                 style={{ color: "var(--ink-1)", borderColor: "var(--line)" }}
               >
                 Continue Test
@@ -360,7 +499,7 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-70"
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-70 hover:brightness-110"
                 style={{ background: "var(--blue)" }}
               >
                 {submitting ? "Submitting…" : "Submit Now"}

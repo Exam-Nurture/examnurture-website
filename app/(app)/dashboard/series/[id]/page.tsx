@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ChevronLeft, Clock, FileText, Lock, Play,
-  CheckCircle2, AlertCircle, Info, Calendar, ShoppingCart
+  AlertCircle, Info, Calendar, ShoppingCart, CheckCircle2
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
@@ -13,14 +13,31 @@ export default function SeriesDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [series, setSeries] = useState<any>(null);
+  const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+
     apiFetch(`/test-series/${id}`)
-      .then(setSeries)
+      .then(async (s: any) => {
+        setSeries(s);
+        if (s.isPaid) {
+          try {
+            const { entitlements } = await apiFetch<any>("/orders/entitlements");
+            const granted = entitlements.some(
+              (e: any) => e.contentType === "TEST_SERIES" && e.contentId === id && e.status === "ACTIVE"
+            );
+            setHasAccess(granted);
+          } catch {
+            setHasAccess(false);
+          }
+        } else {
+          setHasAccess(true);
+        }
+      })
       .catch(e => setError(e.message || "Failed to load series"))
       .finally(() => setLoading(false));
   }, [id]);
@@ -46,11 +63,13 @@ export default function SeriesDetailPage() {
     );
   }
 
+  const checkoutHref = `/dashboard/checkout/${encodeURIComponent(`TEST_SERIES:${id}`)}?title=${encodeURIComponent(series.title)}`;
+
   return (
     <div className="flex flex-col gap-8 fade-up max-w-4xl">
-      
+
       {/* Breadcrumb / Back */}
-      <button 
+      <button
         onClick={() => router.back()}
         className="flex items-center gap-1.5 text-sm font-semibold transition-colors hover:text-blue-600 w-fit"
         style={{ color: "var(--ink-3)" }}
@@ -66,9 +85,15 @@ export default function SeriesDetailPage() {
               {series.exam?.shortName}
             </span>
             {series.isPaid ? (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-amber-50 text-amber-600">
-                Premium
-              </span>
+              hasAccess ? (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-50 text-emerald-600 flex items-center gap-1">
+                  <CheckCircle2 size={10} /> Purchased
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-amber-50 text-amber-600">
+                  Premium
+                </span>
+              )
             ) : (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-50 text-emerald-600">
                 Free Series
@@ -82,7 +107,7 @@ export default function SeriesDetailPage() {
             {series.description || "Comprehensive mock test series designed by experts to help you excel in your exams."}
           </p>
         </div>
-        
+
         {/* Quick Stats */}
         <div className="w-full md:w-64 p-5 rounded-2xl border bg-gray-50/50" style={{ borderColor: "var(--line-soft)" }}>
           <div className="space-y-4">
@@ -91,8 +116,10 @@ export default function SeriesDetailPage() {
               <span className="text-sm font-bold text-[var(--ink-1)]">{series.totalTests}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[var(--ink-4)]">Valid Till</span>
-              <span className="text-sm font-bold text-[var(--ink-1)]">31 Dec 2025</span>
+              <span className="text-xs font-medium text-[var(--ink-4)]">Price</span>
+              <span className="text-sm font-bold text-[var(--ink-1)]">
+                {series.isPaid ? `₹${series.discountedPrice || series.price}` : "Free"}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-[var(--ink-4)]">Language</span>
@@ -102,24 +129,24 @@ export default function SeriesDetailPage() {
         </div>
       </div>
 
-      {/* Unlock Banner — shown for paid series */}
-      {series.isPaid && (
+      {/* Purchase Banner — shown for paid series without access */}
+      {series.isPaid && !hasAccess && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-2xl border-2"
           style={{ background: "#FFF7ED", borderColor: "#FDBA74" }}>
           <div className="flex-1">
             <p className="text-sm font-bold" style={{ color: "#92400E" }}>
-              This is a premium series
+              This is a premium test series — ₹{series.discountedPrice || series.price}
             </p>
             <p className="text-xs mt-0.5" style={{ color: "#B45309" }}>
-              Purchase once and get lifetime access to all {series.tests?.length || 0} tests — access doesn't expire when a tier ends.
+              Purchase once for lifetime access to all {series.tests?.length || 0} tests.
             </p>
           </div>
           <Link
-            href={`/dashboard/checkout/${encodeURIComponent(`TEST_SERIES:${id}`)}`}
+            href={checkoutHref}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shrink-0 transition-all hover:brightness-110 active:scale-[0.98]"
             style={{ background: "var(--blue)" }}
           >
-            <ShoppingCart size={14} /> Unlock Series
+            <ShoppingCart size={14} /> Buy Now
           </Link>
         </div>
       )}
@@ -136,8 +163,8 @@ export default function SeriesDetailPage() {
         </div>
 
         <div className="flex flex-col gap-3">
-          {series.tests?.map((test: any, idx: number) => (
-            <div 
+          {series.tests?.map((test: any) => (
+            <div
               key={test.id}
               className="card group flex items-center justify-between p-4 transition-all hover:border-blue-200"
             >
@@ -166,10 +193,20 @@ export default function SeriesDetailPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                {test.isLocked ? (
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-[11px] font-bold text-gray-400 border border-gray-200">
-                    <Lock size={12} /> LOCKED
-                  </div>
+                {test.isLocked || !hasAccess ? (
+                  test.isLocked ? (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-[11px] font-bold text-gray-400 border border-gray-200">
+                      <Lock size={12} /> LOCKED
+                    </div>
+                  ) : (
+                    <Link
+                      href={checkoutHref}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold border-2 transition-all hover:brightness-110"
+                      style={{ borderColor: "#FDBA74", color: "#92400E", background: "#FFF7ED" }}
+                    >
+                      <ShoppingCart size={12} /> Buy to Unlock
+                    </Link>
+                  )
                 ) : (
                   <Link
                     href={`/exam/${test.id}`}
