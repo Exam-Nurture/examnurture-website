@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import {
   Search, Clock, Eye, Calendar, ArrowRight, Rss, BookOpen,
@@ -188,7 +188,7 @@ function FeaturedCard({ post }: { post: PublicBlogPost }) {
 
 const LIMIT = 12;
 
-export default function BlogPage() {
+function BlogPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -515,5 +515,17 @@ export default function BlogPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function BlogPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
+        <div className="animate-pulse text-[var(--ink-2)]">Loading Articles...</div>
+      </div>
+    }>
+      <BlogPageContent />
+    </Suspense>
   );
 }
