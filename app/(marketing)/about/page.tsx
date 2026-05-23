@@ -18,12 +18,11 @@ function GithubIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-import Link from "next/link";
 
-const CONTENT_API = process.env.NEXT_PUBLIC_CONTENT_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
 
 interface TeamMember {
-  id: number;
+  id: string | number;
   name: string;
   role: string;
   photo_image_url: string | null;
@@ -40,31 +39,48 @@ export default function AboutPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${CONTENT_API}/api/team/`)
-      .then((r) => r.json())
-      .then((data) => {
-        const members = Array.isArray(data) ? data : data.results || [];
-        setTeamMembers(members);
+    fetch(`${API_URL}/team`)
+      .then((r) => {
+        if (!r.ok) throw new Error("API failure");
+        return r.json();
       })
-      .catch(() => setError("Could not load team members"))
+      .then((data) => {
+        const members = Array.isArray(data) ? data : data.items || data.results || [];
+        const mappedMembers = members.map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          role: m.role,
+          photo_image_url: m.photo_image_url || m.photoUrl || m.photo_url || null,
+          linkedin_url: m.linkedin_url || m.linkedinUrl || null,
+          github_url: m.github_url || m.githubUrl || null,
+          website_url: m.website_url || m.websiteUrl || null,
+          twitter_url: m.twitter_url || m.twitterUrl || null,
+          bio: m.bio,
+        }));
+        setTeamMembers(mappedMembers);
+      })
+      .catch((err) => {
+        console.error("Error fetching team members:", err);
+        setError("Could not load team members");
+      })
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-bg text-ink-1">
 
       {/* Hero */}
-      <section className="py-24 lg:py-32 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-24 lg:py-32 px-4 sm:px-6 lg:px-8 bg-bg">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-[11px] font-normal uppercase mb-5 text-black"
+          <p className="text-[11px] font-normal uppercase mb-5 text-ink-3"
              style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
             Our Story
           </p>
-          <h1 className="text-[40px] sm:text-[56px] lg:text-[64px] leading-[1.10] text-black mb-6"
+          <h1 className="text-[40px] sm:text-[56px] lg:text-[64px] leading-[1.10] text-ink-1 mb-6"
               style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
             Building India's Future<br />of Education
           </h1>
-          <p className="text-[18px] leading-[1.45] text-[var(--ink-2)] max-w-2xl mx-auto"
+          <p className="text-[18px] leading-[1.45] text-ink-2 max-w-2xl mx-auto"
              style={{ fontWeight: 300, letterSpacing: "-0.26px" }}>
             We're on a mission to empower students with world-class learning experiences and mentorship to excel in competitive exams.
           </p>
@@ -72,11 +88,11 @@ export default function AboutPage() {
       </section>
 
       {/* Mission */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[var(--bg-secondary)]">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-bg-secondary">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="w-full flex justify-center">
-              <div className="rounded-[16px] overflow-hidden border border-[var(--line)] w-full">
+              <div className="rounded-[16px] overflow-hidden border border-line w-full">
                 <img
                   alt="Our Mission"
                   src="/mission.jpg"
@@ -87,19 +103,19 @@ export default function AboutPage() {
             </div>
 
             <div className="space-y-6">
-              <p className="text-[11px] font-normal uppercase text-black"
+              <p className="text-[11px] font-normal uppercase text-ink-3"
                  style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
                 Our Mission
               </p>
-              <h2 className="text-[32px] sm:text-[40px] leading-[1.10] text-black"
+              <h2 className="text-[32px] sm:text-[40px] leading-[1.10] text-ink-1"
                   style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
                 Empower Every Student
               </h2>
-              <p className="text-[18px] leading-[1.45] text-[var(--ink-2)]"
+              <p className="text-[18px] leading-[1.45] text-ink-2"
                  style={{ fontWeight: 300, letterSpacing: "-0.26px" }}>
                 To provide every student in India with comprehensive, accessible, and high-quality test series, courses, mentorship, and study materials — enabling them to excel in competitive exams with confidence and clarity.
               </p>
-              <div className="pt-2 flex items-center gap-2 text-black font-medium text-[15px]">
+              <div className="pt-2 flex items-center gap-2 text-ink-1 font-medium text-[15px]">
                 <span>Transforming education</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
@@ -109,30 +125,30 @@ export default function AboutPage() {
       </section>
 
       {/* Vision */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-bg">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="md:order-1 space-y-6">
-              <p className="text-[11px] font-normal uppercase text-black"
+              <p className="text-[11px] font-normal uppercase text-ink-3"
                  style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
                 Our Vision
               </p>
-              <h2 className="text-[32px] sm:text-[40px] leading-[1.10] text-black"
+              <h2 className="text-[32px] sm:text-[40px] leading-[1.10] text-ink-1"
                   style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
                 India's Most Trusted Platform
               </h2>
-              <p className="text-[18px] leading-[1.45] text-[var(--ink-2)]"
+              <p className="text-[18px] leading-[1.45] text-ink-2"
                  style={{ fontWeight: 300, letterSpacing: "-0.26px" }}>
                 To become the most trusted and innovative online education platform in India, dedicated to transforming learning experiences and fostering lifelong success for students across all exam disciplines.
               </p>
-              <div className="pt-2 flex items-center gap-2 text-black font-medium text-[15px]">
+              <div className="pt-2 flex items-center gap-2 text-ink-1 font-medium text-[15px]">
                 <span>Building the future</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
             </div>
 
             <div className="md:order-2 w-full flex justify-center">
-              <div className="rounded-[16px] overflow-hidden border border-[var(--line)] w-full">
+              <div className="rounded-[16px] overflow-hidden border border-line w-full">
                 <img
                   alt="Our Vision"
                   src="/vision.jpg"
@@ -146,15 +162,15 @@ export default function AboutPage() {
       </section>
 
       {/* Values */}
-      <section className="py-5 bg-white">
+      <section className="py-5 bg-bg">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-[var(--bg-secondary)] rounded-none sm:rounded-[24px] px-5 pt-14 pb-14">
+          <div className="bg-bg-secondary rounded-none sm:rounded-[24px] px-5 pt-14 pb-14">
             <div className="text-center mb-12">
-              <p className="text-[11px] font-normal uppercase mb-5 text-black"
+              <p className="text-[11px] font-normal uppercase mb-5 text-ink-3"
                  style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
                 What We Stand For
               </p>
-              <h2 className="text-[32px] sm:text-[40px] leading-[1.10] text-black"
+              <h2 className="text-[32px] sm:text-[40px] leading-[1.10] text-ink-1"
                   style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
                 Our Core Values
               </h2>
@@ -171,11 +187,11 @@ export default function AboutPage() {
               ].map((value, idx) => (
                 <div
                   key={idx}
-                  className="bg-white rounded-[8px] p-7 border border-[var(--line)] hover:border-black transition-colors duration-200"
+                  className="bg-card rounded-[8px] p-7 border border-line hover:border-ink-1 transition-colors duration-200"
                 >
                   <div className="text-4xl mb-4">{value.icon}</div>
-                  <h3 className="text-[18px] font-semibold text-black mb-2">{value.title}</h3>
-                  <p className="text-[15px] text-[var(--ink-2)] leading-relaxed">{value.desc}</p>
+                  <h3 className="text-[18px] font-semibold text-ink-1 mb-2">{value.title}</h3>
+                  <p className="text-[15px] text-ink-2 leading-relaxed">{value.desc}</p>
                 </div>
               ))}
             </div>
@@ -184,55 +200,55 @@ export default function AboutPage() {
       </section>
 
       {/* Team */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-bg">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-[11px] font-normal uppercase mb-5 text-black"
+            <p className="text-[11px] font-normal uppercase mb-5 text-ink-3"
                style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
               The People
             </p>
-            <h2 className="text-[32px] sm:text-[40px] leading-[1.10] text-black mb-4"
+            <h2 className="text-[32px] sm:text-[40px] leading-[1.10] text-ink-1 mb-4"
                 style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
               Meet Our Team
             </h2>
-            <p className="text-[18px] text-[var(--ink-2)]" style={{ fontWeight: 300 }}>
+            <p className="text-[18px] text-ink-2" style={{ fontWeight: 300 }}>
               Passionate educators and technologists building the future
             </p>
           </div>
 
           {loading ? (
             <div className="text-center py-16">
-              <div className="animate-spin rounded-full h-10 w-10 border-2 border-[var(--line)] border-t-[var(--ink-1)] mx-auto" />
-              <p className="text-[var(--ink-2)] mt-4 text-sm">Loading team members...</p>
+              <div className="animate-spin rounded-full h-10 w-10 border-2 border-line border-t-ink-1 mx-auto" />
+              <p className="text-ink-2 mt-4 text-sm">Loading team members...</p>
             </div>
           ) : error || teamMembers.length === 0 ? (
             <div className="relative">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="rounded-[12px] bg-[var(--bg-secondary)] border border-[var(--line)] overflow-hidden">
-                    <div className="aspect-square bg-[var(--surface-hover)] flex items-center justify-center">
-                      <div className="w-20 h-20 rounded-full bg-[#e6e6e6] flex items-center justify-center">
-                        <svg className="w-10 h-10 text-[var(--ink-2)]" fill="currentColor" viewBox="0 0 24 24">
+                  <div key={i} className="rounded-[12px] bg-bg-secondary border border-line overflow-hidden">
+                    <div className="aspect-square bg-surface-hover flex items-center justify-center">
+                      <div className="w-20 h-20 rounded-full bg-surface-hover flex items-center justify-center border border-line">
+                        <svg className="w-10 h-10 text-ink-3" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                         </svg>
                       </div>
                     </div>
                     <div className="p-4 space-y-2">
-                      <div className="h-4 bg-[#e6e6e6] rounded w-3/4" />
-                      <div className="h-3 bg-[#e6e6e6] rounded w-1/2" />
+                      <div className="h-4 bg-surface-hover rounded w-3/4" />
+                      <div className="h-3 bg-surface-hover rounded w-1/2" />
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-[16px]">
+              <div className="absolute inset-0 flex items-center justify-center bg-bg/80 backdrop-blur-sm rounded-[16px]">
                 <div className="text-center px-6 py-8">
-                  <div className="w-14 h-14 bg-[var(--bg-secondary)] rounded-[12px] flex items-center justify-center mx-auto mb-4 border border-[var(--line)]">
-                    <svg className="w-7 h-7 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-14 h-14 bg-bg-secondary rounded-[12px] flex items-center justify-center mx-auto mb-4 border border-line">
+                    <svg className="w-7 h-7 text-ink-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </div>
-                  <h3 className="text-[18px] font-semibold text-black mb-2">Team Directory Coming Soon</h3>
-                  <p className="text-[var(--ink-2)] text-sm max-w-xs mx-auto">Our amazing team will be introduced here shortly!</p>
+                  <h3 className="text-[18px] font-semibold text-ink-1 mb-2">Team Directory Coming Soon</h3>
+                  <p className="text-ink-2 text-sm max-w-xs mx-auto">Our amazing team will be introduced here shortly!</p>
                 </div>
               </div>
             </div>
@@ -241,41 +257,41 @@ export default function AboutPage() {
               {teamMembers.map((member) => (
                 <div
                   key={member.id}
-                  className="rounded-[12px] bg-[var(--bg-secondary)] border border-[var(--line)] overflow-hidden hover:border-black transition-colors duration-200"
+                  className="rounded-[12px] bg-bg-secondary border border-line overflow-hidden hover:border-ink-1 transition-colors duration-200"
                 >
-                  <div className="relative overflow-hidden aspect-square bg-[var(--surface-hover)]">
+                  <div className="relative overflow-hidden aspect-square bg-surface-hover">
                     {member.photo_image_url ? (
                       <img src={member.photo_image_url} alt={member.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-5xl font-bold text-[var(--ink-2)]">{member.name.charAt(0).toUpperCase()}</span>
+                        <span className="text-5xl font-bold text-ink-2">{member.name.charAt(0).toUpperCase()}</span>
                       </div>
                     )}
                   </div>
                   <div className="p-4 space-y-2">
                     <div>
-                      <h3 className="text-[15px] font-semibold text-black">{member.name}</h3>
-                      <p className="text-[13px] text-[var(--ink-2)]">{member.role}</p>
+                      <h3 className="text-[15px] font-semibold text-ink-1">{member.name}</h3>
+                      <p className="text-[13px] text-ink-2">{member.role}</p>
                     </div>
-                    {member.bio && <p className="text-[13px] text-[var(--ink-2)] line-clamp-2">{member.bio}</p>}
+                    {member.bio && <p className="text-[13px] text-ink-2 line-clamp-2">{member.bio}</p>}
                     <div className="flex items-center gap-2 pt-1">
                       {member.linkedin_url && (
-                        <a href={member.linkedin_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[var(--line)] text-[var(--ink-2)] hover:text-black hover:border-black transition-colors">
+                        <a href={member.linkedin_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-card border border-line text-ink-2 hover:text-ink-1 hover:border-ink-1 transition-colors">
                           <LinkedInIcon className="w-3.5 h-3.5" />
                         </a>
                       )}
                       {member.github_url && (
-                        <a href={member.github_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[var(--line)] text-[var(--ink-2)] hover:text-black hover:border-black transition-colors">
+                        <a href={member.github_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-card border border-line text-ink-2 hover:text-ink-1 hover:border-ink-1 transition-colors">
                           <GithubIcon className="w-3.5 h-3.5" />
                         </a>
                       )}
                       {member.website_url && (
-                        <a href={member.website_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[var(--line)] text-[var(--ink-2)] hover:text-black hover:border-black transition-colors">
+                        <a href={member.website_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-card border border-line text-ink-2 hover:text-ink-1 hover:border-ink-1 transition-colors">
                           <Globe className="w-3.5 h-3.5" />
                         </a>
                       )}
                       {member.twitter_url && (
-                        <a href={member.twitter_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-white border border-[var(--line)] text-[var(--ink-2)] hover:text-black hover:border-black transition-colors">
+                        <a href={member.twitter_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-[6px] bg-card border border-line text-ink-2 hover:text-ink-1 hover:border-ink-1 transition-colors">
                           <Mail className="w-3.5 h-3.5" />
                         </a>
                       )}
@@ -291,3 +307,4 @@ export default function AboutPage() {
     </div>
   );
 }
+

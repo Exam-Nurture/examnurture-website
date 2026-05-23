@@ -7,12 +7,11 @@ const footerLinks = {
     { name: "All Exams",          href: "/exams"      },
     { name: "All Test Series",    href: "/series/all" },
     { name: "All PYQ Papers",     href: "/pyq/all"    },
-    { name: "Nurture Library",    href: "/blog"    },
+    { name: "Nurture Library",    href: "/blogs"    },
   ],
   account: [
     { name: "Dashboard",          href: "/dashboard"            },
-    { name: "My Library",         href: "/dashboard/my-library" },
-    { name: "Subscription Plans", href: "/dashboard/plans"      },
+    { name: "Saved Blogs",         href: "/dashboard/saved-blogs" },
   ],
   company: [
     { name: "About Us",           href: "/about"                },

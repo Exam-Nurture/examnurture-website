@@ -436,7 +436,7 @@ export default function AdminTestsPage() {
         <UploadQuestionsModal
           test={uploadTarget}
           onClose={() => { setUploadTarget(null); load(); }}
-          onSuccess={(count) => { console.log(`Uploaded ${count}`); }}
+          onSuccess={() => {}}
         />
       )}
     </div>

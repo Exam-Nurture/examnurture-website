@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { apiGetBlogBySlug } from "@/lib/api";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://examnurture.in";
+const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://examnurture.com";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

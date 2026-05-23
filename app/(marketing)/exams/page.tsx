@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, GraduationCap, ArrowRight, ChevronRight, SlidersHorizontal, X, Check } from "lucide-react";
-import { apiGetBoards, type ApiBoard } from "@/lib/api";
+import { Search, GraduationCap, ArrowRight, ChevronRight, X, RotateCcw, Filter } from "lucide-react";
+import { FilterSidebar, MobileFilterBar, ExamFilterPanel } from "@/components/layout/FilterSidebar";
+import { useExamFilter, parseIds, serializeIds } from "@/hooks/useExamFilter";
+import type { ApiBoard, ApiBoardExam } from "@/lib/api";
 
-/* ── Emoji map: presentation-only, state names come from the backend ── */
+/* ── Emoji map ── */
 const STATE_EMOJI: Record<string, string> = {
   "Central Government": "🏛",
   "Jharkhand":          "🌿",
@@ -32,12 +35,8 @@ const STATE_EMOJI: Record<string, string> = {
   "Goa":                "🏖",
   "Delhi":              "🗼",
 };
+function emojiFor(name: string) { return STATE_EMOJI[name] ?? "📋"; }
 
-function emojiFor(name: string) {
-  return STATE_EMOJI[name] ?? "📋";
-}
-
-/* ── Group boards by their state (or "Other" if no state linked) ── */
 interface StateGroup {
   id: number | null;
   name: string;
@@ -46,15 +45,12 @@ interface StateGroup {
 
 function groupByState(boards: ApiBoard[]): StateGroup[] {
   const map = new Map<string, StateGroup>();
-
   for (const board of boards) {
     const key  = board.state ? String(board.state.id) : "__none__";
     const name = board.state?.name ?? "Other";
     if (!map.has(key)) map.set(key, { id: board.state?.id ?? null, name, boards: [] });
     map.get(key)!.boards.push(board);
   }
-
-  // Sort: real states alphabetically first, "Other" last
   return [...map.values()].sort((a, b) => {
     if (a.id === null) return 1;
     if (b.id === null) return -1;
@@ -62,48 +58,79 @@ function groupByState(boards: ApiBoard[]): StateGroup[] {
   });
 }
 
-export default function AllExamsPage() {
-  const [search, setSearch]             = useState("");
-  const [selectedStates, setSelectedStates] = useState<Array<number | null>>([]);
-  const [selectedBoards, setSelectedBoards] = useState<string[]>([]);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+/* ─── Main inner component ────────────────────────────── */
 
-  const [boards, setBoards]   = useState<ApiBoard[]>([]);
-  const [loading, setLoading] = useState(true);
+function AllExamsPageInner() {
+  const router       = useRouter();
+  const pathname     = usePathname();
+  const searchParams = useSearchParams();
 
+  const [search, setSearch]                     = useState(searchParams.get("q") ?? "");
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  const examFilter = useExamFilter({
+    stateIds: parseIds(searchParams.get("stateIds"), Number),
+    boardIds:  parseIds(searchParams.get("boardIds"),  String),
+    examIds:   parseIds(searchParams.get("examIds"),   String),
+  });
+
+  // URL sync
   useEffect(() => {
-    let cancelled = false;
-    apiGetBoards()
-      .then(data => { if (!cancelled) setBoards(data); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+    const params = new URLSearchParams();
+    if (search) params.set("q", search);
+    const sIds = serializeIds(examFilter.selectedStateIds);
+    const bIds = serializeIds(examFilter.selectedBoardIds);
+    const eIds = serializeIds(examFilter.selectedExamIds);
+    if (sIds) params.set("stateIds", sIds);
+    if (bIds) params.set("boardIds", bIds);
+    if (eIds) params.set("examIds",  eIds);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [search, examFilter.selectedStateIds, examFilter.selectedBoardIds, examFilter.selectedExamIds, pathname, router]);
 
-  /* Derive state groups + all exams once boards are loaded */
-  const stateGroups = useMemo(() => groupByState(boards), [boards]);
-  const allExams    = useMemo(() => boards.flatMap(b => (b.exams ?? []).map(e => ({ ...e, board: b }))), [boards]);
+  // Group boards from the hook (already fetched)
+  const stateGroups = useMemo(() => groupByState(examFilter.allBoards), [examFilter.allBoards]);
 
-  const toggleState = (id: number | null) =>
-    setSelectedStates(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
+  // All exams flat (for search)
+  const allExams = useMemo(
+    () => examFilter.allBoards.flatMap(b => (b.exams ?? []).map(e => ({ ...e, board: b as ApiBoard }))),
+    [examFilter.allBoards]
+  );
 
-  const toggleBoard = (id: string) =>
-    setSelectedBoards(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
-
-  const isAllActive = selectedStates.length === 0;
-
-  /* Search: client-side filter over all exams */
-  const filteredExams = search.trim()
+  // Search results
+  const searchResults = search.trim()
     ? allExams.filter(e =>
         e.name.toLowerCase().includes(search.toLowerCase()) ||
         e.shortName.toLowerCase().includes(search.toLowerCase())
       )
     : null;
 
-  /* Browse mode: which state groups to show */
-  const visibleGroups = selectedStates.length > 0
-    ? stateGroups.filter(g => selectedStates.includes(g.id))
-    : stateGroups;
+  // Hierarchical display filtered by sidebar selections
+  const visibleGroups = useMemo(() => {
+    const { selectedStateIds, selectedBoardIds, selectedExamIds } = examFilter;
+    const result: Array<StateGroup & { boards: Array<ApiBoard & { exams: ApiBoardExam[] }> }> = [];
+
+    for (const group of stateGroups) {
+      if (selectedStateIds.length > 0 && group.id != null && !selectedStateIds.includes(group.id)) continue;
+      const filteredBoards: Array<ApiBoard & { exams: ApiBoardExam[] }> = [];
+      for (const board of group.boards) {
+        if (selectedBoardIds.length > 0 && !selectedBoardIds.includes(board.id)) continue;
+        const exams = selectedExamIds.length > 0
+          ? (board.exams ?? []).filter(e => selectedExamIds.includes(e.id))
+          : (board.exams ?? []);
+        if (exams.length > 0) filteredBoards.push({ ...board, exams });
+      }
+      if (filteredBoards.length > 0) result.push({ ...group, boards: filteredBoards });
+    }
+    return result;
+  }, [stateGroups, examFilter.selectedStateIds, examFilter.selectedBoardIds, examFilter.selectedExamIds]);
+
+  const activeFilterCount = examFilter.examFilterCount;
+
+  function resetFilters() {
+    examFilter.resetExamFilter();
+    setSearch("");
+  }
 
   return (
     <div className="min-h-screen pb-20" style={{ background: "var(--bg)" }}>
@@ -124,49 +151,57 @@ export default function AllExamsPage() {
             </div>
             <input
               type="text"
-              className="block w-full pl-12 pr-4 py-4 sm:text-lg border-2 rounded-2xl focus:outline-none transition-all"
+              className="block w-full pl-12 pr-10 py-4 sm:text-lg border-2 rounded-2xl focus:outline-none transition-all"
               style={{ background: "var(--bg)", borderColor: "var(--line-soft)", color: "var(--ink-1)" }}
               placeholder="Search for an exam (e.g., SSC CGL, IBPS PO)…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                style={{ color: "var(--ink-4)" }}
+              >
+                <X size={18} />
+              </button>
+            )}
           </div>
         </div>
       </section>
 
       {/* ── MAIN CONTENT ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-12 relative">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {search.trim() && filteredExams ? (
+        {search.trim() && searchResults ? (
           /* ── SEARCH RESULTS ── */
           <div className="space-y-6">
-            <h2 className="text-xl font-bold" style={{ color: "var(--ink-1)" }}>
-              Search results for &ldquo;{search}&rdquo;
-            </h2>
-            {filteredExams.length === 0 ? (
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold" style={{ color: "var(--ink-1)" }}>
+                <span className="font-black" style={{ color: "var(--blue)" }}>{searchResults.length}</span> results for &ldquo;{search}&rdquo;
+              </h2>
+              <button type="button" onClick={() => setSearch("")} className="text-sm font-semibold" style={{ color: "var(--ink-3)" }}>
+                ← Back to browse
+              </button>
+            </div>
+            {searchResults.length === 0 ? (
               <div className="border rounded-3xl p-12 text-center" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
                 <Search className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: "var(--ink-4)" }} />
                 <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink-1)" }}>No exams found</h3>
-                <p style={{ color: "var(--ink-3)" }}>Try adjusting your search terms or browse by state below.</p>
+                <p style={{ color: "var(--ink-3)" }}>Try different keywords or browse by state using the filters.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredExams.map((exam, idx) => (
-                  <motion.div
-                    key={exam.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.04 }}
-                  >
+                {searchResults.map((exam: ApiBoardExam & { board: ApiBoard }, idx: number) => (
+                  <motion.div key={exam.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
                     <Link
                       href={`/exams/${exam.id}`}
                       className="block border rounded-3xl p-6 transition-all hover:-translate-y-0.5 group"
                       style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
                     >
-                      <span
-                        className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded inline-block mb-3"
-                        style={{ background: `${exam.board.tint}18`, color: exam.board.tint || "#0D287E" }}
-                      >
+                      <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded inline-block mb-3"
+                        style={{ background: `${exam.board.tint}18`, color: exam.board.tint || "#0D287E" }}>
                         {exam.board.shortName}
                       </span>
                       <h3 className="text-xl font-bold mb-2" style={{ color: "var(--ink-1)" }}>{exam.name}</h3>
@@ -183,276 +218,202 @@ export default function AllExamsPage() {
             )}
           </div>
 
-        ) : loading ? (
-          /* ── SKELETON ── */
-          <div className="space-y-8">
-            <div className="flex gap-3">
-              {[100, 160, 120, 100, 140].map((w, i) => (
-                <div key={i} className="h-11 rounded-xl animate-pulse" style={{ width: w, background: "var(--card)" }} />
-              ))}
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-48 rounded-3xl animate-pulse" style={{ background: "var(--card)" }} />
-              ))}
-            </div>
-          </div>
-
         ) : (
-          /* ── BROWSE BY STATE ── */
-          <div className="space-y-12">
+          /* ── BROWSE WITH SIDEBAR ── */
+          <div className="flex gap-6 items-start">
 
-            {/* State tabs + Filter button */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex overflow-x-auto scrollbar-hide gap-3 pb-1">
-                {/* All Exams */}
-                <button
-                  onClick={() => { setSelectedStates([]); setSelectedBoards([]); }}
-                  className="shrink-0 px-5 py-2.5 rounded-full text-sm font-bold transition-all"
-                  style={
-                    isAllActive
-                      ? { background: "#0D287E", color: "#fff" }
-                      : { background: "var(--card)", color: "var(--ink-2)", border: "1.5px solid var(--line-soft)" }
-                  }
-                >
-                  All Exams
-                </button>
+            {/* Left sidebar */}
+            <FilterSidebar
+              searchQuery={search}
+              onSearchChange={setSearch}
+              activeFilterCount={activeFilterCount}
+              onReset={resetFilters}
+            >
+              <ExamFilterPanel
+                allStates={examFilter.allStates}
+                selectedStateIds={examFilter.selectedStateIds}
+                onToggleState={examFilter.toggleState}
+                availableBoards={examFilter.availableBoards}
+                selectedBoardIds={examFilter.selectedBoardIds}
+                onToggleBoard={examFilter.toggleBoard}
+                availableExams={examFilter.availableExams}
+                selectedExamIds={examFilter.selectedExamIds}
+                onToggleExam={examFilter.toggleExam}
+                isLoading={examFilter.isLoading}
+                examsLoading={examFilter.examsLoading}
+              />
+            </FilterSidebar>
 
-                {/* One tab per state, derived from boards data */}
-                {stateGroups.filter(g => g.id !== null).map(group => (
-                  <button
-                    key={group.id}
-                    onClick={() => { setSelectedStates([group.id]); setSelectedBoards([]); }}
-                    className="shrink-0 px-5 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2"
-                    style={
-                      selectedStates.includes(group.id)
-                        ? { background: "#0D287E", color: "#fff" }
-                        : { background: "var(--card)", color: "var(--ink-2)", border: "1.5px solid var(--line-soft)" }
-                    }
-                  >
-                    <span>{emojiFor(group.name)}</span> {group.name}
-                  </button>
-                ))}
+            {/* Right content */}
+            <div className="flex-1 min-w-0">
+
+              {/* Mobile filter bar */}
+              <div className="lg:hidden mb-4">
+                <MobileFilterBar
+                  searchQuery={search}
+                  onSearchChange={setSearch}
+                  activeFilterCount={activeFilterCount}
+                  onOpenMobileFilter={() => setMobileFilterOpen(true)}
+                />
               </div>
 
-              {/* Filter button */}
-              <button
-                className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all"
-                style={
-                  selectedBoards.length > 0
-                    ? { background: "#0D287E", color: "#fff" }
-                    : { background: "var(--card)", color: "var(--ink-2)", border: "1.5px solid var(--line-soft)" }
-                }
-                onClick={() => setIsFilterOpen(true)}
-              >
-                <SlidersHorizontal size={16} />
-                Filters
-                {selectedBoards.length > 0 && (
-                  <span className="ml-1 bg-white/20 px-1.5 py-0.5 rounded text-xs">{selectedBoards.length}</span>
-                )}
-              </button>
-            </div>
-
-            {/* State → Board → Exams */}
-            <div className="space-y-16">
-              {visibleGroups.map(group => {
-                const groupBoards = group.boards.filter(b =>
-                  selectedBoards.length === 0 || selectedBoards.includes(b.id)
-                );
-                if (groupBoards.length === 0) return null;
-
-                return (
-                  <div key={group.id ?? "__none__"} className="space-y-8">
-                    {/* State header */}
-                    {group.id !== null && (
-                      <div className="flex items-center gap-4 border-b pb-4" style={{ borderColor: "var(--line-soft)" }}>
-                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: "var(--card)" }}>
-                          {emojiFor(group.name)}
+              {examFilter.isLoading ? (
+                <SkeletonLoading />
+              ) : visibleGroups.length === 0 ? (
+                <EmptyState onReset={resetFilters} />
+              ) : (
+                <div className="space-y-16">
+                  {visibleGroups.map(group => (
+                    <div key={group.id ?? "__none__"} className="space-y-8">
+                      {group.id !== null && (
+                        <div className="flex items-center gap-4 border-b pb-4" style={{ borderColor: "var(--line-soft)" }}>
+                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: "var(--card)" }}>
+                            {emojiFor(group.name)}
+                          </div>
+                          <h2 className="text-2xl font-bold" style={{ color: "var(--ink-1)" }}>{group.name}</h2>
                         </div>
-                        <h2 className="text-2xl font-bold" style={{ color: "var(--ink-1)" }}>{group.name}</h2>
-                      </div>
-                    )}
-
-                    {/* Boards grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {groupBoards.map(board => {
-                        const boardExams = board.exams ?? [];
-                        if (boardExams.length === 0) return null;
-                        return (
-                          <div
-                            key={board.id}
-                            className="border rounded-3xl overflow-hidden flex flex-col"
-                            style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
-                          >
-                            {/* Board header */}
-                            <div
-                              className="p-5 border-b flex items-center gap-4"
-                              style={{ borderColor: "var(--line-soft)", background: `${board.tint}08` }}
-                            >
-                              <div
-                                className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-sm flex-shrink-0"
-                                style={{ backgroundColor: board.tint || "#0D287E" }}
-                              >
+                      )}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {group.boards.map(board => (
+                          <div key={board.id} className="border rounded-3xl overflow-hidden flex flex-col"
+                            style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
+                            <div className="p-5 border-b flex items-center gap-4"
+                              style={{ borderColor: "var(--line-soft)", background: `${board.tint}08` }}>
+                              <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-sm flex-shrink-0"
+                                style={{ backgroundColor: board.tint || "#0D287E" }}>
                                 {board.shortName.slice(0, 2)}
                               </div>
                               <div>
-                                <h3 className="font-bold text-base leading-tight" style={{ color: "var(--ink-1)" }}>
-                                  {board.name}
-                                </h3>
+                                <h3 className="font-bold text-base leading-tight" style={{ color: "var(--ink-1)" }}>{board.name}</h3>
                                 <span className="text-xs font-bold uppercase tracking-wider" style={{ color: board.tint || "#0D287E" }}>
                                   {board.shortName}
                                 </span>
                               </div>
                             </div>
-
-                            {/* Exams list */}
                             <div className="p-2 flex-1">
-                              {boardExams.map(exam => (
-                                <Link
-                                  key={exam.id}
-                                  href={`/exams/${exam.id}`}
-                                  className="flex items-center justify-between p-4 rounded-2xl transition-all group hover:bg-[var(--bg)]"
-                                >
+                              {(board.exams ?? []).map(exam => (
+                                <Link key={exam.id} href={`/exams/${exam.id}`}
+                                  className="flex items-center justify-between p-4 rounded-2xl transition-all group hover:bg-[var(--bg)]">
                                   <div>
-                                    <h4 className="font-bold" style={{ color: "var(--ink-1)" }}>
-                                      {exam.name}
-                                    </h4>
+                                    <h4 className="font-bold" style={{ color: "var(--ink-1)" }}>{exam.name}</h4>
                                     <p className="text-xs mt-0.5" style={{ color: "var(--ink-4)" }}>
                                       {[exam.hasTests && "Tests", exam.hasPYQ && "PYQs"].filter(Boolean).join(" · ") || "Coming soon"}
                                     </p>
                                   </div>
-                                  <div
-                                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-110 group-hover:bg-[#0D287E] group-hover:text-white"
-                                    style={{ background: "var(--bg)", color: "var(--ink-3)" }}
-                                  >
+                                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-110 group-hover:bg-[#0D287E] group-hover:text-white"
+                                    style={{ background: "var(--bg)", color: "var(--ink-3)" }}>
                                     <ChevronRight size={16} />
                                   </div>
                                 </Link>
                               ))}
                             </div>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-
-              {visibleGroups.every(g => g.boards.every(b => (b.exams ?? []).length === 0)) && (
-                <div className="border-2 border-dashed rounded-3xl p-16 text-center" style={{ borderColor: "var(--line-soft)" }}>
-                  <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: "var(--ink-4)" }} />
-                  <p className="font-medium" style={{ color: "var(--ink-3)" }}>No exams match the selected filters.</p>
+                  ))}
                 </div>
               )}
             </div>
           </div>
         )}
+      </div>
 
-        {/* ── FILTER DRAWER ── */}
-        <AnimatePresence>
-          {isFilterOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                onClick={() => setIsFilterOpen(false)}
-                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
-              />
-              <motion.div
-                initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed inset-y-0 right-0 w-full max-w-sm shadow-2xl z-[101] flex flex-col"
-                style={{ background: "var(--card)" }}
-              >
-                <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: "var(--line-soft)" }}>
-                  <div>
-                    <h2 className="text-xl font-bold" style={{ color: "var(--ink-1)" }}>Filters</h2>
-                    <p className="text-xs mt-1" style={{ color: "var(--ink-3)" }}>Refine your exam discovery</p>
-                  </div>
-                  <button onClick={() => setIsFilterOpen(false)} className="p-2 rounded-full transition-colors" style={{ color: "var(--ink-3)" }}>
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+      {/* ── Mobile filter drawer ── */}
+      <AnimatePresence>
+        {mobileFilterOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setMobileFilterOpen(false)}
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 z-50 flex h-[85vh] flex-col rounded-t-[24px] bg-[var(--bg)] lg:hidden"
+              style={{ borderTop: "1px solid var(--line-soft)" }}
+            >
+              <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "var(--line-soft)" }}>
+                <h3 className="font-bold text-[var(--ink-1)]">Filters</h3>
+                <button onClick={() => setMobileFilterOpen(false)} className="rounded-full p-2 bg-[var(--card)] border border-[var(--line-soft)] text-[var(--ink-2)]">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 py-4 pb-20 [scrollbar-width:none]">
+                <ExamFilterPanel
+                  allStates={examFilter.allStates}
+                  selectedStateIds={examFilter.selectedStateIds}
+                  onToggleState={examFilter.toggleState}
+                  availableBoards={examFilter.availableBoards}
+                  selectedBoardIds={examFilter.selectedBoardIds}
+                  onToggleBoard={examFilter.toggleBoard}
+                  availableExams={examFilter.availableExams}
+                  selectedExamIds={examFilter.selectedExamIds}
+                  onToggleExam={examFilter.toggleExam}
+                  isLoading={examFilter.isLoading}
+                  examsLoading={examFilter.examsLoading}
+                />
+              </div>
+              <div className="flex gap-3 px-5 py-4" style={{ borderTop: "1px solid var(--line-soft)" }}>
+                <button type="button" onClick={() => { resetFilters(); setMobileFilterOpen(false); }}
+                  className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[12px] border text-[13px] font-semibold transition-colors hover:border-[var(--blue)]"
+                  style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
+                  <RotateCcw size={13} /> Clear all
+                </button>
+                <button type="button" onClick={() => setMobileFilterOpen(false)}
+                  className="flex h-11 flex-[1.4] items-center justify-center rounded-[12px] text-[13px] font-semibold text-white transition-opacity hover:opacity-85"
+                  style={{ background: "var(--blue)" }}>
+                  Apply
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
-                  {/* State filter */}
-                  {stateGroups.filter(g => g.id !== null).length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--ink-4)" }}>State / Region</h3>
-                      <div className="flex flex-col gap-2">
-                        {stateGroups.filter(g => g.id !== null).map(group => {
-                          const isSel = selectedStates.includes(group.id);
-                          return (
-                            <button
-                              key={group.id}
-                              onClick={() => toggleState(group.id)}
-                              className="flex items-center justify-between p-3 rounded-xl border transition-all text-left"
-                              style={
-                                isSel
-                                  ? { border: "1px solid #0D287E", background: "rgba(13,40,126,0.08)", color: "#0D287E" }
-                                  : { borderColor: "var(--line-soft)", color: "var(--ink-2)", background: "var(--bg)" }
-                              }
-                            >
-                              <span className="flex items-center gap-2 font-medium">
-                                {emojiFor(group.name)} {group.name}
-                              </span>
-                              {isSel && <Check size={16} style={{ color: "#0D287E" }} />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Board filter */}
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--ink-4)" }}>Exam Board</h3>
-                    <div className="flex flex-col gap-2">
-                      {(selectedStates.length > 0
-                        ? stateGroups.filter(g => selectedStates.includes(g.id)).flatMap(g => g.boards)
-                        : boards
-                      ).map(board => {
-                        const isSel = selectedBoards.includes(board.id);
-                        return (
-                          <button
-                            key={board.id}
-                            onClick={() => toggleBoard(board.id)}
-                            className="flex items-center justify-between p-3 rounded-xl border text-left transition-all"
-                            style={
-                              isSel
-                                ? { border: `1px solid ${board.tint}`, background: `${board.tint}12`, color: board.tint }
-                                : { borderColor: "var(--line-soft)", color: "var(--ink-2)", background: "var(--bg)" }
-                            }
-                          >
-                            <span className="text-sm font-semibold">{board.name}</span>
-                            {isSel && <Check size={16} />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 border-t grid grid-cols-2 gap-4" style={{ borderColor: "var(--line-soft)", background: "var(--bg)" }}>
-                  <button
-                    onClick={() => { setSelectedStates([]); setSelectedBoards([]); }}
-                    className="px-4 py-3 border rounded-xl text-sm font-bold"
-                    style={{ borderColor: "var(--line-soft)", color: "var(--ink-3)", background: "var(--card)" }}
-                  >
-                    Clear All
-                  </button>
-                  <button
-                    onClick={() => setIsFilterOpen(false)}
-                    className="px-4 py-3 rounded-xl text-sm font-bold text-white"
-                    style={{ background: "#0D287E" }}
-                  >
-                    Apply Filters
-                  </button>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+/* ─── Loading skeleton ── */
+function SkeletonLoading() {
+  return (
+    <div className="space-y-8">
+      <div className="flex gap-3">
+        {[100, 160, 120, 100, 140].map((w, i) => (
+          <div key={i} className="h-11 rounded-xl animate-pulse" style={{ width: w, background: "var(--card)" }} />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="h-48 rounded-3xl animate-pulse" style={{ background: "var(--card)" }} />
+        ))}
       </div>
     </div>
+  );
+}
+
+/* ─── Empty state ── */
+function EmptyState({ onReset }: { onReset: () => void }) {
+  return (
+    <div className="border-2 border-dashed rounded-3xl p-16 text-center" style={{ borderColor: "var(--line-soft)" }}>
+      <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: "var(--ink-4)" }} />
+      <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink-1)" }}>No exams match your filters</h3>
+      <p className="mb-5" style={{ color: "var(--ink-3)" }}>Try removing some filters or selecting different states and boards.</p>
+      <button type="button" onClick={onReset}
+        className="inline-flex h-10 items-center gap-2 rounded-[12px] px-5 text-[13px] font-semibold text-white transition-opacity hover:opacity-85"
+        style={{ background: "var(--blue)" }}>
+        <RotateCcw size={14} /> Clear filters
+      </button>
+    </div>
+  );
+}
+
+/* ─── Page export ── */
+export default function AllExamsPage() {
+  return (
+    <Suspense fallback={<SkeletonLoading />}>
+      <AllExamsPageInner />
+    </Suspense>
   );
 }

@@ -67,7 +67,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center py-20 px-4">
+    <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center py-20 px-4">
       <div className="w-full max-w-5xl rounded-[24px] overflow-hidden border border-[var(--line)] flex flex-col lg:flex-row">
 
         {/* LEFT: Brand blue info panel */}
@@ -170,7 +170,7 @@ export default function ContactPage() {
         </div>
 
         {/* RIGHT: Form panel */}
-        <div className="flex-1 bg-white p-10 flex flex-col justify-center">
+        <div className="flex-1 bg-white dark:bg-[var(--bg-secondary)] p-10 flex flex-col justify-center">
 
           {status === "success" ? (
             <div className="flex flex-col items-center justify-center h-full text-center py-16">
@@ -178,12 +178,12 @@ export default function ContactPage() {
                    style={{ background: "linear-gradient(145deg, #0D287E, #091E60)" }}>
                 <CheckCircle className="w-7 h-7 text-white" />
               </div>
-              <h3 className="text-[20px] font-semibold text-black mb-2">Message sent!</h3>
+              <h3 className="text-[20px] font-semibold text-[var(--ink-1)] mb-2">Message sent!</h3>
               <p className="text-[var(--ink-2)] text-sm max-w-xs mb-6">
                 We'll reply within 24 hours. Keep an eye on your inbox.
               </p>
               <button onClick={() => setStatus("idle")}
-                className="text-sm font-medium text-black underline underline-offset-2 hover:no-underline">
+                className="text-sm font-medium text-[var(--ink-1)] underline underline-offset-2 hover:no-underline">
                 Send another →
               </button>
             </div>
@@ -194,14 +194,14 @@ export default function ContactPage() {
                    style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
                   Contact Form
                 </p>
-                <h3 className="text-[28px] leading-[1.10] text-black"
+                <h3 className="text-[28px] leading-[1.10] text-[var(--ink-1)]"
                     style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
                   Send a message
                 </h3>
               </div>
 
               {status === "error" && (
-                <div className="flex items-start gap-3 p-4 rounded-[12px] bg-red-50 border border-red-100 text-red-600 text-sm mb-5">
+                <div className="flex items-start gap-3 p-4 rounded-[12px] bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-800/30 text-red-600 dark:text-red-400 text-sm mb-5">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{errorMsg}</span>
                 </div>
@@ -213,13 +213,13 @@ export default function ContactPage() {
                     <label className="block text-[11px] font-normal uppercase text-[var(--ink-2)] mb-1.5"
                            style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>Name</label>
                     <input required value={form.name} onChange={set("name")} placeholder="Rahul Sharma"
-                      className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-black placeholder-[#9ca3af] outline-none focus:border-[#0D287E] transition-colors bg-white" />
+                      className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-[var(--ink-1)] placeholder-[var(--ink-4)] outline-none focus:border-[#0D287E] dark:focus:border-blue-400 transition-colors bg-white dark:bg-[var(--bg)]" />
                   </div>
                   <div>
                     <label className="block text-[11px] font-normal uppercase text-[var(--ink-2)] mb-1.5"
                            style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>Email</label>
                     <input required type="email" value={form.email} onChange={set("email")} placeholder="you@email.com"
-                      className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-black placeholder-[#9ca3af] outline-none focus:border-[#0D287E] transition-colors bg-white" />
+                      className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-[var(--ink-1)] placeholder-[var(--ink-4)] outline-none focus:border-[#0D287E] dark:focus:border-blue-400 transition-colors bg-white dark:bg-[var(--bg)]" />
                   </div>
                 </div>
 
@@ -227,7 +227,7 @@ export default function ContactPage() {
                   <label className="block text-[11px] font-normal uppercase text-[var(--ink-2)] mb-1.5"
                          style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>Subject</label>
                   <select required value={form.subject} onChange={set("subject")}
-                    className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-black outline-none focus:border-black transition-colors appearance-none cursor-pointer bg-white">
+                    className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-[var(--ink-1)] outline-none focus:border-[#0D287E] dark:focus:border-blue-400 transition-colors appearance-none cursor-pointer bg-white dark:bg-[var(--bg)]">
                     <option value="" disabled>Select a topic…</option>
                     {SUBJECTS.map(s => <option key={s}>{s}</option>)}
                   </select>
@@ -237,7 +237,7 @@ export default function ContactPage() {
                   <label className="block text-[11px] font-normal uppercase text-[var(--ink-2)] mb-1.5"
                          style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>Message</label>
                   <textarea required minLength={10} rows={5} value={form.message} onChange={set("message")} placeholder="Tell us how we can help…"
-                    className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-black placeholder-[#9ca3af] outline-none focus:border-black transition-colors resize-none bg-white" />
+                    className="w-full px-4 py-3 rounded-[10px] border border-[var(--line)] text-sm text-[var(--ink-1)] placeholder-[var(--ink-4)] outline-none focus:border-[#0D287E] dark:focus:border-blue-400 transition-colors resize-none bg-white dark:bg-[var(--bg)]" />
                 </div>
 
                 <button type="submit" disabled={status === "sending"}

@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, BookOpen, FileText,
-  Library, Menu,
-  User, Zap, GraduationCap, BookMarked
+  Menu, User, GraduationCap, BookMarked
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -16,8 +15,7 @@ const NAV_ITEMS = [
   { href: "/exams",                 label: "Browse Exams",         icon: GraduationCap   },
   { href: "/dashboard/series",      label: "Test Series",          icon: BookOpen        },
   { href: "/dashboard/pyq",         label: "Previous Year Papers", icon: FileText        },
-  { href: "/blog",                  label: "Blog",                 icon: Library         },
-  { href: "/dashboard/my-blog",     label: "My Library",           icon: BookMarked      },
+  { href: "/dashboard/saved-blogs", label: "Saved Blogs",          icon: BookMarked      },
 ];
 
 const BOTTOM_ITEMS = [
@@ -143,17 +141,6 @@ export default function Sidebar() {
           {BOTTOM_ITEMS.map((item) => (
             <NavItem key={item.href} {...item} />
           ))}
-          {!collapsed && !user?.subscription && (
-            <Link href="/dashboard/plans"
-              className="mt-2 flex items-center gap-2 px-3 py-2.5 rounded-[10px] transition-all"
-              style={{ background: "linear-gradient(135deg, var(--blue), var(--cyan))" }}>
-              <Zap size={14} className="text-white shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[12px] font-bold text-white leading-none">Upgrade to Pro</p>
-                <p className="text-[10px] text-white/70 mt-0.5 leading-none">Unlock all features</p>
-              </div>
-            </Link>
-          )}
         </div>
       </aside>
 

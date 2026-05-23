@@ -25,7 +25,7 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500", "700"],
 });
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://examnurture.in";
+const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://examnurture.com";
 const TITLE = "ExamNurture — India's Competitive Exam Preparation Platform";
 const DESCRIPTION =
   "Crack JPSC, SBI PO, IBPS PO, RBI Grade B, SSC CGL, Railway NTPC, Daroga SI and more. Full-length mock tests, PYQ papers, AI analytics, real-time percentile ranking — one platform for all government competitive exams.";
@@ -76,19 +76,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${poppins.variable} ${sora.variable} ${jetbrainsMono.variable} h-full`}
       style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}
     >
+      <head />
       <body className="min-h-full bg-[var(--bg)] text-[var(--ink-1)]" suppressHydrationWarning>
-        <script dangerouslySetInnerHTML={{
-          __html: `(function() {
-            try {
-              var theme = localStorage.getItem('theme') || 'system';
-              var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              var isDark = theme === 'dark' || (theme === 'system' && prefersDark);
-              var resolved = isDark ? 'dark' : 'light';
-              document.documentElement.classList.add(resolved);
-              document.documentElement.style.colorScheme = resolved;
-            } catch (e) {}
-          })();`
-        }} />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <ScrollReveal />

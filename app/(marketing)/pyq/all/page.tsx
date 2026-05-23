@@ -36,14 +36,11 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { FilterSidebar, FilterSection, MobileFilterBar, ActiveFilterChips, ExamFilterPanel } from "@/components/layout/FilterSidebar";
+import { useExamFilter, parseIds, serializeIds } from "@/hooks/useExamFilter";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
 
-const YEARS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018"];
-const CATEGORIES = ["State PSC", "Banking", "SSC", "Railway", "Police", "Teaching", "UPSC"];
-const SUBJECTS = ["General Studies", "Quant", "Reasoning", "English", "Current Affairs", "Jharkhand GK"];
-const DIFFICULTIES: PyqDifficulty[] = ["Easy", "Moderate", "Hard"];
-const LANGUAGES = ["English", "Hindi", "Bilingual"];
 const SORTS = [
   { value: "latest", label: "Latest first" },
   { value: "attempted", label: "Most attempted" },
@@ -64,16 +61,6 @@ const BANNER_GRADIENTS = [
   "from-fuchsia-600 to-violet-500",
 ];
 
-const CATEGORY_DISCOVERY = [
-  { name: "SSC Exams", category: "SSC", count: 31, icon: FileText, gradient: "from-blue-600 to-cyan-500" },
-  { name: "Banking Exams", category: "Banking", count: 79, icon: ShieldCheck, gradient: "from-emerald-600 to-teal-400" },
-  { name: "State Govt.", category: "State PSC", count: 663, icon: GraduationCap, gradient: "from-violet-600 to-fuchsia-400" },
-  { name: "Railways", category: "Railway", count: 33, icon: TrendingUp, gradient: "from-amber-500 to-orange-500" },
-  { name: "Police Exams", category: "Police", count: 89, icon: Target, gradient: "from-rose-600 to-pink-400" },
-  { name: "Teaching", category: "Teaching", count: 164, icon: BookOpenCheck, gradient: "from-sky-600 to-blue-400" },
-  { name: "UPSC CSE", category: "UPSC", count: 24, icon: Trophy, gradient: "from-indigo-600 to-violet-400" },
-];
-
 const SEO_GROUPS = [
   { title: "Latest SSC PYQs", links: ["SSC CGL PYQ Papers", "SSC CHSL PYQ Papers", "SSC MTS PYQ Papers", "SSC GD Constable PYQ"] },
   { title: "Banking PYQs", links: ["SBI PO PYQ Papers", "IBPS PO PYQ Papers", "RBI Grade B PYQ", "IBPS Clerk PYQ"] },
@@ -82,7 +69,6 @@ const SEO_GROUPS = [
 ];
 
 type SortValue = (typeof SORTS)[number]["value"];
-type PyqDifficulty = "Easy" | "Moderate" | "Hard";
 
 interface RawPYQPaper {
   id: string;
@@ -99,130 +85,60 @@ interface RawPYQPaper {
 
 interface PyqPaper {
   id: string;
-  examSlug: string;
+  examId: string;
   examName: string;
   title: string;
   year: number;
-  subject: string;
-  category: string;
-  difficulty: PyqDifficulty;
   totalQuestions: number;
   duration: number;
   marks: number;
-  language: string;
   isPremium: boolean;
-  attempts: number;
-  rating: number;
-  bookmarkCount: number;
-  completionPercentage: number;
   pdfUrl?: string;
-  tags: string[];
-  selectionRatio: string;
   isNew: boolean;
-  paperType: "Full Paper" | "Sectional";
   bannerGradient: string;
 }
 
 interface Filters {
   q: string;
-  category: string;
   exam: string;
   year: string;
-  subject: string;
-  difficulty: string;
-  language: string;
   access: string;
-  status: string;
-  solved: string;
   sort: SortValue;
-  collection: string;
 }
 
 const defaultFilters: Filters = {
   q: "",
-  category: "All",
   exam: "All",
   year: "All",
-  subject: "All",
-  difficulty: "All",
-  language: "All",
   access: "All",
-  status: "All",
-  solved: "All",
   sort: "latest",
-  collection: "All",
 };
 
 function readFilters(params: URLSearchParams): Filters {
   return {
     q: params.get("q") ?? "",
-    category: params.get("category") ?? "All",
     exam: params.get("exam") ?? "All",
     year: params.get("year") ?? "All",
-    subject: params.get("subject") ?? "All",
-    difficulty: params.get("difficulty") ?? "All",
-    language: params.get("language") ?? "All",
     access: params.get("access") ?? "All",
-    status: params.get("status") ?? "All",
-    solved: params.get("solved") ?? "All",
     sort: (params.get("sort") as SortValue) ?? "latest",
-    collection: params.get("collection") ?? "All",
   };
 }
 
-function seedFrom(text: string) {
-  return text.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-}
-
-function normalizePaper(raw: RawPYQPaper, index: number): PyqPaper {
-  const seed = seedFrom(raw.id || raw.title || String(index));
-  const examName = raw.exam?.name || "ExamNurture Exam";
-  const category = CATEGORIES[seed % CATEGORIES.length];
-  const subject = SUBJECTS[seed % SUBJECTS.length];
-  const difficulty = DIFFICULTIES[seed % DIFFICULTIES.length];
-  const language = LANGUAGES[seed % LANGUAGES.length];
-  const completionPercentage = seed % 5 === 0 ? 72 : seed % 4 === 0 ? 38 : 0;
-  const year = raw.year ?? Number(YEARS[seed % YEARS.length]);
+function mapPaper(raw: RawPYQPaper, index: number): PyqPaper {
   return {
     id: raw.id,
-    examSlug: raw.exam?.slug || raw.exam?.id || examName.toLowerCase().replace(/\s+/g, "-"),
-    examName,
-    title: raw.title || `${examName} Previous Year Paper`,
-    year,
-    subject,
-    category,
-    difficulty,
-    totalQuestions: raw.totalQuestions ?? 100 + (seed % 50),
-    duration: raw.durationSec ? Math.round(raw.durationSec / 60) : 90 + (seed % 4) * 30,
-    marks: raw.marks ?? 100 + (seed % 5) * 50,
-    language,
-    isPremium: raw.isPremium ?? seed % 4 === 0,
-    attempts: 1200 + seed * 17,
-    rating: Number((4.3 + (seed % 7) / 10).toFixed(1)),
-    bookmarkCount: 200 + seed * 3,
-    completionPercentage,
+    examId: raw.exam?.id ?? "",
+    examName: raw.exam?.name ?? "Unknown Exam",
+    title: raw.title ?? "PYQ Paper",
+    year: raw.year ?? 0,
+    totalQuestions: raw.totalQuestions ?? 0,
+    duration: raw.durationSec ? Math.round(raw.durationSec / 60) : 0,
+    marks: raw.marks ?? 0,
+    isPremium: raw.isPremium ?? false,
     pdfUrl: raw.pdfUrl,
-    tags: [subject, category, seed % 2 === 0 ? "Full Paper" : "Topic-wise"],
-    selectionRatio: `${8 + (seed % 21)}%`,
-    isNew: year >= 2024 || index < 3,
-    paperType: seed % 3 === 0 ? "Sectional" : "Full Paper",
-    bannerGradient: BANNER_GRADIENTS[seed % BANNER_GRADIENTS.length],
+    isNew: raw.year ? raw.year >= 2024 : false,
+    bannerGradient: BANNER_GRADIENTS[index % BANNER_GRADIENTS.length],
   };
-}
-
-function fallbackPapers(): PyqPaper[] {
-  const names = ["JPSC Prelims", "SSC CGL", "BPSC", "SBI PO", "Railway NTPC", "UP Police", "CTET", "RBI Grade B"];
-  return Array.from({ length: 18 }, (_, i) =>
-    normalizePaper({
-      id: `demo-pyq-${i + 1}`,
-      title: `${names[i % names.length]} ${2025 - (i % 7)} Official PYQ Paper`,
-      year: 2025 - (i % 7),
-      totalQuestions: 100 + (i % 4) * 25,
-      durationSec: (90 + (i % 3) * 30) * 60,
-      exam: { id: names[i % names.length].toLowerCase().replace(/\s+/g, "-"), name: names[i % names.length] },
-      pdfUrl: "#",
-    }, i)
-  );
 }
 
 /* ─── Main Page Component ────────────────────────────── */
@@ -244,6 +160,12 @@ function PyqAllPageInner() {
   const [debouncedQ, setDebouncedQ] = useState(filters.q);
   const [authModal, setAuthModal] = useState<{ open: boolean; next: string }>({ open: false, next: "/dashboard" });
 
+  const examFilter = useExamFilter({
+    stateIds: parseIds(searchParams.get("stateIds"), Number),
+    boardIds:  parseIds(searchParams.get("boardIds"),  String),
+    examIds:   parseIds(searchParams.get("examIds"),   String),
+  });
+
   const requireAuth = useCallback((href: string, e: React.MouseEvent) => {
     if (!user) {
       e.preventDefault();
@@ -260,8 +182,11 @@ function PyqAllPageInner() {
 
   useEffect(() => {
     const next = readFilters(searchParams);
-    setFilters(next);
-    setDebouncedQ(next.q);
+    setFilters((prev) => {
+      const equal = Object.keys(next).every(k => prev[k as keyof Filters] === next[k as keyof Filters]);
+      return equal ? prev : next;
+    });
+    setDebouncedQ((prev) => prev === next.q ? prev : next.q);
   }, [searchParams]);
 
   useEffect(() => {
@@ -274,9 +199,15 @@ function PyqAllPageInner() {
     Object.entries({ ...filters, q: debouncedQ }).forEach(([key, value]) => {
       if (value && value !== defaultFilters[key as keyof Filters]) params.set(key, value);
     });
+    const sIds = serializeIds(examFilter.selectedStateIds);
+    const bIds = serializeIds(examFilter.selectedBoardIds);
+    const eIds = serializeIds(examFilter.selectedExamIds);
+    if (sIds) params.set("stateIds", sIds);
+    if (bIds) params.set("boardIds", bIds);
+    if (eIds) params.set("examIds",  eIds);
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [debouncedQ, filters, pathname, router]);
+  }, [debouncedQ, filters, examFilter.selectedStateIds, examFilter.selectedBoardIds, examFilter.selectedExamIds, pathname, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -287,14 +218,11 @@ function PyqAllPageInner() {
         const res = await fetch(`${API_URL}/pyq?limit=100`);
         if (!res.ok) throw new Error("Could not load PYQ papers");
         const data = (await res.json()) as { items?: RawPYQPaper[] };
+        if (!cancelled) setPapers((data.items ?? []).map(mapPaper));
+      } catch {
         if (!cancelled) {
-          const normalized = (data.items?.length ? data.items : fallbackPapers()).map(normalizePaper);
-          setPapers(normalized);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Something went wrong");
-          setPapers(fallbackPapers());
+          setError("Unable to load PYQ papers. Please check your connection and try again.");
+          setPapers([]);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -305,33 +233,38 @@ function PyqAllPageInner() {
   }, []);
 
   const exams = useMemo(() => ["All", ...Array.from(new Set(papers.map((p) => p.examName))).sort()], [papers]);
+  const availableYears = useMemo(
+    () => Array.from(new Set(papers.map(p => String(p.year)).filter(y => y !== "0"))).sort((a, b) => Number(b) - Number(a)),
+    [papers]
+  );
+
+  // Build a set of exam IDs for papers belonging to selected boards (for board-level filtering)
+  const boardExamIdSet = useMemo(() => {
+    if (examFilter.selectedBoardIds.length === 0) return null;
+    return new Set(examFilter.availableExams.map((e) => e.id));
+  }, [examFilter.selectedBoardIds, examFilter.availableExams]);
 
   const filteredPapers = useMemo(() => {
     const q = debouncedQ.trim().toLowerCase();
+    const { selectedExamIds, selectedBoardIds } = examFilter;
     const result = papers.filter((p) => {
-      if (q && ![p.title, p.examName, p.subject, p.category, ...p.tags].join(" ").toLowerCase().includes(q)) return false;
-      if (filters.category !== "All" && p.category !== filters.category) return false;
+      if (q && ![p.title, p.examName].join(" ").toLowerCase().includes(q)) return false;
       if (filters.exam !== "All" && p.examName !== filters.exam) return false;
       if (filters.year !== "All" && String(p.year) !== filters.year) return false;
-      if (filters.subject !== "All" && p.subject !== filters.subject) return false;
-      if (filters.difficulty !== "All" && p.difficulty !== filters.difficulty) return false;
-      if (filters.language !== "All" && p.language !== filters.language) return false;
       if (filters.access !== "All" && (filters.access === "Free" ? p.isPremium : !p.isPremium)) return false;
-      if (filters.status !== "All" && (filters.status === "Attempted" ? p.completionPercentage === 0 : p.completionPercentage > 0)) return false;
-      if (filters.solved !== "All" && (filters.solved === "Solved" ? p.completionPercentage < 100 : p.completionPercentage === 100)) return false;
-      if (filters.collection === "Trending" && p.attempts < 1500) return false;
-      if (filters.collection === "Popular" && p.rating < 4.5) return false;
+      // Cascading exam filter: specific exam IDs take precedence over board-level filter
+      if (selectedExamIds.length > 0) {
+        if (!selectedExamIds.includes(p.examId)) return false;
+      } else if (selectedBoardIds.length > 0) {
+        if (!boardExamIdSet?.has(p.examId)) return false;
+      }
       return true;
     });
     return result.sort((a, b) => {
-      if (filters.sort === "attempted") return b.attempts - a.attempts;
-      if (filters.sort === "rated") return b.rating - a.rating;
-      if (filters.sort === "topic") return a.subject.localeCompare(b.subject);
-      if (filters.sort === "sectional") return a.paperType.localeCompare(b.paperType);
       if (filters.sort === "full") return b.totalQuestions - a.totalQuestions;
       return b.year - a.year;
     });
-  }, [debouncedQ, filters, papers]);
+  }, [debouncedQ, filters, papers, examFilter.selectedExamIds, examFilter.selectedBoardIds, boardExamIdSet]);
 
   useEffect(() => { setVisibleCount(9); }, [filteredPapers.length, filters]);
 
@@ -348,15 +281,14 @@ function PyqAllPageInner() {
   const visiblePapers = filteredPapers.slice(0, visibleCount);
   const stats = useMemo(() => ({
     total: papers.length,
-    attempts: papers.reduce((s, p) => s + p.attempts, 0),
     exams: new Set(papers.map((p) => p.examName)).size,
-    years: new Set(papers.map((p) => p.year)).size,
+    years: new Set(papers.map((p) => p.year).filter(Boolean)).size,
   }), [papers]);
 
   function updateFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
     setFilters((prev) => ({ ...prev, [key]: value }));
   }
-  function resetFilters() { setFilters(defaultFilters); setDebouncedQ(""); }
+  function resetFilters() { setFilters(defaultFilters); setDebouncedQ(""); examFilter.resetExamFilter(); }
   function toggleBookmark(id: string) {
     setBookmarks((prev) => {
       const next = new Set(prev);
@@ -366,7 +298,7 @@ function PyqAllPageInner() {
     });
   }
 
-  const activeFilterCount = Object.entries(filters).filter(([k, v]) => k !== "sort" && v && v !== defaultFilters[k as keyof Filters]).length;
+  const activeFilterCount = Object.entries(filters).filter(([k, v]) => k !== "sort" && v && v !== defaultFilters[k as keyof Filters]).length + examFilter.examFilterCount;
 
   return (
     <main className="min-h-screen" style={{ background: "var(--bg)" }}>
@@ -378,185 +310,42 @@ function PyqAllPageInner() {
         <div className="flex gap-6 items-start">
 
           {/* ── Left sidebar filters (desktop) ───────────── */}
-          <aside className="hidden lg:flex flex-col gap-5 w-[210px] shrink-0 sticky top-20">
-            {/* Search */}
-            <div
-              className="flex items-center gap-2 rounded-[14px] border px-3 py-2.5"
-              style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
-            >
-              <Search size={14} style={{ color: "var(--ink-4)" }} className="shrink-0" />
-              <input
-                value={filters.q}
-                onChange={(e) => updateFilter("q", e.target.value)}
-                placeholder="Search PYQs…"
-                className="flex-1 min-w-0 bg-transparent text-[13px] outline-none placeholder:text-[var(--ink-4)]"
-                style={{ color: "var(--ink-1)" }}
-              />
-              {filters.q && (
-                <button type="button" onClick={() => updateFilter("q", "")} style={{ color: "var(--ink-4)" }}>
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-
-            {/* Category */}
-            <div className="rounded-[14px] border p-3" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
-              <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5 px-1" style={{ color: "var(--ink-3)" }}>Category</p>
-              <div className="flex flex-col gap-0.5 max-h-[200px] overflow-y-auto [scrollbar-width:thin]">
-                {["All", ...CATEGORIES].map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => updateFilter("category", cat)}
-                    className="w-full text-left px-2.5 py-1.5 rounded-[8px] text-[13px] transition-all"
-                    style={{
-                      background: filters.category === cat ? "var(--blue-soft)" : "transparent",
-                      color: filters.category === cat ? "var(--blue)" : "var(--ink-2)",
-                      fontWeight: filters.category === cat ? 600 : 400,
-                    }}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Collection */}
-            <div className="rounded-[14px] border p-3" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
-              <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5 px-1" style={{ color: "var(--ink-3)" }}>Collection</p>
-              <div className="flex flex-col gap-0.5">
-                {["All", "Trending", "Popular"].map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => updateFilter("collection", opt)}
-                    className="w-full text-left px-2.5 py-1.5 rounded-[8px] text-[13px] transition-all"
-                    style={{
-                      background: filters.collection === opt ? "var(--blue-soft)" : "transparent",
-                      color: filters.collection === opt ? "var(--blue)" : "var(--ink-2)",
-                      fontWeight: filters.collection === opt ? 600 : 400,
-                    }}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Access */}
-            <div className="rounded-[14px] border p-3" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
-              <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5 px-1" style={{ color: "var(--ink-3)" }}>Access</p>
-              <div className="flex flex-col gap-0.5">
-                {["All", "Free", "Premium"].map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => updateFilter("access", opt)}
-                    className="w-full text-left px-2.5 py-1.5 rounded-[8px] text-[13px] transition-all"
-                    style={{
-                      background: filters.access === opt ? "var(--blue-soft)" : "transparent",
-                      color: filters.access === opt ? "var(--blue)" : "var(--ink-2)",
-                      fontWeight: filters.access === opt ? 600 : 400,
-                    }}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Exams */}
-            {exams.length > 2 && (
-              <div className="rounded-[14px] border p-3" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
-                <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5 px-1" style={{ color: "var(--ink-3)" }}>Exam</p>
-                <div className="flex flex-col gap-0.5 max-h-[200px] overflow-y-auto [scrollbar-width:thin]">
-                  {exams.map((ex) => (
-                    <button
-                      key={ex}
-                      type="button"
-                      onClick={() => updateFilter("exam", ex)}
-                      className="w-full text-left px-2.5 py-1.5 rounded-[8px] text-[13px] transition-all"
-                      style={{
-                        background: filters.exam === ex ? "var(--blue-soft)" : "transparent",
-                        color: filters.exam === ex ? "var(--blue)" : "var(--ink-2)",
-                        fontWeight: filters.exam === ex ? 600 : 400,
-                      }}
-                    >
-                      {ex}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Year */}
-            <div className="rounded-[14px] border p-3" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
-              <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5 px-1" style={{ color: "var(--ink-3)" }}>Year</p>
-              <div className="flex flex-col gap-0.5 max-h-[200px] overflow-y-auto [scrollbar-width:thin]">
-                {["All", ...YEARS].map((yr) => (
-                  <button
-                    key={yr}
-                    type="button"
-                    onClick={() => updateFilter("year", yr)}
-                    className="w-full text-left px-2.5 py-1.5 rounded-[8px] text-[13px] transition-all"
-                    style={{
-                      background: filters.year === yr ? "var(--blue-soft)" : "transparent",
-                      color: filters.year === yr ? "var(--blue)" : "var(--ink-2)",
-                      fontWeight: filters.year === yr ? 600 : 400,
-                    }}
-                  >
-                    {yr}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Reset */}
-            {activeFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="flex items-center justify-center gap-1.5 rounded-[12px] border py-2 text-[12px] font-semibold transition-colors hover:border-[var(--blue)] hover:text-[var(--blue)]"
-                style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}
-              >
-                <RotateCcw size={12} /> Clear {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""}
-              </button>
-            )}
-          </aside>
+          <FilterSidebar
+            searchQuery={filters.q}
+            onSearchChange={(v) => updateFilter("q", v)}
+            activeFilterCount={activeFilterCount}
+            onReset={resetFilters}
+          >
+            <ExamFilterPanel
+              allStates={examFilter.allStates}
+              selectedStateIds={examFilter.selectedStateIds}
+              onToggleState={examFilter.toggleState}
+              availableBoards={examFilter.availableBoards}
+              selectedBoardIds={examFilter.selectedBoardIds}
+              onToggleBoard={examFilter.toggleBoard}
+              availableExams={examFilter.availableExams}
+              selectedExamIds={examFilter.selectedExamIds}
+              onToggleExam={examFilter.toggleExam}
+              isLoading={examFilter.isLoading}
+              examsLoading={examFilter.examsLoading}
+            />
+            {availableYears.length > 0 && <FilterSection title="Year" selectedValue={filters.year} onSelect={(v) => updateFilter("year", String(v))} options={["All", ...availableYears].map(y => ({ value: y, label: y }))} />}
+            <FilterSection title="Access" selectedValue={filters.access} onSelect={(v) => updateFilter("access", String(v))} options={["All", "Free", "Premium"].map(a => ({ value: a, label: a }))} />
+          </FilterSidebar>
 
           {/* ── Right content ─────────────────────────────── */}
           <div className="flex-1 min-w-0 flex flex-col gap-6">
-
             {/* Mobile search + filter row */}
-            <div className="flex gap-2 lg:hidden">
-              <div
-                className="flex flex-1 items-center gap-2 rounded-[14px] border px-3 py-2.5"
-                style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
-              >
-                <Search size={14} style={{ color: "var(--ink-4)" }} />
-                <input
-                  value={filters.q}
-                  onChange={(e) => updateFilter("q", e.target.value)}
-                  placeholder="Search PYQs…"
-                  className="flex-1 min-w-0 bg-transparent text-[13px] outline-none placeholder:text-[var(--ink-4)]"
-                  style={{ color: "var(--ink-1)" }}
-                />
-                {filters.q && <button type="button" onClick={() => updateFilter("q", "")} style={{ color: "var(--ink-4)" }}><X size={12} /></button>}
-              </div>
-              <button
-                type="button"
-                onClick={() => setFilterOpen(true)}
-                className="relative flex h-[42px] w-[42px] items-center justify-center rounded-[14px] border transition-colors hover:border-[var(--blue)]"
-                style={{ background: "var(--card)", borderColor: "var(--line-soft)", color: "var(--ink-2)" }}
-              >
-                <Filter size={15} />
-                {activeFilterCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--blue)] text-[9px] font-bold text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
+            <div className="lg:hidden">
+              <MobileFilterBar
+                searchQuery={filters.q}
+                onSearchChange={(v) => updateFilter("q", v)}
+                activeFilterCount={activeFilterCount}
+                onOpenMobileFilter={() => setFilterOpen(true)}
+              />
             </div>
+
+
 
             {/* Toolbar: count + sort */}
             <div className="flex items-center justify-between gap-3">
@@ -602,30 +391,18 @@ function PyqAllPageInner() {
                 </div>
               </div>
             </div>
-
             {/* Active filter chips */}
-            {activeFilterCount > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                {Object.entries(filters).filter(([k, v]) => k !== "sort" && v && v !== defaultFilters[k as keyof Filters]).map(([key, value]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => updateFilter(key as keyof Filters, defaultFilters[key as keyof Filters])}
-                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors hover:opacity-80"
-                    style={{ background: "var(--blue-soft)", color: "var(--blue)" }}
-                  >
-                    {value} <X size={10} />
-                  </button>
-                ))}
-                <button type="button" onClick={resetFilters} className="text-[11px] font-semibold hover:underline" style={{ color: "var(--ink-4)" }}>
-                  Clear all
-                </button>
-              </div>
-            )}
+            <ActiveFilterChips
+              filters={Object.entries(filters).filter(([k, v]) => k !== "sort" && v && v !== defaultFilters[k as keyof Filters]).map(([k, v]) => ({ key: k, value: String(v) }))}
+              onRemove={(key) => updateFilter(key as keyof Filters, defaultFilters[key as keyof Filters])}
+              onReset={resetFilters}
+            />
+
+            
             
             {error && (
               <div className="rounded-[14px] border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-[13px] font-semibold text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
-                {error} — showing sample data.
+                {error}
               </div>
             )}
 
@@ -676,17 +453,66 @@ function PyqAllPageInner() {
 
       {/* Footer SEO band */}
       <SeoSection onSelect={(v) => updateFilter("q", v)} />
-
-      {/* Mobile filter drawer */}
-      <MobileFilterDrawer
-        open={filterOpen}
-        filters={filters}
-        exams={exams}
-        resultCount={filteredPapers.length}
-        onChange={updateFilter}
-        onReset={resetFilters}
-        onClose={() => setFilterOpen(false)}
-      />
+      {/* ── Mobile filter drawer ─────────────────────────── */}
+      <AnimatePresence>
+        {filterOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setFilterOpen(false)}
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 z-50 flex h-[85vh] flex-col rounded-t-[24px] bg-[var(--bg)] lg:hidden"
+              style={{ borderTop: "1px solid var(--line-soft)" }}
+            >
+              <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "var(--line-soft)" }}>
+                <h3 className="font-bold text-[var(--ink-1)]">Filters</h3>
+                <button onClick={() => setFilterOpen(false)} className="rounded-full p-2 bg-[var(--card)] border border-[var(--line-soft)] text-[var(--ink-2)]">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 py-4 pb-20 [scrollbar-width:none]">
+                <div className="flex flex-col gap-6">
+                  <ExamFilterPanel
+              allStates={examFilter.allStates}
+              selectedStateIds={examFilter.selectedStateIds}
+              onToggleState={examFilter.toggleState}
+              availableBoards={examFilter.availableBoards}
+              selectedBoardIds={examFilter.selectedBoardIds}
+              onToggleBoard={examFilter.toggleBoard}
+              availableExams={examFilter.availableExams}
+              selectedExamIds={examFilter.selectedExamIds}
+              onToggleExam={examFilter.toggleExam}
+              isLoading={examFilter.isLoading}
+              examsLoading={examFilter.examsLoading}
+            />
+                  {availableYears.length > 0 && <FilterSection title="Year" selectedValue={filters.year} onSelect={(v) => updateFilter("year", String(v))} options={["All", ...availableYears].map(y => ({ value: y, label: y }))} />}
+                  <FilterSection title="Access" selectedValue={filters.access} onSelect={(v) => updateFilter("access", String(v))} options={["All", "Free", "Premium"].map(a => ({ value: a, label: a }))} />
+                </div>
+              </div>
+              <div className="flex gap-3 px-5 py-4" style={{ borderTop: "1px solid var(--line-soft)" }}>
+                <button type="button" onClick={() => { resetFilters(); setFilterOpen(false); }}
+                  className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[12px] border text-[13px] font-semibold transition-colors hover:border-[var(--blue)]"
+                  style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
+                  <RotateCcw size={13} /> Clear all
+                </button>
+                <button type="button" onClick={() => setFilterOpen(false)}
+                  className="flex h-11 flex-[1.4] items-center justify-center rounded-[12px] text-[13px] font-semibold text-white transition-opacity hover:opacity-85"
+                  style={{ background: "var(--blue)" }}>
+                  Apply
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Auth Modal */}
       {authModal.open && (
@@ -726,7 +552,7 @@ function PyqAllPageInner() {
 
 /* ─── Hero Section ───────────────────────────────────── */
 function HeroSection({ stats, onRequireAuth }: {
-  stats: { total: number; attempts: number; exams: number; years: number };
+  stats: { total: number; exams: number; years: number };
   onRequireAuth: (href: string, e: React.MouseEvent) => void;
 }) {
   return (
@@ -768,10 +594,10 @@ function HeroSection({ stats, onRequireAuth }: {
 
         {/* Right — Stats cards */}
         <div className="grid grid-cols-2 gap-4">
-          <StatCard icon={FileText} label="PYQ Papers" value={`${Math.max(stats.total, 18)}+`} />
-          <StatCard icon={Users} label="Total Attempts" value={`${Math.max(Math.round(stats.attempts / 1000), 120)}k+`} />
-          <StatCard icon={GraduationCap} label="Exams Covered" value={`${Math.max(stats.exams, 8)}+`} />
-          <StatCard icon={Trophy} label="Years Covered" value={`${Math.max(stats.years, 8)}+`} />
+          <StatCard icon={FileText} label="PYQ Papers" value={stats.total > 0 ? `${stats.total}+` : "—"} />
+          <StatCard icon={GraduationCap} label="Exams Covered" value={stats.exams > 0 ? `${stats.exams}+` : "—"} />
+          <StatCard icon={Trophy} label="Years Covered" value={stats.years > 0 ? `${stats.years}+` : "—"} />
+          <StatCard icon={Star} label="With Solutions" value="All" />
         </div>
       </div>
     </section>
@@ -793,7 +619,6 @@ function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label
 
 /* ─── PYQ Card (grid view) ───────────────────────────── */
 function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqPaper; bookmarked: boolean; onBookmark: () => void; onRequireAuth?: (href: string, e: React.MouseEvent) => void }) {
-  const locked = paper.isPremium && paper.completionPercentage === 0;
   return (
     <article className="group flex flex-col overflow-hidden rounded-[16px] border transition-colors duration-200 hover:-translate-y-0.5 hover:border-[var(--blue)]"
              style={{ background: "var(--card)", borderColor: "var(--line-soft)", boxShadow: "var(--shadow-xs, 0 1px 4px rgba(0,0,0,.05))" }}>
@@ -802,23 +627,16 @@ function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqP
            style={{ background: "var(--bg-secondary)", borderColor: "var(--line-soft)" }}>
         <span className="text-2xl font-black select-none" style={{ color: "var(--line)" }}>PYQ</span>
         <div className="absolute bottom-2 left-3 flex gap-1.5">
-          <span className="rounded-full px-2 py-0.5 text-[9px] font-medium" style={{ background: "var(--ink-1)", color: "var(--bg)" }}>{paper.year}</span>
+          {paper.year > 0 && <span className="rounded-full px-2 py-0.5 text-[9px] font-medium" style={{ background: "var(--ink-1)", color: "var(--bg)" }}>{paper.year}</span>}
           {paper.isNew && <span className="rounded-full px-2 py-0.5 text-[9px] font-medium" style={{ background: "var(--line)", color: "var(--ink-2)" }}>New</span>}
           {paper.isPremium && <span className="rounded-full px-2 py-0.5 text-[9px] font-medium" style={{ background: "var(--line)", color: "var(--ink-2)" }}>Premium</span>}
         </div>
-        <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5">
-          <span className="rounded-[6px] border px-2 py-0.5 text-[9px] font-medium" style={{ background: "var(--card)", borderColor: "var(--line-soft)", color: "var(--ink-3)" }}>
-            {paper.paperType}
-          </span>
+        <div className="absolute right-2.5 top-2.5">
           <button
             type="button"
             onClick={onBookmark}
             className={`flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors ${bookmarked ? "hover:opacity-90" : ""}`}
-            style={{ 
-              background: bookmarked ? "var(--ink-1)" : "var(--card)", 
-              borderColor: bookmarked ? "var(--ink-1)" : "var(--line-soft)", 
-              color: bookmarked ? "var(--bg)" : "var(--ink-3)" 
-            }}
+            style={{ background: bookmarked ? "var(--ink-1)" : "var(--card)", borderColor: bookmarked ? "var(--ink-1)" : "var(--line-soft)", color: bookmarked ? "var(--bg)" : "var(--ink-3)" }}
           >
             <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-current" : ""}`} />
           </button>
@@ -832,35 +650,14 @@ function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqP
           {paper.title}
         </h3>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <Tag tone={paper.difficulty === "Hard" ? "red" : paper.difficulty === "Moderate" ? "amber" : "slate"}>{paper.difficulty}</Tag>
-          <Tag>{paper.subject}</Tag>
-          <Tag>{paper.language}</Tag>
-        </div>
-
         <div className="mt-3 grid grid-cols-3 gap-1.5">
-          <MetricChip icon={BookOpenCheck} value={paper.totalQuestions} label="Questions" />
-          <MetricChip icon={Target} value={paper.marks} label="Marks" />
-          <MetricChip icon={Clock3} value={`${paper.duration}m`} label="Duration" />
-        </div>
-
-        <div className="mt-3 rounded-[8px] border px-3 py-2" style={{ background: "var(--bg-secondary)", borderColor: "var(--line-soft)" }}>
-          <div className="flex items-center justify-between text-[11px]" style={{ color: "var(--ink-3)" }}>
-            <span>{paper.attempts.toLocaleString()} attempts</span>
-            <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-current" />{paper.rating}</span>
-          </div>
-          {paper.completionPercentage > 0 && (
-            <div className="mt-2">
-              <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "var(--line-soft)" }}>
-                <div className="h-full rounded-full" style={{ width: `${paper.completionPercentage}%`, background: "var(--ink-1)" }} />
-              </div>
-              <p className="mt-1 text-[10px] font-medium" style={{ color: "var(--ink-3)" }}>{paper.completionPercentage}% completed</p>
-            </div>
-          )}
+          {paper.totalQuestions > 0 && <MetricChip icon={BookOpenCheck} value={paper.totalQuestions} label="Questions" />}
+          {paper.marks > 0 && <MetricChip icon={Target} value={paper.marks} label="Marks" />}
+          {paper.duration > 0 && <MetricChip icon={Clock3} value={`${paper.duration}m`} label="Duration" />}
         </div>
 
         <div className="mt-auto pt-4 flex gap-2">
-          {locked ? (
+          {paper.isPremium ? (
             <Link
               href="/dashboard/plans"
               onClick={(e) => onRequireAuth?.("/dashboard/plans", e)}
@@ -876,8 +673,7 @@ function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqP
               className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] font-medium transition-opacity hover:opacity-85"
               style={{ background: "var(--ink-1)", color: "var(--bg)", fontWeight: 480 }}
             >
-              <Play className="h-3.5 w-3.5 fill-current" />
-              {paper.completionPercentage ? "Continue" : "Start"}
+              <Play className="h-3.5 w-3.5 fill-current" /> Start
             </Link>
           )}
           <Link
@@ -889,12 +685,8 @@ function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqP
             Details
           </Link>
           {paper.pdfUrl && paper.pdfUrl !== "#" && (
-            <a
-              href={paper.pdfUrl}
-              className="flex h-10 w-10 items-center justify-center rounded-full border transition-colors hover:bg-[var(--surface-hover)]"
-              style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}
-              aria-label="Download PDF"
-            >
+            <a href={paper.pdfUrl} className="flex h-10 w-10 items-center justify-center rounded-full border transition-colors hover:bg-[var(--surface-hover)]"
+               style={{ borderColor: "var(--line)", color: "var(--ink-3)" }} aria-label="Download PDF">
               <Download className="h-3.5 w-3.5" />
             </a>
           )}
@@ -906,7 +698,6 @@ function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqP
 
 /* ─── PYQ Row (list view) ────────────────────────────── */
 function PyqRow({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqPaper; bookmarked: boolean; onBookmark: () => void; onRequireAuth?: (href: string, e: React.MouseEvent) => void }) {
-  const locked = paper.isPremium && paper.completionPercentage === 0;
   return (
     <article className="group flex items-center gap-4 rounded-[16px] border px-4 py-3 transition hover:border-[var(--blue)]"
              style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
@@ -916,43 +707,33 @@ function PyqRow({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqPa
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <h3 className="truncate text-sm font-semibold transition-colors group-hover:text-[var(--blue)]" style={{ color: "var(--ink-1)" }}>{paper.title}</h3>
-          <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ background: "var(--bg-secondary)", color: "var(--ink-3)" }}>{paper.year}</span>
+          {paper.year > 0 && <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ background: "var(--bg-secondary)", color: "var(--ink-3)" }}>{paper.year}</span>}
           {paper.isNew && <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ background: "var(--blue-soft)", color: "var(--blue)" }}>New</span>}
           {paper.isPremium && <span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ background: "rgba(245, 158, 11, 0.1)", color: "#d97706" }}>Premium</span>}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] font-semibold" style={{ color: "var(--ink-4)" }}>
           <span>{paper.examName}</span>
-          <span>{paper.totalQuestions}Q · {paper.duration}m · {paper.marks}M</span>
-          <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-amber-400 text-amber-400" />{paper.rating}</span>
-          <span>{paper.difficulty}</span>
-          <span>{paper.language}</span>
+          {paper.totalQuestions > 0 && <span>{paper.totalQuestions}Q</span>}
+          {paper.duration > 0 && <span>{paper.duration}m</span>}
+          {paper.marks > 0 && <span>{paper.marks}M</span>}
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <button type="button" onClick={onBookmark} className={`flex h-8 w-8 items-center justify-center rounded-lg transition`}
-                style={{
-                  background: bookmarked ? "var(--ink-1)" : "transparent",
-                  color: bookmarked ? "var(--bg)" : "var(--ink-3)",
-                }}>
+        <button type="button" onClick={onBookmark} className="flex h-8 w-8 items-center justify-center rounded-lg transition"
+                style={{ background: bookmarked ? "var(--ink-1)" : "transparent", color: bookmarked ? "var(--bg)" : "var(--ink-3)" }}>
           <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-current" : ""}`} />
         </button>
-        {locked ? (
-          <Link
-            href="/dashboard/plans"
-            onClick={(e) => onRequireAuth?.("/dashboard/plans", e)}
+        {paper.isPremium ? (
+          <Link href="/dashboard/plans" onClick={(e) => onRequireAuth?.("/dashboard/plans", e)}
             className="inline-flex h-9 items-center gap-1.5 rounded-xl px-4 text-xs font-semibold transition-opacity hover:opacity-85"
-            style={{ background: "var(--ink-1)", color: "var(--bg)" }}
-          >
+            style={{ background: "var(--ink-1)", color: "var(--bg)" }}>
             <Zap className="h-3 w-3" /> Unlock
           </Link>
         ) : (
-          <Link
-            href={`/dashboard/pyq/${paper.id}`}
-            onClick={(e) => onRequireAuth?.(`/dashboard/pyq/${paper.id}`, e)}
+          <Link href={`/dashboard/pyq/${paper.id}`} onClick={(e) => onRequireAuth?.(`/dashboard/pyq/${paper.id}`, e)}
             className="inline-flex h-9 items-center gap-1.5 rounded-xl px-4 text-xs font-semibold transition-opacity hover:opacity-85"
-            style={{ background: "var(--blue)", color: "#fff" }}
-          >
-            <Play className="h-3 w-3 fill-current" /> {paper.completionPercentage ? "Continue" : "Solve"}
+            style={{ background: "var(--blue)", color: "#fff" }}>
+            <Play className="h-3 w-3 fill-current" /> Solve
           </Link>
         )}
       </div>
@@ -1006,133 +787,6 @@ function FilterChips({ filters, onChange, onReset }: {
 }
 
 /* ─── Filter Group ───────────────────────────────────── */
-
-function FilterGroup({ title, options, value, onChange, defaultOpen = false }: {
-  title: string; options: string[]; value: string;
-  onChange: (v: string) => void; defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="border-b border-slate-100 dark:border-white/8">
-      <button
-        type="button"
-        onClick={() => setOpen((p) => !p)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-black text-slate-800 dark:text-white"
-      >
-        <span>{title}</span>
-        <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="flex flex-wrap gap-1.5 px-4 pb-4">
-              {options.map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => onChange(opt)}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition ${
-                    value === opt
-                      ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                      : "bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700 dark:bg-white/8 dark:text-slate-400"
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-/* ─── Mobile Filter Drawer ──────────────────────── */
-function MobileFilterDrawer(props: {
-  open: boolean;
-  filters: Filters;
-  exams: string[];
-  resultCount: number;
-  onChange: <K extends keyof Filters>(k: K, v: Filters[K]) => void;
-  onReset: () => void;
-  onClose: () => void;
-}) {
-  const activeCount = Object.entries(props.filters).filter(([k, v]) => k !== "sort" && v && v !== defaultFilters[k as keyof Filters]).length;
-
-  return (
-    <AnimatePresence>
-      {props.open && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={props.onClose}
-            className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm"
-          />
-          <motion.div
-            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 z-[101] flex w-full max-w-sm flex-col bg-white shadow-2xl dark:bg-gray-900"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-white/10">
-              <div>
-                <p className="text-xs font-black uppercase tracking-widest text-blue-600">Filters</p>
-                <p className="font-black text-slate-950 dark:text-white">{props.resultCount} results</p>
-              </div>
-              <button
-                type="button"
-                onClick={props.onClose}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 dark:bg-white/10 dark:text-slate-300"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Scrollable body */}
-            <div className="flex-1 overflow-y-auto">
-              <FilterGroup title="Exam Category" options={["All", ...CATEGORIES]} value={props.filters.category} onChange={(v) => props.onChange("category", v)} defaultOpen />
-              <FilterGroup title="Exam Name" options={props.exams.slice(0, 15)} value={props.filters.exam} onChange={(v) => props.onChange("exam", v)} />
-              <FilterGroup title="Year" options={["All", ...YEARS]} value={props.filters.year} onChange={(v) => props.onChange("year", v)} defaultOpen />
-              <FilterGroup title="Subject" options={["All", ...SUBJECTS]} value={props.filters.subject} onChange={(v) => props.onChange("subject", v)} />
-              <FilterGroup title="Difficulty" options={["All", ...DIFFICULTIES]} value={props.filters.difficulty} onChange={(v) => props.onChange("difficulty", v)} />
-              <FilterGroup title="Language" options={["All", ...LANGUAGES]} value={props.filters.language} onChange={(v) => props.onChange("language", v)} />
-              <FilterGroup title="Collection" options={["All", "Trending", "Popular"]} value={props.filters.collection} onChange={(v) => props.onChange("collection", v)} defaultOpen />
-              <FilterGroup title="Access Type" options={["All", "Free", "Premium"]} value={props.filters.access} onChange={(v) => props.onChange("access", v)} defaultOpen />
-              <FilterGroup title="Attempt Status" options={["All", "Attempted", "Unattempted"]} value={props.filters.status} onChange={(v) => props.onChange("status", v)} />
-              <FilterGroup title="Solved Status" options={["All", "Solved", "Unsolved"]} value={props.filters.solved} onChange={(v) => props.onChange("solved", v)} />
-            </div>
-
-            {/* Footer */}
-            <div className="flex gap-3 border-t border-slate-100 px-5 py-4 dark:border-white/10">
-              <button
-                type="button"
-                onClick={() => { props.onReset(); props.onClose(); }}
-                className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-slate-200 text-sm font-black text-slate-700 transition hover:border-blue-300 hover:text-blue-700 dark:border-white/10 dark:text-white"
-              >
-                <RotateCcw className="h-3.5 w-3.5" /> Clear All
-                {activeCount > 0 && (
-                  <span className="ml-0.5 rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-black text-white">{activeCount}</span>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={props.onClose}
-                className="flex h-11 flex-[1.4] items-center justify-center rounded-xl bg-blue-600 text-sm font-black text-white transition hover:bg-blue-700"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
 
 /* ─── SEO Footer Section ─────────────────────────────── */
 function SeoSection({ onSelect }: { onSelect: (v: string) => void }) {

@@ -21,6 +21,7 @@ import {
   QrCode,
   Smartphone,
   ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -61,27 +62,10 @@ const FEATURE_EMOJIS = ["📝", "📚", "📰", "🏛️"];
 const features = [
   { icon: FileText,      title: "Full-Length Test Series", desc: "CBT-style exams with real exam interface, auto-timer, and question palette — just like the actual test.",          href: "/series/all"  },
   { icon: BookOpen,      title: "Previous Year Papers",    desc: "Thousands of PYQ papers with detailed solutions across JPSC, Banking, SSC, Railway, and more.",                   href: "/pyq/all"     },
-  { icon: Library,       title: "Blogs",                   desc: "Expert articles, preparation tips, exam strategies, and latest updates on government exams.",                     href: "/blog"  },
+  { icon: Library,       title: "Blogs",                   desc: "Expert articles, preparation tips, exam strategies, and latest updates on government exams.",                     href: "/blogs"  },
   { icon: GraduationCap, title: "Exams",                   desc: "Browse all exams — syllabus, exam pattern, eligibility, important dates, and preparation resources.",             href: "/exams" },
 ];
 
-/* ── Fallback static data (used if API is unreachable) ── */
-const FALLBACK_FEATURED_EXAMS = [
-  { name: "JPSC Prelims", tag: "State PSC",    slug: "jpsc-prelims", state: "Jharkhand",      board: "JPSC",   description: "Prepare for Jharkhand Public Service Commission Prelims with full-length test series, previous year papers, and expert study materials.", numTests: 18, numPYQ: 40 },
-  { name: "SBI PO",       tag: "Banking",      slug: "sbi-po",       state: "National",       board: "SBI",    description: "Master the State Bank of India Probationary Officer exam with comprehensive mock tests and detailed solutions.", numTests: 20, numPYQ: 60 },
-  { name: "IBPS PO",      tag: "Banking",      slug: "ibps-po",      state: "National",       board: "IBPS",   description: "Crack IBPS PO with our extensive test series, PYQ practice, and specialized banking preparation materials.", numTests: 15, numPYQ: 55 },
-  { name: "SSC CGL",      tag: "SSC",          slug: "ssc-cgl",      state: "National",       board: "SSC",    description: "Comprehensive preparation for Staff Selection Commission Combined Graduate Level with all-India level resources.", numTests: 25, numPYQ: 70 },
-  { name: "Railway NTPC", tag: "Railway",      slug: "rrb-ntpc",     state: "National",       board: "RRB",    description: "RRB NTPC exam preparation with CBT-style tests, previous year papers, and detailed solutions.", numTests: 14, numPYQ: 45 },
-  { name: "Daroga SI",    tag: "Police",       slug: "up-si",        state: "Uttar Pradesh",  board: "UPPBPB", description: "Uttar Pradesh Police Sub-Inspector preparation with specialized coaching materials and mock tests.", numTests: 12, numPYQ: 30 },
-  { name: "RBI Grade B",  tag: "Banking",      slug: "rbi-grade-b",  state: "National",       board: "RBI",    description: "Reserve Bank of India Grade B officer exam preparation with expert guidance and performance analytics.", numTests: 10, numPYQ: 35 },
-  { name: "UET",          tag: "Engineering",  slug: null,           state: "Jharkhand",      board: "JAC",    description: "Engineering entrance exam preparation with structured courses and practice tests.", numTests: 12, numPYQ: 50 },
-];
-
-const FALLBACK_TESTIMONIALS = [
-  { name: "Priya Sharma", role: "JPSC Prelims 2024 — Cleared",        initials: "PS", text: "ExamNurture's CBT interface and analytics helped me identify my weak areas. I improved from 45% to 78% in just 3 months of focused practice." },
-  { name: "Rahul Kumar",  role: "SBI PO 2024 — Selected",             initials: "RK", text: "The PYQ section is outstanding. Real exam papers with detailed solutions. This platform made my banking exam prep so much easier." },
-  { name: "Anjali Singh", role: "SSC CGL 2024 — Tier 1 Qualified",    initials: "AS", text: "Being able to see my progress in real-time was game changing. The analytics showed exactly where I needed to improve." },
-];
 
 const FALLBACK_FAQS = [
   { question: "What exams does ExamNurture cover?", answer: "ExamNurture covers a wide range of competitive exams including JPSC Prelims & Mains, SBI PO, IBPS PO, RBI Grade B, SSC CGL, Railway NTPC, Daroga SI, UET, and many more state and central government exams." },
@@ -109,12 +93,12 @@ interface FeaturedExam {
 }
 
 function useFeaturedExams(): FeaturedExam[] {
-  const [data, setData] = useState<FeaturedExam[]>(FALLBACK_FEATURED_EXAMS);
+  const [data, setData] = useState<FeaturedExam[]>([]);
   useEffect(() => {
     fetch(`${API_URL}/featured-exams`)
       .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((items) => { if (items?.length) setData(items); })
-      .catch(() => { /* keep fallback */ });
+      .then((items: FeaturedExam[]) => { if (items?.length) setData(items); })
+      .catch(() => {});
   }, []);
   return data;
 }
@@ -125,12 +109,12 @@ interface TestimonialData {
 }
 
 function useTestimonials(): TestimonialData[] {
-  const [data, setData] = useState<TestimonialData[]>(FALLBACK_TESTIMONIALS);
+  const [data, setData] = useState<TestimonialData[]>([]);
   useEffect(() => {
     fetch(`${API_URL}/testimonials`)
       .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((items) => { if (items?.length) setData(items); })
-      .catch(() => { /* keep fallback */ });
+      .then((items: TestimonialData[]) => { if (items?.length) setData(items); })
+      .catch(() => {});
   }, []);
   return data;
 }
@@ -333,7 +317,7 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
         </p>
 
         {/* CTA pair: primary action + "Download App" split button */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mb-16">
+        <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 mb-16">
           {authLoading ? (
             <>
               <div className="h-12 w-48 rounded-full bg-[#EAE8EC] dark:bg-[var(--line-soft)] animate-pulse" />
@@ -342,11 +326,15 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
           ) : user ? (
             <>
               <BtnPrimary href="/dashboard">Go to Dashboard <ArrowRight className="w-5 h-5" /></BtnPrimary>
+              <BtnSecondary href="/pyq/all"><FileText className="w-4 h-4 text-emerald-500" /> Free PYQ</BtnSecondary>
+              <BtnSecondary href="/daily-quiz"><Sparkles className="w-4 h-4 text-amber-500" /> Free Daily Quiz</BtnSecondary>
               <DownloadAppBtn />
             </>
           ) : (
             <>
               <BtnPrimary onClick={onLogin}>Get Started Free <ArrowRight className="w-5 h-5" /></BtnPrimary>
+              <BtnSecondary href="/pyq/all"><FileText className="w-4 h-4 text-emerald-500" /> Free PYQ</BtnSecondary>
+              <BtnSecondary href="/daily-quiz"><Sparkles className="w-4 h-4 text-amber-500" /> Free Daily Quiz</BtnSecondary>
               <DownloadAppBtn />
             </>
           )}
@@ -387,15 +375,15 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
    marquee-strip token: bg #000, text white, mono, 36px tall
 ───────────────────────────────────────────────────────────── */
 function MarqueeStrip() {
-  const doubled = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
+  const doubled = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS, ...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
   return (
-    <div className="h-9 bg-black overflow-hidden flex items-center select-none" aria-hidden="true">
-      <div className="en-marquee flex gap-14 whitespace-nowrap">
+    <div className="h-14 bg-black dark:bg-[#12151C] border-y border-black dark:border-[rgba(255,255,255,0.05)] overflow-hidden flex items-center select-none pointer-events-none" aria-hidden="true">
+      <div className="en-marquee flex gap-16 whitespace-nowrap">
         {doubled.map((name, i) => (
           <span
             key={i}
-            className="text-white text-[12px] uppercase"
-            style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}
+            className="text-white text-[14px] uppercase font-bold"
+            style={{ fontFamily: "var(--font-mono)", letterSpacing: "1px" }}
           >
             {name}
           </span>
@@ -491,6 +479,27 @@ function ExamCategoriesSection({ examCategories }: { examCategories: FeaturedExa
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [computeX]);
+
+  if (examCategories.length === 0) {
+    return (
+      <section className="py-5 bg-white dark:bg-[var(--bg)]">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-[#E8EDF8] dark:bg-[#12151C] rounded-none sm:rounded-[28px] px-5 pt-10 pb-10 sm:px-10 lg:px-16 lg:pt-14 lg:pb-14 text-center">
+            <Eyebrow>🏆 Popular Exams</Eyebrow>
+            <h2 className="text-[38px] sm:text-[52px] leading-[1.10] text-[#2C2C2E] dark:text-[var(--ink-1)] mb-4" style={{ fontWeight: 300, letterSpacing: "-0.96px" }}>
+              Exams Coming Soon
+            </h2>
+            <p className="text-[18px] text-[#666872] dark:text-[var(--ink-2)] max-w-xl mx-auto" style={{ fontWeight: 330 }}>
+              We are adding exam preparation resources for JPSC, SSC, IBPS and more. Stay tuned.
+            </p>
+            <div className="mt-8">
+              <BtnPrimary href="/exams">Browse All Exams <ArrowRight className="w-4 h-4" /></BtnPrimary>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     /* canvas pad → blue-tinted block with rounded corners */
@@ -682,6 +691,7 @@ function ExamCategoriesSection({ examCategories }: { examCategories: FeaturedExa
    TESTIMONIALS — cream color-block section (#f4ecd6)
 ───────────────────────────────────────────────────────────── */
 function TestimonialsSection({ testimonials }: { testimonials: TestimonialData[] }) {
+  if (testimonials.length === 0) return null;
   return (
     <section className="py-5 bg-white dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">

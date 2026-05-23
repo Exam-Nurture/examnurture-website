@@ -10,7 +10,6 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import MegaMenu from "@/components/layout/MegaMenu";
 
 const FREE_ITEMS = [
   {
@@ -31,7 +30,7 @@ const FREE_ITEMS = [
   },
   {
     label: "Free Study Material",
-    href:  "/blog?filter=free",
+    href:  "/blogs?filter=free",
     icon:  Library,
     desc:  "Notes, PDFs & topic resources",
     color: "text-[var(--blue)]",
@@ -55,7 +54,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/pyq":       "Previous Year Papers",
   "/dashboard/analytics": "Analytics",
   "/exams":      "Browse Exams",
-  "/blog":    "Nurture Library",
+  "/blogs":    "Nurture Library",
   "/dashboard/plans":      "Upgrade Plan",
   "/dashboard/profile":    "My Profile",
 };
@@ -74,12 +73,11 @@ export default function Topbar({ hideSidebarItems = false }: { hideSidebarItems?
 
   const [showMenu,      setShowMenu]      = useState(false);
   const [showFree,      setShowFree]      = useState(false);
-  const [showExamsMenu, setShowExamsMenu] = useState(false);
   const freeRef = useRef<HTMLDivElement>(null);
 
   const displayName = user?.name ?? "Student";
   const initials    = displayName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  const planLabel   = user?.subscription ? `Tier ${user.subscription.tierLevel}` : "Free Plan";
+
 
   const handleLogout = async () => { await logout(); router.push("/"); };
 
@@ -95,7 +93,6 @@ export default function Topbar({ hideSidebarItems = false }: { hideSidebarItems?
   useEffect(() => {
     setShowFree(false);
     setShowMenu(false);
-    setShowExamsMenu(false);
   }, [pathname]);
 
   const isFreeActive = FREE_ITEMS.some(i => pathname.startsWith(i.href.split("?")[0]));
@@ -164,11 +161,15 @@ export default function Topbar({ hideSidebarItems = false }: { hideSidebarItems?
               );
             })}
 
-            <MegaMenu
-              show={showExamsMenu}
-              onMouseEnter={() => setShowExamsMenu(true)}
-              onMouseLeave={() => setShowExamsMenu(false)}
-            />
+            <Link href="/exams"
+              className={`px-3 py-1.5 rounded-[8px] text-[13px] font-medium transition-all whitespace-nowrap ${
+                pathname.startsWith("/exams")
+                  ? "bg-[var(--blue-soft)] text-[var(--blue)]"
+                  : "text-[var(--ink-3)] hover:bg-[var(--bg)] hover:text-[var(--ink-1)]"
+              }`}
+            >
+              Exams
+            </Link>
 
             {NAV_AFTER_EXAMS.map((item) => {
               const isActive = pathname.startsWith(item.href);
@@ -218,7 +219,6 @@ export default function Topbar({ hideSidebarItems = false }: { hideSidebarItems?
                       </div>
                       <div>
                         <p className="text-[12px] font-bold" style={{ color: "var(--ink-1)" }}>Free Resources</p>
-                        <p className="text-[10px]" style={{ color: "var(--ink-4)" }}>No subscription needed — completely free</p>
                       </div>
                     </div>
                     {FREE_ITEMS.map((item) => {
@@ -301,7 +301,7 @@ export default function Topbar({ hideSidebarItems = false }: { hideSidebarItems?
               <div className="text-[12px] font-semibold leading-tight" style={{ color: "var(--ink-1)" }}>
                 {displayName.split(" ")[0]}{displayName.split(" ")[1]?.[0] ? " " + displayName.split(" ")[1][0] + "." : ""}
               </div>
-              <div className="text-[10px] leading-tight" style={{ color: "var(--ink-4)" }}>{planLabel}</div>
+
             </div>
           </button>
 

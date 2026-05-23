@@ -1,42 +1,52 @@
 import type { Metadata } from "next";
-import { findExam, getBoardForExam } from "@/lib/data/examCatalogue";
+import { apiGetExamById } from "@/lib/api";
 import Script from "next/script";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://examnurture.in";
+const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://examnurture.com";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const exam = findExam(slug);
-  if (!exam) return {};
+  try {
+    const exam = await apiGetExamById(slug);
+    const title = `${exam.name} Preparation — Test Series, PYQ & Study Material`;
+    const subjectsList = typeof exam.subjects === "string" ? exam.subjects.split(",").map((s: string) => s.trim()) : [];
+    const description = `Prepare for ${exam.name} with full-length mock tests, previous year papers, and AI analytics on ExamNurture. ${exam.pattern || ''}. Subjects: ${subjectsList.slice(0, 4).join(", ")}.`;
+    const canonicalUrl = `${BASE}/exams/${slug}`;
 
-  const board = getBoardForExam(exam);
-  const title = `${exam.name} Preparation — Test Series, PYQ & Study Material`;
-  const description = `Prepare for ${exam.name} with full-length mock tests, previous year papers, and AI analytics on ExamNurture. ${exam.pattern}. Subjects: ${exam.subjects.slice(0, 4).join(", ")}.`;
-  const canonicalUrl = `${BASE}/exams/${slug}`;
-
-  return {
-    title,
-    description,
-    alternates: { canonical: canonicalUrl },
-    openGraph: {
+    return {
       title,
       description,
-      url: canonicalUrl,
-      type: "website",
-      siteName: "ExamNurture",
-    },
-    twitter: {
-      card: "summary",
-      title,
-      description,
-    },
-  };
+      alternates: { canonical: canonicalUrl },
+      openGraph: {
+        title,
+        description,
+        url: canonicalUrl,
+        type: "website",
+        siteName: "ExamNurture",
+      },
+      twitter: {
+        card: "summary",
+        title,
+        description,
+      },
+    };
+  } catch (err) {
+    console.error("Error generating metadata for exam slug:", err);
+    return {};
+  }
 }
 
 export default async function ExamSlugLayout({ children, params }: { children: React.ReactNode, params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const exam = findExam(slug);
-  const board = exam ? getBoardForExam(exam) : undefined;
+  let exam: any = null;
+  let board: any = null;
+
+  try {
+    exam = await apiGetExamById(slug);
+    board = exam?.board;
+  } catch (err) {
+    console.error("Error fetching exam in layout:", err);
+  }
 
   const jsonLd = exam ? {
     "@context": "https://schema.org",

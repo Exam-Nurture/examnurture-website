@@ -100,7 +100,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         {/* Back button */}
         <div className="absolute top-5 left-5">
           <Link
-            href="/blog"
+            href="/blogs"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white backdrop-blur-sm hover:bg-white/20 transition-colors"
             style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)" }}
           >
@@ -219,7 +219,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             {/* Back link */}
             <div className="mt-8">
               <Link
-                href="/blog"
+                href="/blogs"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:gap-3"
                 style={{ border: "1.5px solid var(--line)", color: "var(--ink-2)" }}
               >

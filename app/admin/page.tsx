@@ -13,7 +13,7 @@ const STAT_LABELS: Record<string, string> = {
   pyqPapers: "PYQ Papers",
   events: "Live Events",
   payments: "Payments",
-  subscriptions: "Subscriptions",
+
   contactMessages: "Contact Msgs",
 };
 

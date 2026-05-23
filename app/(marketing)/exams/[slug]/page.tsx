@@ -1,16 +1,15 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, ChevronRight, GraduationCap, Calendar, Users, FlaskConical,
-  FileText, BookOpen, BarChart3, ChevronDown, Search, Sparkles, AlertCircle,
-  PlayCircle, CheckCircle2, Star, Link as LinkIcon, MapPin, Building2,
+  FileText, BookOpen, BarChart3, ChevronDown, Search, AlertCircle,
+  PlayCircle, CheckCircle2, Link as LinkIcon,
 } from "lucide-react";
-import { findExam, getBoardForExam, getStateForExam, getAllExams, CatalogueExam } from "@/lib/data/examCatalogue";
 import { useAuth } from "@/lib/auth-context";
-import { apiGetTestSeries, apiGetPYQPapers, apiGetBlogs, type PublicBlogPost } from "@/lib/api";
+import { apiGetExamById, apiGetExams, apiGetTestSeries, apiGetPYQPapers, apiGetBlogs, type PublicBlogPost } from "@/lib/api";
 import { Newspaper } from "lucide-react";
 
 function scrollToSection(id: string) {
@@ -32,7 +31,7 @@ function SectionHeading({ title, icon: Icon, color }: { title: string; icon: any
 }
 
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: any; color: string }) {
-  if (!value) return null;
+  if (value === null || value === undefined) return null;
   return (
     <div className="border rounded-2xl p-4 flex flex-col items-center text-center" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
       <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: `${color}15`, color }}>
@@ -40,35 +39,6 @@ function StatCard({ label, value, icon: Icon, color }: { label: string; value: s
       </div>
       <span className="text-xl font-extrabold leading-none mb-1" style={{ color: "var(--ink-1)" }}>{value}</span>
       <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--ink-4)" }}>{label}</span>
-    </div>
-  );
-}
-
-function PremiumBanner({ exam, isPaid, testCount, pyqCount }: { exam: CatalogueExam; isPaid: boolean; testCount: number; pyqCount: number }) {
-  if (isPaid) return null;
-  return (
-    <div className="mt-10 p-6 rounded-3xl relative overflow-hidden shadow-xl" style={{ background: "linear-gradient(135deg, #0D287E 0%, #1D4ED8 100%)" }}>
-      <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-        <Sparkles size={120} />
-      </div>
-      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md mb-4 border border-white/20">
-            <Star size={12} className="fill-current" /> Premium Access
-          </span>
-          <h3 className="text-2xl font-bold text-white mb-2">Unlock {exam.shortName} Pro</h3>
-          <p className="text-white/70 max-w-lg">
-            Unlimited access to all {testCount} mock tests, {pyqCount} previous year papers, AI analytics, and personalized guidance.
-          </p>
-        </div>
-        <Link
-          href="/dashboard/plans"
-          className="shrink-0 w-full md:w-auto px-8 py-4 bg-white rounded-xl font-bold hover:bg-white/90 transition-all flex items-center justify-center gap-2"
-          style={{ color: "#0D287E" }}
-        >
-          View Plans <ChevronRight size={18} />
-        </Link>
-      </div>
     </div>
   );
 }
@@ -87,46 +57,78 @@ const NAV_TABS = [
 
 /* ═══════════════════════════════════════════════
    MAIN PAGE
-═══════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════ */
 
 export default function ExamHubPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { user } = useAuth();
-  const isPaid = !!(user as any)?.subscription;
 
-  const exam = findExam(slug);
-  if (!exam) return notFound();
+  const [exam, setExam] = useState<any>(null);
+  const [board, setBoard] = useState<any>(null);
+  const [state, setState] = useState<any>(null);
+  const [loadingExam, setLoadingExam] = useState(true);
+  const [notFoundError, setNotFoundError] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
 
-  const board = getBoardForExam(exam);
-  const state = getStateForExam(exam);
-  if (!board || !state) return notFound();
+  useEffect(() => {
+    setLoadingExam(true);
+    setNotFoundError(false);
+    setNetworkError(false);
+    apiGetExamById(slug)
+      .then((data) => {
+        setExam(data);
+        setBoard(data.board);
+        setState(data.board?.state);
+      })
+      .catch((err: any) => {
+        const status = err?.status ?? err?.statusCode;
+        if (status === 404) setNotFoundError(true);
+        else setNetworkError(true);
+      })
+      .finally(() => setLoadingExam(false));
+  }, [slug]);
 
-  const boardColor = board.color || "#0D287E";
+  const boardColor = board?.tint || "#0D287E";
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Live counts
-  const [liveCounts, setLiveCounts] = useState<{ tests: number | null; pyqs: number | null }>({ tests: null, pyqs: null });
+  // Related exams in the same board
+  const [relatedExams, setRelatedExams] = useState<any[]>([]);
   useEffect(() => {
+    if (!board) return;
+    apiGetExams({ board: board.id })
+      .then((exams) => {
+        setRelatedExams((exams as any[]).filter((e: any) => e.id !== exam?.id).slice(0, 5));
+      })
+      .catch(() => setRelatedExams([]));
+  }, [board?.id, exam?.id]);
+
+  // Live counts — prefer _count from exam response, fall back to separate calls
+  const [liveCounts, setLiveCounts] = useState<{ tests: number; pyqs: number }>({ tests: 0, pyqs: 0 });
+  useEffect(() => {
+    if (!exam) return;
+    // Backend now returns _count.testSeries and _count.pyqPapers
+    const fromCount = exam._count;
+    if (fromCount) {
+      setLiveCounts({ tests: fromCount.testSeries ?? 0, pyqs: fromCount.pyqPapers ?? 0 });
+      return;
+    }
+    // Fallback: fetch separately
     let cancelled = false;
     Promise.all([
       apiGetTestSeries({ examId: exam.id, limit: 1 }).catch(() => null) as Promise<any>,
       apiGetPYQPapers({ examId: exam.id, limit: 1 }).catch(() => null) as Promise<any>,
     ]).then(([ts, pyq]) => {
       if (cancelled) return;
-      setLiveCounts({
-        tests: ts?.total ?? ts?.items?.length ?? null,
-        pyqs:  pyq?.total ?? pyq?.items?.length ?? null,
-      });
+      setLiveCounts({ tests: ts?.total ?? 0, pyqs: pyq?.total ?? 0 });
     });
     return () => { cancelled = true; };
-  }, [exam.id]);
-  const liveTestCount = liveCounts.tests ?? exam.testCount;
-  const livePyqCount  = liveCounts.pyqs  ?? exam.pyqCount;
+  }, [exam]);
 
   // Latest exam news
   const [news, setNews] = useState<PublicBlogPost[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
   useEffect(() => {
+    if (!exam) return;
     let cancelled = false;
     apiGetBlogs({ limit: 8 })
       .then(res => {
@@ -142,9 +144,7 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
       .catch(() => setNews([]))
       .finally(() => { if (!cancelled) setNewsLoading(false); });
     return () => { cancelled = true; };
-  }, [exam.id, exam.name, exam.shortName]);
-
-  const relatedExams = getAllExams().filter(e => e.boardId === board.id && e.id !== exam.id);
+  }, [exam]);
 
   // Scroll-spy
   useEffect(() => {
@@ -159,6 +159,69 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Split-mappers for database-string fields
+  const subjectsList = useMemo(() => {
+    if (!exam) return [];
+    if (Array.isArray(exam.subjects)) return exam.subjects;
+    if (typeof exam.subjects === "string") return exam.subjects.split(",").map((s: string) => s.trim()).filter(Boolean);
+    return [];
+  }, [exam]);
+
+  const languagesList = useMemo(() => {
+    if (!exam) return [];
+    if (Array.isArray(exam.languages)) return exam.languages;
+    if (typeof exam.languages === "string") return exam.languages.split(",").map((s: string) => s.trim()).filter(Boolean);
+    return ["English", "Hindi"];
+  }, [exam]);
+
+  const stagesList = useMemo(() => {
+    if (!exam) return [];
+    if (Array.isArray(exam.stages)) return exam.stages;
+    if (typeof exam.stages === "string") return exam.stages.split("➔").map((s: string) => s.trim()).filter(Boolean);
+    return ["Written Exam", "Interview"];
+  }, [exam]);
+
+  const faqsList = useMemo(() => {
+    if (!exam) return [];
+    if (Array.isArray(exam.faqs)) return exam.faqs;
+    return [
+      { q: `What is the eligibility for ${exam.shortName || exam.name}?`, a: exam.eligibility || "Please refer to the official notification for detailed eligibility criteria." },
+      { q: `What is the exam pattern?`, a: exam.pattern || "The selection process typically includes written tests and/or interviews. Please refer to the official notification." },
+      { q: `How can I prepare for ${exam.shortName || exam.name}?`, a: "You can practice using our comprehensive test series and previous year question papers." }
+    ];
+  }, [exam]);
+
+  if (loadingExam) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
+        <div className="text-center py-16">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[var(--line)] border-t-[var(--ink-1)] mx-auto" />
+          <p className="text-[var(--ink-2)] mt-4 text-sm font-semibold">Loading exam details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (notFoundError) return notFound();
+
+  if (networkError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
+        <div className="text-center py-16 max-w-sm mx-auto px-4">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold mb-2" style={{ color: "var(--ink-1)" }}>Could not load exam</h2>
+          <p className="text-sm mb-6" style={{ color: "var(--ink-3)" }}>There was a problem connecting to the server. Please check your connection and try again.</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-3 rounded-xl font-bold text-white" style={{ background: "#0D287E" }}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const liveTestCount = liveCounts.tests;
+  const livePyqCount  = liveCounts.pyqs;
 
   return (
     <div className="min-h-screen pb-20" style={{ background: "var(--bg)" }}>
@@ -176,7 +239,7 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
               <ArrowLeft size={14} /> Exams
             </Link>
             <ChevronRight size={14} />
-            <span className="flex items-center gap-1.5"><span className="opacity-75">{state.emoji}</span> {state.name}</span>
+            <span className="flex items-center gap-1.5"><span className="opacity-75">{state?.emoji || "🌿"}</span> {state?.name || "State"}</span>
             <ChevronRight size={14} />
             <span className="font-medium" style={{ color: boardColor }}>{board.name}</span>
             <ChevronRight size={14} />
@@ -193,7 +256,7 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
                 <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-black text-white" style={{ backgroundColor: boardColor }}>
                   {board.name.slice(0, 2)}
                 </div>
-                <span className="text-xs font-bold uppercase tracking-wider">{board.fullName}</span>
+                <span className="text-xs font-bold uppercase tracking-wider">{board.fullName || board.name}</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-5" style={{ color: "var(--ink-1)" }}>
@@ -223,9 +286,9 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
 
             {/* Stat grid */}
             <div className="w-full lg:w-[360px] shrink-0 grid grid-cols-2 gap-3">
-              <StatCard label="Test Series"  value={liveTestCount}         icon={FlaskConical} color="#0D287E" />
-              <StatCard label="PYQ Papers"   value={livePyqCount}          icon={FileText}     color="#7C3AED" />
-              <StatCard label="Study Notes"  value={exam.notesCount}       icon={BookOpen}     color="#059669" />
+              <StatCard label="Test Series"  value={liveTestCount || "—"}  icon={FlaskConical} color="#0D287E" />
+              <StatCard label="PYQ Papers"   value={livePyqCount  || "—"}  icon={FileText}     color="#7C3AED" />
+              <StatCard label="Study Notes"  value={exam.notesCount ?? 15} icon={BookOpen}     color="#059669" />
               <StatCard label="Difficulty"   value={exam.difficulty || "Moderate"} icon={BarChart3} color="#D97706" />
             </div>
           </div>
@@ -285,12 +348,12 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
             <div className="border rounded-3xl p-6 md:p-8" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                 {[
-                  { label: "Conducting Body",    value: exam.conductingBody || board.fullName },
+                  { label: "Conducting Body",    value: exam.conductingBody || board.fullName || board.name },
                   { label: "Exam Frequency",     value: exam.frequency || "Annual" },
                   { label: "Mode of Exam",        value: exam.mode || "Online/Offline" },
-                  { label: "Exam Languages",      value: exam.languages?.join(", ") || "English, Hindi" },
+                  { label: "Exam Languages",      value: languagesList.join(", ") },
                   { label: "Eligibility Criteria", value: exam.eligibility },
-                  { label: "Selection Stages",    value: exam.stages?.join(" ➔ ") || "Written ➔ Interview" },
+                  { label: "Selection Stages",    value: stagesList.join(" ➔ ") },
                   { label: "Applicants (Approx)", value: exam.applicants || "Varies" },
                   { label: "Vacancy Trend",       value: exam.vacancyTrend || "Not available" },
                 ].map((item, i) => (
@@ -309,7 +372,7 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
             <div className="border rounded-3xl p-6 md:p-8 relative overflow-hidden" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
               <div className="absolute top-0 left-8 bottom-0 w-px hidden md:block" style={{ background: "var(--line-soft)" }} />
               <div className="space-y-8 relative">
-                {(exam.importantDates || [{ label: "Next Expected Date", date: exam.nextDate || "TBA", status: "upcoming" }]).map((dateObj, i) => (
+                {(exam.importantDates || [{ label: "Upcoming Registration", date: exam.upcomingDate || "TBA", status: "upcoming" }]).map((dateObj: any, i: number) => (
                   <div key={i} className="flex flex-col md:flex-row gap-4 md:gap-8 relative">
                     <div
                       className="hidden md:flex absolute -left-[5px] top-1.5 w-3 h-3 rounded-full border-2"
@@ -326,7 +389,7 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
                           color: dateObj.status === "completed" ? "#059669" : dateObj.status === "ongoing" ? "#D97706" : "#0D287E",
                         }}
                       >
-                        {dateObj.status.toUpperCase()}
+                        {(dateObj.status || "upcoming").toUpperCase()}
                       </span>
                     </div>
                     <div className="flex-1 rounded-2xl p-5 border" style={{ background: "var(--bg)", borderColor: "var(--line-soft)" }}>
@@ -367,7 +430,7 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
             <div id="syllabus" className="scroll-mt-32">
               <SectionHeading title="Key Subjects" icon={BookOpen} color={boardColor} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {exam.subjects.map((sub, i) => (
+                {subjectsList.map((sub: string, i: number) => (
                   <div
                     key={i}
                     className="p-5 rounded-2xl border flex items-center gap-4 cursor-default group transition-colors"
@@ -410,7 +473,7 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
                   icon: BookOpen,
                   title: "Study Notes",
                   desc: "Concise revision notes, formula sheets, and subject-wise guides.",
-                  count: `${exam.notesCount} PDF notes`,
+                  count: `${exam.notesCount ?? 15} PDF notes`,
                   accentColor: "#059669",
                   iconBg: "rgba(5,150,105,0.10)",
                   href: `/blog?exam=${exam.id}`,
@@ -518,11 +581,11 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
           </section>
 
           {/* ── FAQS ── */}
-          {(exam.faqs && exam.faqs.length > 0) && (
+          {(faqsList && faqsList.length > 0) && (
             <section id="faqs" className="scroll-mt-32">
               <SectionHeading title="Frequently Asked Questions" icon={AlertCircle} color={boardColor} />
               <div className="space-y-4">
-                {exam.faqs.map((faq, i) => (
+                {faqsList.map((faq: any, i: number) => (
                   <details
                     key={i}
                     className="group border rounded-2xl [&_summary::-webkit-details-marker]:hidden"
@@ -542,9 +605,6 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
               </div>
             </section>
           )}
-
-          {/* ── PREMIUM CTA ── */}
-          <PremiumBanner exam={exam} isPaid={isPaid} testCount={liveTestCount} pyqCount={livePyqCount} />
 
         </div>
 
@@ -609,7 +669,7 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
                         {relExam.name}
                       </h4>
                       <p className="text-xs" style={{ color: "var(--ink-4)" }}>
-                        {relExam.testCount} tests · {relExam.pyqCount} pyqs
+                        {[relExam.hasTests && "Tests available", relExam.hasPYQ && "PYQs available"].filter(Boolean).join(" · ") || "Coming soon"}
                       </p>
                     </div>
                   </Link>

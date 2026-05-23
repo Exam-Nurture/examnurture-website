@@ -3,12 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { BookOpen, FileText, ChevronDown, ChevronUp, CheckCircle2, ExternalLink, Zap, Lock, ShoppingCart } from "lucide-react";
-import { EXAM_BOARDS } from "@/lib/data/examData";
 
 /**
  * Guide content lives here (levels, topics, notes, PYQ counts).
- * Board metadata (name, tint, pattern) is derived from examData.ts.
- * To add a new guide: (1) add the exam to examData with hasGuide:true,
+ * Board metadata (name, tint, pattern) is derived from examCatalogue.ts.
+ * To add a new guide: (1) add the exam to examCatalogue,
  * (2) add a GUIDE_CONTENT entry below with the same boardId.
  */
 
@@ -44,7 +43,7 @@ type ExamGuide = {
 };
 
 /* ─── Guide content data ───────────────────────────────────────
-   boardId links each guide to examData.ts for metadata enrichment.
+   boardId links each guide to examCatalogue.ts for metadata enrichment.
    Content (levels, topics) stays here as it is learning content.
 ──────────────────────────────────────────────────────────────── */
 const GUIDES: ExamGuide[] = [
@@ -256,9 +255,8 @@ export default function GuidesPage() {
       {/* Exam selector pills — boards that have guide content */}
       <div className="flex flex-wrap gap-2">
         {GUIDES.map((g) => {
-          /* Enrich with examData for tint/colorSoft when possible */
-          const board = EXAM_BOARDS.find((b) => b.id === g.boardId);
-          const tint  = board?.tint ?? g.tint;
+          /* Enrich with examCatalogue for tint/colorSoft when possible */
+          const tint  = g.tint;
           return (
             <button
               key={g.id}

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  apiGetProfile, apiLogin, apiRegister, apiLogout, apiGoogleAuth,
+  apiGetProfile, apiLogin, apiRegister, apiLogout, apiGoogleAuth, apiFirebaseLogin,
   clearToken, tryRefreshSession, type UserProfile,
 } from "./api";
 
@@ -14,6 +14,7 @@ interface AuthState {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
+  loginWithPhone: (idToken: string, phone: string) => Promise<void>;
   register: (data: { name: string; email: string; phone?: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -61,6 +62,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = useCallback(async (credential: string) => {
     const data = await apiGoogleAuth(credential);
+    setUser(data.user as UserProfile);
+  }, []);
+
+  const loginWithPhone = useCallback(async (idToken: string, phone: string) => {
+    const data = await apiFirebaseLogin(idToken, phone);
     setUser(data.user as UserProfile);
   }, []);
 
@@ -136,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, loginWithPhone, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -178,7 +178,7 @@ function EmptyState({
 /* ────────────────────────────────────────────
    Main page
 ──────────────────────────────────────────── */
-export default function MyLibraryPage() {
+export default function SavedBlogsPage() {
   const [bookmarks,      setBookmarks]      = useState<any[]>([]);
   const [loadingBM,      setLoadingBM]      = useState(true);
   const [readSlugs,      setReadSlugs]      = useState<Set<string>>(new Set());
@@ -223,14 +223,14 @@ export default function MyLibraryPage() {
             className="text-2xl font-extrabold"
             style={{ fontFamily: "var(--font-sora)", color: "var(--ink-1)" }}
           >
-            My Library
+            Saved Blogs
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--ink-4)" }}>
             Your reading progress, saves, and bookmarks
           </p>
         </div>
         <Link
-          href="/blog"
+          href="/blogs"
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-[var(--bg)]"
           style={{ color: "var(--blue)", borderColor: "var(--blue)", borderWidth: 1.5 }}
         >
@@ -327,7 +327,7 @@ export default function MyLibraryPage() {
           </div>
           {unreadSaved.length > 5 && (
             <Link
-              href="/blog"
+              href="/blogs"
               className="mt-3 flex items-center gap-1 text-[12px] font-semibold transition-colors hover:text-[var(--blue)]"
               style={{ color: "var(--ink-4)" }}
             >
@@ -351,7 +351,7 @@ export default function MyLibraryPage() {
             sub="Articles are marked as read when you scroll past 80%"
             action={
               <Link
-                href="/blog"
+                href="/blogs"
                 className="flex items-center gap-1.5 text-sm font-semibold transition-colors"
                 style={{ color: "var(--blue)" }}
               >
@@ -366,7 +366,7 @@ export default function MyLibraryPage() {
             ))}
             {readArticles.length > 4 && (
               <Link
-                href="/blog"
+                href="/blogs"
                 className="mt-1 flex items-center gap-1 text-[12px] font-semibold transition-colors hover:text-[var(--blue)]"
                 style={{ color: "var(--ink-4)" }}
               >
@@ -469,7 +469,7 @@ export default function MyLibraryPage() {
           </p>
         </div>
         <Link
-          href="/blog"
+          href="/blogs"
           className="shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold text-white transition-all hover:brightness-110 w-full sm:w-auto"
           style={{ background: "var(--blue)" }}
         >

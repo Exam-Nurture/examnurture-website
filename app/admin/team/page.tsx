@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Upload, X, ImageIcon } from "lucide-react";
 import {
   apiAdminGetTeam, apiAdminCreateTeamMember, apiAdminUpdateTeamMember, apiAdminDeleteTeamMember,
-  AdminTeamMember,
+  apiAdminUploadImage, AdminTeamMember,
 } from "@/lib/api";
 import { AdminTable, Pagination, Modal, Field, Toggle } from "@/components/admin/AdminTable";
 
@@ -19,6 +20,8 @@ export default function AdminTeamPage() {
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [form, setForm] = useState<Partial<AdminTeamMember>>(empty());
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   async function load(p = page) {
     setLoading(true);
@@ -34,7 +37,15 @@ export default function AdminTeamPage() {
     ev.preventDefault();
     setSaving(true);
     try {
-      const payload = { ...form, displayOrder: Number(form.displayOrder) };
+      // Empty strings fail URL/email validation — send undefined instead
+      const payload = {
+        ...form,
+        displayOrder: Number(form.displayOrder),
+        photoUrl: form.photoUrl?.trim() || undefined,
+        linkedinUrl: form.linkedinUrl?.trim() || undefined,
+        twitterUrl: form.twitterUrl?.trim() || undefined,
+        email: form.email?.trim() || undefined,
+      };
       if (modal === "create") await apiAdminCreateTeamMember(payload);
       else await apiAdminUpdateTeamMember(form.id!, payload);
       setModal(null);
@@ -95,7 +106,14 @@ export default function AdminTeamPage() {
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none"
                 style={{ border: "1.5px solid var(--line)", background: "var(--bg)", color: "var(--ink-1)" }} />
             </div>
-            <Field label="Photo URL" name="photoUrl" value={form.photoUrl ?? ""} onChange={(v) => set("photoUrl", v)} />
+            <PhotoUploadField
+              value={form.photoUrl ?? ""}
+              onChange={(url) => set("photoUrl", url)}
+              uploading={uploading}
+              setUploading={setUploading}
+              error={uploadError}
+              setError={setUploadError}
+            />
             <Field label="Email" name="email" type="email" value={form.email ?? ""} onChange={(v) => set("email", v)} />
             <Field label="LinkedIn URL" name="linkedinUrl" value={form.linkedinUrl ?? ""} onChange={(v) => set("linkedinUrl", v)} />
             <Field label="Twitter URL" name="twitterUrl" value={form.twitterUrl ?? ""} onChange={(v) => set("twitterUrl", v)} />
@@ -112,6 +130,92 @@ export default function AdminTeamPage() {
           </form>
         </Modal>
       )}
+    </div>
+  );
+}
+
+function PhotoUploadField({
+  value, onChange, uploading, setUploading, error, setError,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+  uploading: boolean;
+  setUploading: (v: boolean) => void;
+  error: string;
+  setError: (v: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File) {
+    setError("");
+    setUploading(true);
+    try {
+      const { url } = await apiAdminUploadImage(file);
+      onChange(url);
+    } catch (e: any) {
+      setError(e.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div>
+      <label className="block text-xs font-medium mb-1" style={{ color: "var(--ink-2)" }}>Photo</label>
+
+      {/* Preview + remove */}
+      {value ? (
+        <div className="flex items-center gap-3 mb-2">
+          <img src={value} alt="preview" className="w-14 h-14 rounded-full object-cover border" style={{ borderColor: "var(--line)" }} />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs truncate" style={{ color: "var(--ink-3)" }}>{value}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="p-1 rounded-md hover:bg-red-50"
+            title="Remove photo"
+          >
+            <X size={14} className="text-red-400" />
+          </button>
+        </div>
+      ) : null}
+
+      {/* Drop zone */}
+      <div
+        className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-4 cursor-pointer hover:bg-[var(--bg)] transition-colors"
+        style={{ borderColor: uploading ? "var(--blue)" : "var(--line)" }}
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          const file = e.dataTransfer.files[0];
+          if (file) handleFile(file);
+        }}
+      >
+        {uploading ? (
+          <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--line)", borderTopColor: "var(--blue)" }} />
+        ) : (
+          <Upload size={16} style={{ color: "var(--ink-4)" }} />
+        )}
+        <p className="text-xs" style={{ color: "var(--ink-4)" }}>
+          {uploading ? "Uploading…" : "Click or drag a photo (JPEG/PNG/WebP, max 5 MB)"}
+        </p>
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+          e.target.value = "";
+        }}
+      />
+
+      {error && <p className="text-xs mt-1 text-red-500">{error}</p>}
     </div>
   );
 }

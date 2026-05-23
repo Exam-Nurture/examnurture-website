@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { FileText, Search, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
+import { ArrowRight, FileText, Search, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { apiGetTestSeries } from "@/lib/api";
 
@@ -203,7 +203,7 @@ export default function SeriesPage() {
                 className="text-[28px] leading-none"
                 style={{ fontWeight: 300, letterSpacing: "-0.96px", color: "var(--ink-1)" }}
               >
-                Test Series
+                My Test Series
               </h1>
               {!loading && (
                 <>
@@ -217,9 +217,16 @@ export default function SeriesPage() {
               )}
             </div>
             <p className="text-[14px] max-w-xl" style={{ color: "var(--ink-4)", lineHeight: "1.5" }}>
-              Practice with full-length mock tests for your target exams.
+              Your purchased and free test series. Practice with full-length mocks.
             </p>
           </div>
+          <Link
+            href="/series/all"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold border transition-all hover:bg-[var(--blue)] hover:text-white hover:border-[var(--blue)]"
+            style={{ color: "var(--ink-2)", borderColor: "var(--line)" }}
+          >
+            Browse All Series <ArrowRight size={14} />
+          </Link>
         </div>
       </div>
 

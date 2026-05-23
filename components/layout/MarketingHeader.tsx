@@ -13,7 +13,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import AuthModal from "@/components/auth/AuthModal";
-import MegaMenu from "@/components/layout/MegaMenu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=com.kvebrk.rwwkrt";
@@ -25,10 +24,10 @@ const examsNav = [
 ];
 
 const learnNav = [
-  { name: "Current News",    href: "/blog?tab=news",    icon: Newspaper,  desc: "Daily current affairs digest"       },
+  { name: "Current News",    href: "/blogs?tab=news",    icon: Newspaper,  desc: "Daily current affairs digest"       },
   { name: "Daily Quiz",      href: "/daily-quiz",          icon: Zap,        desc: "5-question daily practice set"      },
-  { name: "Nurture Library", href: "/blog",             icon: Library,    desc: "Full study library & notes"         },
-  { name: "Books & Magazine",href: "/blog?tab=books",   icon: BookMarked, desc: "Recommended books & magazines"      },
+  { name: "Nurture Library", href: "/blogs",             icon: Library,    desc: "Full study library & notes"         },
+  { name: "Books & Magazine",href: "/blogs?tab=books",   icon: BookMarked, desc: "Recommended books & magazines"      },
 ];
 
 /* ── Inner component that safely reads searchParams ── */
@@ -65,7 +64,6 @@ export default function MarketingHeader() {
   const [isScrolled,     setIsScrolled]     = useState(false);
   const [isHidden,       setIsHidden]       = useState(false);
   const [showUserMenu,   setShowUserMenu]   = useState(false);
-  const [showExamsMenu,  setShowExamsMenu]  = useState(false);
   const [showSearch,     setShowSearch]     = useState(false);
   const [searchQuery,    setSearchQuery]    = useState("");
   const [showAuthModal,  setShowAuthModal]  = useState(false);
@@ -80,7 +78,7 @@ export default function MarketingHeader() {
 
   const displayName = user?.name ?? "";
   const initials    = displayName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "U";
-  const planLabel   = user?.subscription ? `Tier ${user.subscription.tierLevel}` : "Free";
+
 
   const handleNextParam = useCallback((next: string | null) => {
     if (!next || modalDismissed.current) return;
@@ -122,7 +120,6 @@ export default function MarketingHeader() {
   useEffect(() => {
     setShowUserMenu(false);
     setShowSearch(false);
-    setShowExamsMenu(false);
     setMobileTab(null);
   }, [pathname]);
 
@@ -150,7 +147,7 @@ export default function MarketingHeader() {
   const handleLogout = async () => { await logout(); router.push("/"); };
 
   const isExamsActive = pathname === "/exams" || pathname.startsWith("/exams/");
-  const isLibraryActive = pathname.startsWith("/blog");
+  const isLibraryActive = pathname.startsWith("/blogs");
 
   const toggleMobileTab = (tab: typeof mobileTab) =>
     setMobileTab(prev => prev === tab ? null : tab);
@@ -313,14 +310,10 @@ export default function MarketingHeader() {
                 <NavLink href="/about">About</NavLink>
                 <NavLink href="/series/all">Test Series</NavLink>
 
-                <MegaMenu
-                  show={showExamsMenu}
-                  onMouseEnter={() => setShowExamsMenu(true)}
-                  onMouseLeave={() => setShowExamsMenu(false)}
-                />
+                <NavLink href="/exams">Exams</NavLink>
 
                 <NavLink href="/pyq/all">Previous Year Papers</NavLink>
-                <NavLink href="/blog">Blog</NavLink>
+                <NavLink href="/blogs">Blogs</NavLink>
                 <NavLink href="/contact">Contact</NavLink>
 
               </div>
@@ -415,7 +408,7 @@ export default function MarketingHeader() {
                       >
                         <div className="px-4 py-3 border-b border-[var(--line-soft)] mb-1">
                           <p className="text-sm font-bold text-[var(--ink-1)] truncate">{displayName}</p>
-                          <p className="text-[10px] text-[var(--ink-4)] uppercase tracking-wider font-bold mt-0.5">{planLabel} Plan</p>
+
                         </div>
                         {[
                           { icon: LayoutDashboard, label: "Dashboard",    href: "/dashboard"           },
@@ -543,7 +536,7 @@ export default function MarketingHeader() {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-[var(--ink-1)] truncate">{displayName}</p>
-                      <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--blue-soft)] text-[var(--blue)] uppercase tracking-wide">{planLabel}</span>
+
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 mb-3">
@@ -621,7 +614,7 @@ export default function MarketingHeader() {
 
           {/* Blog */}
           <Link
-            href="/blog"
+            href="/blogs"
             onClick={() => setMobileTab(null)}
             className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all"
           >
@@ -632,7 +625,7 @@ export default function MarketingHeader() {
             </div>
             <span className={`text-[10px] font-semibold ${
               isLibraryActive ? "text-[var(--blue)]" : "text-[var(--ink-4)]"
-            }`}>Blog</span>
+            }`}>Blogs</span>
           </Link>
 
           {/* Contact */}

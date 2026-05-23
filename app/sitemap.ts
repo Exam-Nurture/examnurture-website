@@ -1,17 +1,22 @@
 import type { MetadataRoute } from "next";
-import { getAllExams } from "@/lib/data/examCatalogue";
-import { apiGetBlogs } from "@/lib/api";
+import { apiGetExams, apiGetBlogs } from "@/lib/api";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://examnurture.in";
+const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://examnurture.com";
 
 function url(path: string, priority: number, freq: MetadataRoute.Sitemap[number]["changeFrequency"]): MetadataRoute.Sitemap[number] {
   return { url: `${BASE}${path}`, lastModified: new Date(), changeFrequency: freq, priority };
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const examUrls = getAllExams().map((exam) =>
-    url(`/exams/${exam.id}`, 0.8, "weekly")
-  );
+  let examUrls: MetadataRoute.Sitemap = [];
+  try {
+    const exams = await apiGetExams();
+    examUrls = exams.map((exam: any) =>
+      url(`/exams/${exam.id}`, 0.8, "weekly")
+    );
+  } catch (error) {
+    console.error("Failed to fetch exams for sitemap:", error);
+  }
 
   let blogUrls: MetadataRoute.Sitemap = [];
   try {
@@ -28,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url("/exams",       0.9, "weekly"),
     url("/series/all",  0.9, "daily"),
     url("/pyq/all",     0.9, "daily"),
-    url("/blog",        0.9, "daily"),
+    url("/blogs",        0.9, "daily"),
     url("/about",   0.5, "monthly"),
     url("/contact", 0.4, "monthly"),
     url("/privacy", 0.3, "yearly"),

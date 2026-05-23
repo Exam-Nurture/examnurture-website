@@ -130,19 +130,51 @@ export async function apiFetch<T = unknown>(
     try { body = await res.json(); } catch { /* empty */ }
 
     let msg: string | undefined;
-    if (typeof body?.detail === "string") {
-      msg = body.detail;
-    } else if (Array.isArray(body?.detail) && body.detail[0]?.msg) {
-      // FastAPI validation errors: [{ loc: [...], msg: "...", type: "..." }]
-      msg = body.detail.map((d) => d.msg).filter(Boolean).join("; ");
-    } else if (body?.error?.message) {
-      msg = body.error.message;
-    } else if (typeof body?.message === "string") {
-      msg = body.message;
+    
+    // User-friendly error messages based on status codes
+    const FRIENDLY_MESSAGES: Record<number, string> = {
+      400: "There was a problem with your request. Please check and try again.",
+      401: "Please sign in to access this feature.",
+      403: "You don't have permission to perform this action.",
+      404: "We couldn't find what you were looking for.",
+      408: "The request took too long. Please check your connection and try again.",
+      422: "Please check the information provided and try again.",
+      429: "You're doing that too fast. Please wait a moment and try again.",
+      500: "Oops! Something went wrong on our end. Please try again later.",
+      502: "We're experiencing temporary server issues. Please try again soon.",
+      503: "Service is temporarily unavailable. We're working on it!",
+      504: "The server took too long to respond. Please try again."
+    };
+
+    if (res.status >= 500) {
+      // Never show backend stack traces or internal errors to users
+      msg = FRIENDLY_MESSAGES[res.status] || "Something went wrong on our end. Please try again later.";
+    } else {
+      if (typeof body?.detail === "string") {
+        msg = body.detail;
+      } else if (Array.isArray(body?.detail) && body.detail[0]?.msg) {
+        // FastAPI validation errors: [{ loc: [...], msg: "...", type: "..." }]
+        msg = body.detail.map((d) => d.msg).filter(Boolean).join("; ");
+      } else if (body?.error?.message) {
+        msg = body.error.message;
+      } else if (typeof body?.message === "string") {
+        msg = body.message;
+      }
+
+      // If the extracted message looks like a technical developer error, sanitize it
+      if (msg && (
+        msg.includes('TypeError') || 
+        msg.includes('Exception') || 
+        msg.includes('traceback') || 
+        msg.includes('undefined') ||
+        msg.includes('prisma') ||
+        msg.includes('SQL')
+      )) {
+        msg = FRIENDLY_MESSAGES[res.status] || "An unexpected error occurred.";
+      }
     }
 
-    // statusText is empty in HTTP/2; fall back to a status-code description
-    const fallback = res.statusText || statusDescription(res.status);
+    const fallback = FRIENDLY_MESSAGES[res.status] || res.statusText || statusDescription(res.status);
     throw new ApiError(res.status, msg || fallback, path);
   }
 
@@ -215,13 +247,7 @@ export async function apiLogout(): Promise<void> {
 export interface UserProfile extends AuthUser {
   phone?: string;
   hasGoogle?: boolean;
-  subscription?: {
-    id: string;
-    tierLevel: number;
-    billingCycle: "MONTHLY" | "YEARLY";
-    status: "ACTIVE" | "EXPIRED" | "CANCELLED" | "PAUSED";
-    currentPeriodEnd: string;
-  } | null;
+
   stats: {
     attempts: number;
     bookmarks: number;
@@ -236,6 +262,15 @@ export async function apiGoogleAuth(credential: string): Promise<AuthResponse> {
   const data = await apiFetch<AuthResponse>("/auth/google", {
     method: "POST",
     body: JSON.stringify({ credential }),
+  }, false);
+  setToken(data.accessToken);
+  return data;
+}
+
+export async function apiFirebaseLogin(idToken: string, phone: string): Promise<AuthResponse> {
+  const data = await apiFetch<AuthResponse>("/auth/firebase", {
+    method: "POST",
+    body: JSON.stringify({ idToken, phone }),
   }, false);
   setToken(data.accessToken);
   return data;
@@ -291,46 +326,26 @@ export async function apiGetAnalytics(): Promise<AnalyticsData> {
   return apiFetch("/user/analytics");
 }
 
-/* ── Subscription endpoints ─────────────────────── */
 
-export interface CheckoutResponse {
-  razorpayOrderId: string;
-  amount: number;
-  currency: string;
-  keyId: string | null;
-  tierLevel: number;
-  billingCycle: string;
-}
-
-export async function apiCheckout(tierLevel: number, billingCycle: "MONTHLY" | "YEARLY"): Promise<CheckoutResponse> {
-  return apiFetch("/subscription/checkout", {
-    method: "POST",
-    body: JSON.stringify({ tierLevel, billingCycle }),
-  });
-}
-
-export async function apiVerifyPayment(data: {
-  razorpayOrderId: string;
-  razorpayPaymentId: string;
-  razorpaySignature: string;
-  tierLevel: number;
-  billingCycle: "MONTHLY" | "YEARLY";
-}): Promise<{ success: boolean }> {
-  return apiFetch("/subscription/verify", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
-export async function apiGetSubscriptionStatus() {
-  return apiFetch<{ active: boolean; subscription: UserProfile["subscription"] }>("/subscription/status");
-}
-
-export async function apiCancelSubscription() {
-  return apiFetch("/subscription/cancel", { method: "POST" });
-}
 
 /* ── Exams / Boards ─────────────────────────────── */
+
+export interface ApiExamCategory {
+  id: number; name: string; slug: string; icon?: string; colorTint?: string; sortOrder?: number;
+}
+
+export async function apiGetExamCategories(): Promise<ApiExamCategory[]> {
+  return apiFetch<ApiExamCategory[]>("/exam-categories");
+}
+
+export interface ApiExamSubject {
+  id: number; name: string; slug: string;
+}
+
+export async function apiGetExamSubjects(examId?: string): Promise<ApiExamSubject[]> {
+  const qs = examId ? `?examId=${examId}` : "";
+  return apiFetch<ApiExamSubject[]>(`/exam-subjects${qs}`);
+}
 
 export interface ApiBoardExam {
   id: string; name: string; shortName: string; hasTests: boolean; hasPYQ: boolean; tier: number;
@@ -361,7 +376,11 @@ export async function apiGetExams(params?: { board?: string; tier?: number }) {
   if (params?.board) qs.set("board", params.board);
   if (params?.tier) qs.set("tier", String(params.tier));
   const s = qs.toString();
-  return apiFetch(`/exams${s ? `?${s}` : ""}`);
+  return apiFetch<any[]>(`/exams${s ? `?${s}` : ""}`);
+}
+
+export async function apiGetExamById(id: string): Promise<any> {
+  return apiFetch<any>(`/exams/${id}`);
 }
 
 /* ── Tests ─────────────────────────────────────── */
@@ -840,6 +859,22 @@ export async function apiAdminDeleteTeamMember(id: string) {
   return apiFetch(`/admin/team/${id}`, { method: "DELETE" });
 }
 
+export async function apiAdminUploadImage(file: File): Promise<{ url: string; key: string }> {
+  const token = getToken();
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE}/admin/upload/image`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error?.message || `Upload failed (${res.status})`);
+  }
+  return res.json();
+}
+
 /* ── Public contact form ────────────────────────── */
 
 export async function apiGetCourses(params?: { featured?: boolean }) {
@@ -886,183 +921,12 @@ export async function apiAdminDeleteContact(id: string) {
   return apiFetch(`/admin/contact/${id}`, { method: "DELETE" });
 }
 
-// Subscriptions & Payments (read-only)
-export async function apiAdminGetSubscriptions(params?: { page?: number }) {
-  return apiFetch<PaginatedResponse<unknown>>(`/admin/subscriptions${buildQS(params ?? {})}`);
-}
+
 export async function apiAdminGetPayments(params?: { page?: number }) {
   return apiFetch<PaginatedResponse<unknown>>(`/admin/payments${buildQS(params ?? {})}`);
 }
 
-// ── Subscription v2 ──────────────────────────────────────────────────────────
 
-export type ContentType = 'TEST_SERIES' | 'PYQ' | 'STUDY_MATERIAL' | 'MENTORSHIP' | 'COURSE';
-
-export interface TierContent {
-  id: string;
-  tierId: number;
-  contentType: ContentType;
-  contentId: string;
-  addedAt: string;
-  contentTitle?: string;
-}
-
-export interface TierDefinition {
-  id: number;
-  name: string;
-  eligibility: string;
-  description: string;
-  monthlyPaise: number;
-  yearlyPaise: number;
-  isActive: boolean;
-  contents: TierContent[];
-  _count?: { contents: number; subscriptions: number };
-}
-
-export interface TierSubscriptionRecord {
-  id: string;
-  tierId: number;
-  tierName: string;
-  billingCycle: 'MONTHLY' | 'YEARLY';
-  expiresAt: string;
-  status: string;
-}
-
-export interface IndividualSubRecord {
-  contentId: string;
-  expiresAt: string;
-  subscriptionId: string;
-}
-
-export interface StudentAccessMap {
-  individual: Partial<Record<ContentType, IndividualSubRecord[]>>;
-  activeTierSubscriptions: TierSubscriptionRecord[];
-}
-
-export interface TierCheckoutResponse {
-  razorpayOrderId: string;
-  amount: number;
-  currency: string;
-  keyId: string | null;
-  tierId: number;
-  tierName: string;
-  billingCycle: string;
-}
-
-export interface IndividualCheckoutResponse {
-  razorpayOrderId: string;
-  amount: number;
-  currency: string;
-  keyId: string | null;
-  contentType: ContentType;
-  contentId: string;
-  contentTitle: string;
-  durationDays: number;
-}
-
-// Tier checkout (new flow)
-export async function apiTierCheckout(
-  tierId: number,
-  billingCycle: 'MONTHLY' | 'YEARLY',
-): Promise<TierCheckoutResponse> {
-  return apiFetch('/subscription/tier/checkout', {
-    method: 'POST',
-    body: JSON.stringify({ tierId, billingCycle }),
-  });
-}
-
-export async function apiTierVerify(data: {
-  razorpayOrderId: string;
-  razorpayPaymentId: string;
-  razorpaySignature: string;
-  tierId: number;
-  billingCycle: 'MONTHLY' | 'YEARLY';
-}): Promise<{ success: boolean }> {
-  return apiFetch('/subscription/tier/verify', { method: 'POST', body: JSON.stringify(data) });
-}
-
-// Individual purchase
-export async function apiIndividualCheckout(data: {
-  contentType: ContentType;
-  contentId: string;
-  durationDays?: number;
-}): Promise<IndividualCheckoutResponse> {
-  return apiFetch('/subscription/individual/checkout', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-export async function apiIndividualVerify(data: {
-  razorpayOrderId: string;
-  razorpayPaymentId: string;
-  razorpaySignature: string;
-  contentType: ContentType;
-  contentId: string;
-  durationDays?: number;
-}): Promise<{ success: boolean }> {
-  return apiFetch('/subscription/individual/verify', { method: 'POST', body: JSON.stringify(data) });
-}
-
-// Access map
-export async function apiGetAccessMap(): Promise<StudentAccessMap> {
-  return apiFetch('/subscription/access-map');
-}
-
-// Tier definitions (public)
-export async function apiGetTierDefinitions(): Promise<TierDefinition[]> {
-  return apiFetch('/tiers');
-}
-
-export async function apiGetTierDefinition(id: number, withDetails = false): Promise<TierDefinition> {
-  return apiFetch(`/tiers/${id}${withDetails ? '?withDetails=true' : ''}`);
-}
-
-// ── Admin — Tier Management ──────────────────────────────────────────────────
-
-export async function apiAdminGetTierDefinitions() {
-  return apiFetch<TierDefinition[]>('/admin/tier-definitions');
-}
-export async function apiAdminCreateTierDefinition(body: Partial<TierDefinition>) {
-  return apiFetch<TierDefinition>('/admin/tier-definitions', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-export async function apiAdminUpdateTierDefinition(id: number, body: Partial<TierDefinition>) {
-  return apiFetch<TierDefinition>(`/admin/tier-definitions/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  });
-}
-export async function apiAdminDeleteTierDefinition(id: number) {
-  return apiFetch(`/admin/tier-definitions/${id}`, { method: 'DELETE' });
-}
-
-export async function apiAdminGetTierContents(tierId: number) {
-  return apiFetch<TierContent[]>(`/admin/tier-definitions/${tierId}/contents`);
-}
-export async function apiAdminAddTierContent(
-  tierId: number,
-  body: { contentType: ContentType; contentId: string },
-) {
-  return apiFetch<TierContent>(`/admin/tier-definitions/${tierId}/contents`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-export async function apiAdminRemoveTierContent(tierId: number, contentRecordId: string) {
-  return apiFetch(`/admin/tier-definitions/${tierId}/contents/${contentRecordId}`, {
-    method: 'DELETE',
-  });
-}
-
-export async function apiAdminGetTierSubscriptions(params?: { page?: number; status?: string }) {
-  return apiFetch<PaginatedResponse<unknown>>(`/admin/tier-subscriptions${buildQS(params ?? {})}`);
-}
-export async function apiAdminGetIndividualSubscriptions(params?: { page?: number }) {
-  return apiFetch<PaginatedResponse<unknown>>(`/admin/individual-subscriptions${buildQS(params ?? {})}`);
-}
 
 // ── Order & Payment System ────────────────────────────────────────────────────
 

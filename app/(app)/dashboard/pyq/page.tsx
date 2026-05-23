@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Clock, BookOpen, Download, Play, CheckCircle2, SlidersHorizontal, X } from "lucide-react";
+import { ArrowRight, Clock, BookOpen, Download, Play, CheckCircle2, SlidersHorizontal, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { apiGetPYQPapers, apiGetPYQAttempts } from "@/lib/api";
 
@@ -206,18 +206,18 @@ function PYQPageInner() {
             className="text-[28px] leading-none"
             style={{ fontWeight: 300, letterSpacing: "-0.96px", color: "var(--ink-1)" }}
           >
-            PYQ Papers
+            My PYQ Papers
           </h1>
           <p className="text-[13px] mt-2" style={{ color: "var(--ink-4)" }}>
-            Past year question papers with detailed solutions and analytics.
+            Your attempted papers with detailed solutions and analytics.
           </p>
         </div>
         <Link
           href="/pyq/all"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border border-[var(--line)] hover:border-black transition-colors"
-          style={{ color: "var(--ink-2)" }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold border transition-all hover:bg-[var(--blue)] hover:text-white hover:border-[var(--blue)]"
+          style={{ color: "var(--ink-2)", borderColor: "var(--line)" }}
         >
-          Browse All PYQs
+          Browse All PYQs <ArrowRight size={14} />
         </Link>
       </div>
 
