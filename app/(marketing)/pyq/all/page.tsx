@@ -39,7 +39,7 @@ import {
 import { FilterSidebar, FilterSection, MobileFilterBar, ActiveFilterChips, ExamFilterPanel } from "@/components/layout/FilterSidebar";
 import { useExamFilter, parseIds, serializeIds } from "@/hooks/useExamFilter";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
 
 const SORTS = [
   { value: "latest", label: "Latest first" },

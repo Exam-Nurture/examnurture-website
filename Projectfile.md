@@ -1149,7 +1149,7 @@ interface JWTPayload {
 
 ### Frontend (`.env.local`)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
+NEXT_PUBLIC_BACKEND_API_URL=http://localhost:4000/api/v1
 NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxx
 ```
 
