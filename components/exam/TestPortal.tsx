@@ -62,6 +62,7 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
   const [submitting, setSubmitting]               = useState(false);
   const [activeSectionIdx, setActiveSectionIdx]   = useState(0);
   const [isFullscreen, setIsFullscreen]           = useState(false);
+  const [lang, setLang]                           = useState<"EN" | "HI">("EN");
   const startedAt = useRef(Date.now());
 
   /* Build sections from question subjects */
@@ -239,6 +240,22 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
 
         {/* Right actions */}
         <div className="flex items-center gap-2 flex-1 justify-end">
+          {/* Language toggle — only shown when Hindi content exists */}
+          {questions.some((q) => q.textHindi) && (
+            <div className="flex rounded-lg overflow-hidden border text-[12px] font-bold"
+              style={{ borderColor: "var(--line-soft)" }}>
+              <button onClick={() => setLang("EN")}
+                className="px-3 py-1.5 transition-colors"
+                style={{ background: lang === "EN" ? "var(--blue)" : "var(--card)", color: lang === "EN" ? "#fff" : "var(--ink-3)" }}>
+                EN
+              </button>
+              <button onClick={() => setLang("HI")}
+                className="px-3 py-1.5 transition-colors"
+                style={{ background: lang === "HI" ? "var(--blue)" : "var(--card)", color: lang === "HI" ? "#fff" : "var(--ink-3)" }}>
+                हि
+              </button>
+            </div>
+          )}
           <button
             onClick={toggleFullscreen}
             title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
@@ -273,6 +290,7 @@ export default function TestPortal({ testId, title, durationSec, questions, onSu
                 selectedIndex={answers[question.id] ?? null}
                 revealed={false}
                 onSelect={handleSelect}
+                lang={lang}
               />
             </div>
           </div>

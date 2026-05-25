@@ -27,7 +27,7 @@ type Question = {
 const empty = (): Partial<AdminPYQPaper> => ({
   examId: "", title: "", year: new Date().getFullYear(), shift: "",
   totalQs: 0, durationMin: 0, pdfUrl: "", type: "OBJECTIVE",
-  hasSolutions: false, tierRequired: 0, isActive: true,
+  hasSolutions: false, isActive: true,
 });
 
 const JSON_SAMPLE = `[
@@ -123,10 +123,9 @@ export default function NewPYQPage() {
     try {
       const payload = {
         ...form,
-        year:         Number(form.year),
-        totalQs:      Number(form.totalQs),
-        durationMin:  Number(form.durationMin),
-        tierRequired: Number(form.tierRequired),
+        year:        Number(form.year),
+        totalQs:     Number(form.totalQs),
+        durationMin: Number(form.durationMin),
       };
       if (questions.length > 0) {
         await apiAdminCreatePYQBulk({ paper: payload, questions: questions as Record<string, unknown>[] });

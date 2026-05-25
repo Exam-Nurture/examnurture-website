@@ -10,20 +10,42 @@ import type { Question } from "@/components/exam/QuestionViewer";
 
 type Phase = "loading" | "active" | "result" | "error";
 
-function mapQ(raw: any): Question {
-  let opts: string[] = [];
+function parseOpts(raw: any): string[] {
   try {
-    const rawOpts = typeof raw.options === "string" ? JSON.parse(raw.options) : (raw.options || []);
-    // Backend may return [{text: string}] objects or plain strings
-    opts = rawOpts.map((o: any) => (typeof o === "string" ? o : (o?.text ?? "")));
-  }
-  catch { opts = []; }
+    const arr = typeof raw === "string" ? JSON.parse(raw) : (raw || []);
+    return Array.isArray(arr) ? arr.map((o: any) => (typeof o === "string" ? o : (o?.text ?? ""))) : [];
+  } catch { return []; }
+}
+
+function parseImageArray(raw: any): string[] {
+  if (!raw) return [];
+  try { return Array.isArray(raw) ? raw.filter(Boolean) : []; } catch { return []; }
+}
+
+function parseOptionImages(raw: any): string[][] {
+  if (!raw) return [[], [], [], []];
+  try {
+    const arr = Array.isArray(raw) ? raw : [];
+    return [0, 1, 2, 3].map((i) => (Array.isArray(arr[i]) ? arr[i].filter(Boolean) : []));
+  } catch { return [[], [], [], []]; }
+}
+
+function mapQ(raw: any): Question {
   return {
     id: raw.id,
-    text: raw.text,
-    options: opts,
+    text: raw.text ?? "",
+    options: parseOpts(raw.options),
     correctIndex: raw.correctIndex ?? undefined,
     explanation: raw.explanation ?? null,
+    textHindi: raw.textHindi ?? null,
+    optionsHindi: raw.optionsHindi ? parseOpts(raw.optionsHindi) : null,
+    explanationHindi: raw.explanationHindi ?? null,
+    passage: raw.passage ?? null,
+    passageHindi: raw.passageHindi ?? null,
+    questionImages: parseImageArray(raw.questionImages),
+    questionHindiImages: parseImageArray(raw.questionHindiImages),
+    optionImages: parseOptionImages(raw.optionImages),
+    optionHindiImages: parseOptionImages(raw.optionHindiImages),
     subject: raw.subject ?? null,
     topic: raw.topic ?? null,
     difficulty: raw.difficulty ?? null,

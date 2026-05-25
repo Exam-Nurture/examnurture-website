@@ -82,7 +82,7 @@ export default function AboutPage() {
           </h1>
           <p className="text-[18px] leading-[1.45] text-ink-2 max-w-2xl mx-auto"
              style={{ fontWeight: 300, letterSpacing: "-0.26px" }}>
-            We're on a mission to empower students with world-class learning experiences and mentorship to excel in competitive exams.
+            We're on a mission to empower students with world-class learning experiences to excel in competitive exams.
           </p>
         </div>
       </section>
@@ -113,7 +113,7 @@ export default function AboutPage() {
               </h2>
               <p className="text-[18px] leading-[1.45] text-ink-2"
                  style={{ fontWeight: 300, letterSpacing: "-0.26px" }}>
-                To provide every student in India with comprehensive, accessible, and high-quality test series, courses, mentorship, and study materials — enabling them to excel in competitive exams with confidence and clarity.
+                To provide every student in India with comprehensive, accessible, and high-quality test series, courses, and study materials — enabling them to excel in competitive exams with confidence and clarity.
               </p>
               <div className="pt-2 flex items-center gap-2 text-ink-1 font-medium text-[15px]">
                 <span>Transforming education</span>

@@ -11,7 +11,7 @@ import { AdminTable, Pagination, Modal, Field, SelectField, Toggle } from "@/com
 const empty = (): Partial<AdminPYQPaper> => ({
   examId: "", title: "", year: new Date().getFullYear(), shift: "",
   totalQs: 0, durationMin: 0, pdfUrl: "", type: "OBJECTIVE",
-  hasSolutions: false, tierRequired: 0, isActive: true,
+  hasSolutions: false, isActive: true,
 });
 
 export default function AdminPYQPage() {
@@ -47,10 +47,9 @@ export default function AdminPYQPage() {
     try {
       await apiAdminUpdatePYQ(editing.id, {
         ...form,
-        year:         Number(form.year),
-        totalQs:      Number(form.totalQs),
-        durationMin:  Number(form.durationMin),
-        tierRequired: Number(form.tierRequired),
+        year:        Number(form.year),
+        totalQs:     Number(form.totalQs),
+        durationMin: Number(form.durationMin),
       });
       setEditing(null);
       load();

@@ -628,7 +628,7 @@ export async function apiAdminDeleteExam(id: string) {
 // Test Series
 export interface AdminTestSeries {
   id: string; examId: string; title: string; description?: string;
-  totalTests: number; tierRequired: number; isPaid: boolean; isFeatured: boolean;
+  totalTests: number; isPaid: boolean; isFeatured: boolean;
   isActive: boolean; price: number; discountedPrice?: number;
 }
 export async function apiAdminGetTestSeries(params?: { page?: number; limit?: number; examId?: string }) {
@@ -648,7 +648,7 @@ export async function apiAdminDeleteTestSeries(id: string) {
 export interface AdminTest {
   id: string; seriesId: string; title: string; description?: string;
   testType: string; subjects?: string; durationSec: number;
-  totalMarks: number; negMarks: number; tierRequired: number;
+  totalMarks: number; negMarks: number;
   isLocked: boolean; isActive: boolean;
 }
 export async function apiAdminGetTests(params?: { page?: number; seriesId?: string }) {
@@ -662,6 +662,15 @@ export async function apiAdminUpdateTest(id: string, body: Partial<AdminTest>) {
 }
 export async function apiAdminDeleteTest(id: string) {
   return apiFetch(`/admin/tests/${id}`, { method: "DELETE" });
+}
+export async function apiAdminExportTest(id: string, format: "json" | "zip" = "json"): Promise<Blob> {
+  const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+  const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+  const res = await fetch(`${BASE}/admin/tests/${id}/export?format=${format}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  return res.blob();
 }
 export async function apiAdminBulkUploadQuestions(testId: string, questions: Record<string, unknown>[]) {
   return apiFetch<{ added: number; testId: string }>(
@@ -699,7 +708,7 @@ export async function apiAdminDeleteQuestion(id: string) {
 export interface AdminPYQPaper {
   id: string; examId: string; title: string; year: number; shift?: string;
   totalQs: number; durationMin: number; pdfUrl?: string; type: string;
-  hasSolutions: boolean; tierRequired: number; isActive: boolean;
+  hasSolutions: boolean; isActive: boolean;
 }
 export async function apiAdminGetPYQ(params?: { page?: number; limit?: number; examId?: string }) {
   return apiFetch<PaginatedResponse<AdminPYQPaper>>(`/admin/pyq${buildQS(params ?? {})}`);
@@ -734,7 +743,6 @@ export interface AdminStudyMaterial {
   language: string;
   pageCount: number;
   coverUrl?: string;
-  tierRequired: number;
   isActive: boolean;
   isFeatured: boolean;
   exams: AdminStudyMaterialExam[];
@@ -799,33 +807,11 @@ export async function apiAdminDeleteBlog(id: string) {
   return apiFetch(`/admin/blogs/${id}`, { method: "DELETE" });
 }
 
-// Mentorship Programs
-export interface AdminMentorship {
-  id: string; examId: string; title: string; description?: string;
-  price: number; discountedPrice?: number; buyUrl?: string;
-  mentorName: string; mentorTitle?: string; courseDurationWeeks: number;
-  tierRequired: number; isActive: boolean; isFeatured: boolean;
-}
-export async function apiAdminGetMentorship(params?: { page?: number; limit?: number }) {
-  return apiFetch<PaginatedResponse<AdminMentorship>>(`/admin/mentorship${buildQS(params ?? {})}`);
-}
-export async function apiAdminCreateMentorship(body: Partial<AdminMentorship>) {
-  return apiFetch("/admin/mentorship", { method: "POST", body: JSON.stringify(body) });
-}
-export async function apiAdminUpdateMentorship(id: string, body: Partial<AdminMentorship>) {
-  return apiFetch(`/admin/mentorship/${id}`, { method: "PATCH", body: JSON.stringify(body) });
-}
-export async function apiAdminDeleteMentorship(id: string) {
-  return apiFetch(`/admin/mentorship/${id}`, { method: "DELETE" });
-}
-
-
-
 // Live Events
 export interface AdminLiveEvent {
   id: string; title: string; description?: string; host: string; hostRole: string;
   scheduledAt: string; durationMin: number; isLive: boolean;
-  meetUrl?: string; tierRequired: number; isActive: boolean;
+  meetUrl?: string; isActive: boolean;
 }
 export async function apiAdminGetEvents(params?: { page?: number }) {
   return apiFetch<PaginatedResponse<AdminLiveEvent>>(`/admin/events${buildQS(params ?? {})}`);
@@ -880,11 +866,6 @@ export async function apiAdminUploadImage(file: File): Promise<{ url: string; ke
 export async function apiGetCourses(params?: { featured?: boolean }) {
   const qs = params?.featured ? "?featured=true" : "";
   return apiFetch<any[]>(`/courses${qs}`);
-}
-
-export async function apiGetMentorshipPrograms(params?: { featured?: boolean }) {
-  const qs = params?.featured ? "?featured=true" : "";
-  return apiFetch<any[]>(`/mentorship-programs${qs}`);
 }
 
 export async function apiSubmitContact(body: {

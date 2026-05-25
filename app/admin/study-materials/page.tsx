@@ -21,7 +21,6 @@ const emptyPayload = (): Partial<AdminStudyMaterialPayload> => ({
   language: "ENGLISH",
   pageCount: 0,
   coverUrl: "",
-  tierRequired: 0,
   isActive: true,
   isFeatured: false,
 });
@@ -76,7 +75,6 @@ export default function AdminStudyMaterialsPage() {
       language: m.language as AdminStudyMaterialPayload["language"],
       pageCount: m.pageCount,
       coverUrl: m.coverUrl ?? "",
-      tierRequired: m.tierRequired,
       isActive: m.isActive,
       isFeatured: m.isFeatured,
     });
@@ -88,7 +86,7 @@ export default function AdminStudyMaterialsPage() {
     ev.preventDefault();
     setSaving(true);
     try {
-      const payload = { ...form, tierRequired: Number(form.tierRequired), pageCount: Number(form.pageCount) };
+      const payload = { ...form, pageCount: Number(form.pageCount) };
       if (modal === "create") await apiAdminCreateStudyMaterial(payload);
       else await apiAdminUpdateStudyMaterial(editId!, payload);
       setModal(null);

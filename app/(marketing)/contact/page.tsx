@@ -8,7 +8,6 @@ import { apiSubmitContact } from "@/lib/api";
 const SUBJECTS = [
   "General Inquiry",
   "Test Series / Courses",
-  "Mentorship",
   "Technical Support",
   "Partnership / Collaboration",
   "Feedback",

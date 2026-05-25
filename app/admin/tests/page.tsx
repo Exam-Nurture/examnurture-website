@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
   apiAdminGetTests, apiAdminCreateTest, apiAdminUpdateTest, apiAdminDeleteTest,
-  apiAdminBulkUploadQuestions, apiAdminGetTestSeries, AdminTest, AdminTestSeries,
+  apiAdminBulkUploadQuestions, apiAdminGetTestSeries, apiAdminExportTest,
+  AdminTest, AdminTestSeries,
 } from "@/lib/api";
 import { AdminTable, Pagination, Modal, Field, SelectField, Toggle } from "@/components/admin/AdminTable";
 
@@ -246,7 +247,7 @@ function UploadQuestionsModal({ test, onClose, onSuccess }: {
 const emptyTest = (seriesId = ""): Partial<AdminTest> => ({
   seriesId, title: "", description: "", testType: "OBJECTIVE",
   subjects: "", durationSec: 3600, totalMarks: 100, negMarks: 0.25,
-  tierRequired: 0, isLocked: false, isActive: true,
+  isLocked: false, isActive: true,
 });
 
 export default function AdminTestsPage() {
@@ -285,7 +286,6 @@ export default function AdminTestsPage() {
         durationSec: Number(form.durationSec),
         totalMarks: Number(form.totalMarks),
         negMarks: Number(form.negMarks),
-        tierRequired: Number(form.tierRequired),
       };
       if (modal === "create") await apiAdminCreateTest(payload);
       else await apiAdminUpdateTest(form.id!, payload);
@@ -320,13 +320,47 @@ export default function AdminTestsPage() {
     {
       key: "upload", label: "Questions",
       render: (t: AdminTest) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); setUploadTarget(t); }}
-          className="px-2 py-0.5 rounded text-[10px] font-semibold text-white flex items-center gap-1"
-          style={{ background: "var(--blue)" }}
-        >
-          ↑ Upload MCQs
-        </button>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={(e) => { e.stopPropagation(); setUploadTarget(t); }}
+            className="px-2 py-0.5 rounded text-[10px] font-semibold text-white flex items-center gap-1"
+            style={{ background: "var(--blue)" }}
+          >
+            ↑ Upload
+          </button>
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                const blob = await apiAdminExportTest(t.id, "json");
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = `${t.title.replace(/\s+/g, "_")}_questions.json`; a.click();
+                URL.revokeObjectURL(url);
+              } catch { alert("Export failed"); }
+            }}
+            className="px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1"
+            style={{ background: "var(--green-soft)", color: "var(--green)" }}
+          >
+            ↓ JSON
+          </button>
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                const blob = await apiAdminExportTest(t.id, "zip");
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = `${t.title.replace(/\s+/g, "_")}_questions.zip`; a.click();
+                URL.revokeObjectURL(url);
+              } catch { alert("Export failed"); }
+            }}
+            className="px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1"
+            style={{ background: "var(--amber-soft)", color: "var(--amber)" }}
+          >
+            ↓ ZIP
+          </button>
+        </div>
       ),
     },
   ];

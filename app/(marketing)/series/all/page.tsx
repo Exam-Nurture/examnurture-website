@@ -59,7 +59,7 @@ type SortValue = (typeof SORTS)[number]["value"];
 
 interface RawTestSeries {
   id: string; title: string; description?: string; totalTests?: number;
-  tierRequired?: number; isPaid?: boolean; isFeatured?: boolean; isActive?: boolean;
+  isPaid?: boolean; isFeatured?: boolean; isActive?: boolean;
   bannerUrl?: string; price?: number; discountedPrice?: number; attemptCount?: number;
   isTrending?: boolean;
   exam?: {
