@@ -70,6 +70,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [adminName, setAdminName] = useState("Admin");
+  const [adminRole, setAdminRole] = useState("ADMIN");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           router.replace("/admin/login");
         } else {
           setAdminName(u.name);
+          setAdminRole(u.role);
         }
       })
       .catch(() => router.replace("/admin/login"));
@@ -110,7 +112,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 px-2">
-          {NAV.map((entry) => {
+          {NAV.filter(entry => {
+            if (!("group" in entry)) return entry.href !== "/admin/users" || adminRole === "SUPERADMIN";
+            return true;
+          }).map((entry) => {
             if ("group" in entry) {
               return (
                 <div key={entry.group} className="mt-3 mb-1">

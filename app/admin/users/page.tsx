@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiAdminGetUsers, apiAdminUpdateUser, apiAdminDeleteUser, AuthUser } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { apiAdminGetUsers, apiAdminUpdateUser, apiAdminDeleteUser, AuthUser, apiGetProfile } from "@/lib/api";
 import { AdminTable, Pagination, Modal, Field, SelectField } from "@/components/admin/AdminTable";
 
 export default function AdminUsersPage() {
+  const router = useRouter();
   const [data, setData] = useState<{ items: AuthUser[]; total: number; page: number; limit: number } | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -16,6 +18,11 @@ export default function AdminUsersPage() {
   async function load(p = page, s = search) {
     setLoading(true);
     try {
+      const u = await apiGetProfile();
+      if (u.role !== "SUPERADMIN") {
+        router.replace("/admin");
+        return;
+      }
       const res = await apiAdminGetUsers({ page: p, limit: 20, search: s || undefined });
       setData(res);
     } finally {
