@@ -610,8 +610,9 @@ export interface AdminExam {
   eligibility: string; pattern: string; subjects: string;
   hasTests: boolean; hasPYQ: boolean; hasGuide: boolean; isFeatured: boolean; isActive: boolean;
   upcomingDate?: string; applicationFee?: string; notificationUrl?: string;
+  examCategoryId?: number | null;
 }
-export async function apiAdminGetExams(params?: { page?: number; limit?: number; boardId?: string }) {
+export async function apiAdminGetExams(params?: { page?: number; limit?: number; boardId?: string; examCategoryId?: number }) {
   return apiFetch<PaginatedResponse<AdminExam>>(`/admin/exams${buildQS(params ?? {})}`);
 }
 export async function apiAdminCreateExam(body: Partial<AdminExam>) {

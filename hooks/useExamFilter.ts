@@ -5,12 +5,15 @@ import {
   apiGetStates,
   apiGetBoards,
   apiGetExams,
+  apiGetExamCategories,
   type ApiState,
   type ApiBoard,
   type ApiBoardExam,
+  type ApiExamCategory,
 } from "@/lib/api";
 
 export interface ExamFilterValue {
+  categoryIds: number[];
   stateIds: number[];
   boardIds: string[];
   examIds: string[];
@@ -35,6 +38,7 @@ export function serializeIds(ids: (string | number)[]): string {
 }
 
 export interface UseExamFilterReturn {
+  allCategories: ApiExamCategory[];
   allStates: ApiState[];
   allBoards: ApiBoard[];
   availableBoards: ApiBoard[];
@@ -42,10 +46,12 @@ export interface UseExamFilterReturn {
   isLoading: boolean;
   examsLoading: boolean;
 
+  selectedCategoryIds: number[];
   selectedStateIds: number[];
   selectedBoardIds: string[];
   selectedExamIds: string[];
 
+  toggleCategory: (id: number) => void;
   toggleState: (id: number) => void;
   toggleBoard: (id: string) => void;
   toggleExam: (id: string) => void;
@@ -55,10 +61,12 @@ export interface UseExamFilterReturn {
 }
 
 export function useExamFilter(initial?: Partial<ExamFilterValue>): UseExamFilterReturn {
+  const [allCategories, setAllCategories] = useState<ApiExamCategory[]>([]);
   const [allStates, setAllStates] = useState<ApiState[]>([]);
   const [allBoards, setAllBoards] = useState<ApiBoard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(initial?.categoryIds ?? []);
   const [selectedStateIds, setSelectedStateIds] = useState<number[]>(initial?.stateIds ?? []);
   const [selectedBoardIds, setSelectedBoardIds] = useState<string[]>(initial?.boardIds ?? []);
   const [selectedExamIds, setSelectedExamIds] = useState<string[]>(initial?.examIds ?? []);
@@ -67,12 +75,13 @@ export function useExamFilter(initial?: Partial<ExamFilterValue>): UseExamFilter
   const [boardExamsMap, setBoardExamsMap] = useState<Map<string, ApiBoardExam[]>>(new Map());
   const [examsLoading, setExamsLoading] = useState(false);
 
-  // Fetch all states + boards once on mount
+  // Fetch all states + boards + categories once on mount
   useEffect(() => {
-    Promise.all([apiGetStates(), apiGetBoards()])
-      .then(([states, boards]) => {
+    Promise.all([apiGetStates(), apiGetBoards(), apiGetExamCategories()])
+      .then(([states, boards, categories]) => {
         setAllStates(states ?? []);
         setAllBoards(boards ?? []);
+        setAllCategories(categories ?? []);
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
@@ -112,7 +121,7 @@ export function useExamFilter(initial?: Partial<ExamFilterValue>): UseExamFilter
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBoardIds]);
 
-  // Available exams cascade: union of exams from selected boards
+  // Available exams cascade: union of exams from selected boards, further filtered by selected categories
   const availableExams = useMemo(() => {
     if (selectedBoardIds.length === 0) return [];
     const seen = new Set<string>();
@@ -120,13 +129,22 @@ export function useExamFilter(initial?: Partial<ExamFilterValue>): UseExamFilter
     selectedBoardIds.forEach((boardId) => {
       (boardExamsMap.get(boardId) ?? []).forEach((exam) => {
         if (!seen.has(exam.id)) {
-          seen.add(exam.id);
-          result.push(exam);
+          if (selectedCategoryIds.length === 0 || (exam as any).examCategoryId == null || selectedCategoryIds.includes((exam as any).examCategoryId)) {
+            seen.add(exam.id);
+            result.push(exam);
+          }
         }
       });
     });
     return result.sort((a, b) => a.name.localeCompare(b.name));
-  }, [selectedBoardIds, boardExamsMap]);
+  }, [selectedBoardIds, boardExamsMap, selectedCategoryIds]);
+
+  /** Toggle a category */
+  const toggleCategory = useCallback((id: number) => {
+    setSelectedCategoryIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }, []);
 
   /** Toggle a state. Removing a state also removes its boards + their exams. */
   const toggleState = useCallback(
@@ -187,24 +205,30 @@ export function useExamFilter(initial?: Partial<ExamFilterValue>): UseExamFilter
   }, []);
 
   const resetExamFilter = useCallback(() => {
+    setSelectedCategoryIds([]);
     setSelectedStateIds([]);
     setSelectedBoardIds([]);
     setSelectedExamIds([]);
   }, []);
 
   const examFilterCount =
-    selectedStateIds.length + selectedBoardIds.length + selectedExamIds.length;
+    selectedCategoryIds.length + selectedStateIds.length + selectedBoardIds.length + selectedExamIds.length;
 
   return {
+    allCategories,
     allStates,
     allBoards,
     availableBoards,
     availableExams,
     isLoading,
     examsLoading,
+
+    selectedCategoryIds,
     selectedStateIds,
     selectedBoardIds,
     selectedExamIds,
+
+    toggleCategory,
     toggleState,
     toggleBoard,
     toggleExam,

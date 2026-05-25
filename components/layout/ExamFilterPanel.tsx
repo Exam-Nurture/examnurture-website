@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import type { ApiState, ApiBoard, ApiBoardExam } from "@/lib/api";
+import type { ApiState, ApiBoard, ApiBoardExam, ApiExamCategory } from "@/lib/api";
 
 /* ── Multi-select section ──────────────────────────────────── */
 
@@ -100,6 +100,10 @@ export function MultiSelectSection({
 /* ── ExamFilterPanel — drop-in for any sidebar / drawer ────── */
 
 export interface ExamFilterPanelProps {
+  allCategories: ApiExamCategory[];
+  selectedCategoryIds: number[];
+  onToggleCategory: (id: number) => void;
+
   allStates: ApiState[];
   selectedStateIds: number[];
   onToggleState: (id: number) => void;
@@ -117,6 +121,9 @@ export interface ExamFilterPanelProps {
 }
 
 export function ExamFilterPanel({
+  allCategories,
+  selectedCategoryIds,
+  onToggleCategory,
   allStates,
   selectedStateIds,
   onToggleState,
@@ -131,6 +138,16 @@ export function ExamFilterPanel({
 }: ExamFilterPanelProps) {
   return (
     <>
+      {/* ── Categories ── */}
+      <MultiSelectSection
+        title="Exam Category"
+        isLoading={isLoading}
+        options={allCategories.map((c) => ({ value: c.id, label: c.name }))}
+        selectedValues={selectedCategoryIds}
+        onToggle={(v) => onToggleCategory(Number(v))}
+        placeholder="No categories available"
+      />
+
       {/* ── States ── */}
       <MultiSelectSection
         title="State"

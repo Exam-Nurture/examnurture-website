@@ -317,6 +317,9 @@ function PyqAllPageInner() {
             onReset={resetFilters}
           >
             <ExamFilterPanel
+              allCategories={examFilter.allCategories}
+              selectedCategoryIds={examFilter.selectedCategoryIds}
+              onToggleCategory={examFilter.toggleCategory}
               allStates={examFilter.allStates}
               selectedStateIds={examFilter.selectedStateIds}
               onToggleState={examFilter.toggleState}
@@ -481,6 +484,9 @@ function PyqAllPageInner() {
               <div className="flex-1 overflow-y-auto px-5 py-4 pb-20 [scrollbar-width:none]">
                 <div className="flex flex-col gap-6">
                   <ExamFilterPanel
+              allCategories={examFilter.allCategories}
+              selectedCategoryIds={examFilter.selectedCategoryIds}
+              onToggleCategory={examFilter.toggleCategory}
               allStates={examFilter.allStates}
               selectedStateIds={examFilter.selectedStateIds}
               onToggleState={examFilter.toggleState}

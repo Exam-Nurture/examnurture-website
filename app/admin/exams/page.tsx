@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   apiAdminGetExams, apiAdminCreateExam, apiAdminUpdateExam, apiAdminDeleteExam,
-  apiAdminGetBoards, AdminExam, AdminBoard,
+  apiAdminGetBoards, apiAdminGetExamCategories, AdminExam, AdminBoard, ApiExamCategory
 } from "@/lib/api";
 import { AdminTable, Pagination, Modal, Field, SelectField, Toggle } from "@/components/admin/AdminTable";
 
@@ -11,13 +11,16 @@ const empty = (): Partial<AdminExam> => ({
   id: "", boardId: "", name: "", shortName: "", fullName: "",
   eligibility: "", pattern: "", subjects: '["GK","Reasoning","Math"]',
   hasTests: false, hasPYQ: false, hasGuide: false, isFeatured: false, isActive: true,
+  examCategoryId: null,
 });
 
 export default function AdminExamsPage() {
   const [data, setData] = useState<{ items: AdminExam[]; total: number } | null>(null);
   const [boards, setBoards] = useState<AdminBoard[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [page, setPage] = useState(1);
   const [filterBoard, setFilterBoard] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [form, setForm] = useState<Partial<AdminExam>>(empty());
@@ -25,16 +28,24 @@ export default function AdminExamsPage() {
 
   async function load(p = page) {
     setLoading(true);
-    try { setData(await apiAdminGetExams({ page: p, limit: 20, boardId: filterBoard || undefined })); }
+    try { 
+      setData(await apiAdminGetExams({ 
+        page: p, 
+        limit: 20, 
+        boardId: filterBoard || undefined,
+        examCategoryId: filterCategory ? Number(filterCategory) : undefined
+      })); 
+    }
     finally { setLoading(false); }
   }
 
   useEffect(() => {
     apiAdminGetBoards({ page: 1, limit: 100 }).then((r) => setBoards(r.items));
+    apiAdminGetExamCategories().then(setCategories);
     load();
   }, []);
 
-  useEffect(() => { load(); }, [page, filterBoard]);
+  useEffect(() => { load(); }, [page, filterBoard, filterCategory]);
 
   function set(key: keyof AdminExam, val: unknown) { setForm((f) => ({ ...f, [key]: val })); }
 
@@ -47,7 +58,7 @@ export default function AdminExamsPage() {
     try {
       const payload = {
         ...form,
-
+        examCategoryId: form.examCategoryId ? Number(form.examCategoryId) : null,
         notificationUrl: form.notificationUrl || undefined,
         bannerUrl: (form as any).bannerUrl || undefined,
       };
@@ -98,6 +109,15 @@ export default function AdminExamsPage() {
     <div className="space-y-4">
       <div className="flex gap-2 items-center">
         <select
+          value={filterCategory}
+          onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
+          className="px-3 py-2 rounded-lg text-sm outline-none"
+          style={{ border: "1.5px solid var(--line)", background: "var(--card)", color: "var(--ink-2)" }}
+        >
+          <option value="">All Categories</option>
+          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select
           value={filterBoard}
           onChange={(e) => { setFilterBoard(e.target.value); setPage(1); }}
           className="px-3 py-2 rounded-lg text-sm outline-none"
@@ -127,6 +147,13 @@ export default function AdminExamsPage() {
               onChange={(v) => set("boardId", v)}
               options={boards.map((b) => ({ value: b.id, label: b.name }))}
               required
+            />
+            <SelectField
+              label="Exam Category"
+              name="examCategoryId"
+              value={form.examCategoryId ? String(form.examCategoryId) : ""}
+              onChange={(v) => set("examCategoryId", v ? Number(v) : null)}
+              options={[{ value: "", label: "None" }, ...categories.map((c) => ({ value: String(c.id), label: c.name }))]}
             />
             <Field label="Name" name="name" value={form.name ?? ""} onChange={(v) => set("name", v)} required />
             <div className="grid grid-cols-2 gap-3">

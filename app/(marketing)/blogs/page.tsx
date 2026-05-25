@@ -350,6 +350,9 @@ function BlogPageContent() {
             />
             {/* ── Cascading State → Board → Exam filter ── */}
             <ExamFilterPanel
+              allCategories={examFilter.allCategories}
+              selectedCategoryIds={examFilter.selectedCategoryIds}
+              onToggleCategory={examFilter.toggleCategory}
               allStates={examFilter.allStates}
               selectedStateIds={examFilter.selectedStateIds}
               onToggleState={examFilter.toggleState}
@@ -484,6 +487,9 @@ function BlogPageContent() {
                     ]}
                   />
                   <ExamFilterPanel
+                    allCategories={examFilter.allCategories}
+                    selectedCategoryIds={examFilter.selectedCategoryIds}
+                    onToggleCategory={examFilter.toggleCategory}
                     allStates={examFilter.allStates}
                     selectedStateIds={examFilter.selectedStateIds}
                     onToggleState={examFilter.toggleState}
