@@ -82,11 +82,6 @@ export default function AdminPYQPage() {
     { key: "totalQs", label: "Questions" },
     { key: "type",    label: "Type" },
     {
-      key: "tierRequired",
-      label: "Tier",
-      render: (p: AdminPYQPaper) => `Tier ${p.tierRequired}`,
-    },
-    {
       key: "isActive",
       label: "Active",
       render: (p: AdminPYQPaper) => (
@@ -142,11 +137,6 @@ export default function AdminPYQPage() {
                 label="Type" name="type" value={form.type ?? "OBJECTIVE"}
                 onChange={(v) => set("type", v)}
                 options={["OBJECTIVE", "SUBJECTIVE", "MIXED"].map((t) => ({ value: t, label: t }))}
-              />
-              <SelectField
-                label="Tier Required" name="tierRequired" value={String(form.tierRequired ?? 0)}
-                onChange={(v) => set("tierRequired", parseInt(v))}
-                options={[0, 1, 2, 3].map((n) => ({ value: n, label: n === 0 ? "Free" : `Tier ${n}` }))}
               />
               <div className="col-span-2">
                 <Field label="PDF URL (Optional)" name="pdfUrl" value={form.pdfUrl ?? ""} onChange={(v) => set("pdfUrl", v)} placeholder="https://..." />

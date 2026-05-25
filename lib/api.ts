@@ -56,7 +56,7 @@ function cookieDomainAttr(): string {
 export function setToken(token: string) {
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
   const domain = cookieDomainAttr();
-  document.cookie = `${TOKEN_COOKIE}=${encodeURIComponent(token)}; path=/; max-age=${15 * 60}; SameSite=Lax${domain}${secure}`;
+  document.cookie = `${TOKEN_COOKIE}=${encodeURIComponent(token)}; path=/; max-age=${2 * 24 * 60 * 60}; SameSite=Lax${domain}${secure}`;
 }
 
 export function clearToken() {
@@ -197,7 +197,7 @@ export interface AuthUser {
   phone?: string;
   avatarUrl?: string;
   isVerified: boolean;
-  role: "STUDENT" | "ADMIN";
+  role: "STUDENT" | "ADMIN" | "SUPERADMIN";
   createdAt?: string;
 }
 

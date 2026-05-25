@@ -128,7 +128,6 @@ export default function AdminStudyMaterialsPage() {
         : <span style={{ color: "var(--ink-3)" }}>—</span>,
     },
     { key: "language", label: "Lang" },
-    { key: "tierRequired", label: "Tier", render: (m: AdminStudyMaterial) => `Tier ${m.tierRequired}` },
     {
       key: "isActive", label: "Active",
       render: (m: AdminStudyMaterial) => (
@@ -207,9 +206,6 @@ export default function AdminStudyMaterialsPage() {
               <SelectField label="Language" name="language" value={form.language ?? "ENGLISH"}
                 onChange={(v) => set("language", v as AdminStudyMaterialPayload["language"])}
                 options={["ENGLISH", "HINDI", "BILINGUAL"].map((l) => ({ value: l, label: l }))} />
-              <SelectField label="Tier Required" name="tierRequired" value={String(form.tierRequired ?? 0)}
-                onChange={(v) => set("tierRequired", parseInt(v) as unknown as AdminStudyMaterialPayload["tierRequired"])}
-                options={[0, 1, 2, 3].map((n) => ({ value: n, label: n === 0 ? "Free" : `Tier ${n}` }))} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">

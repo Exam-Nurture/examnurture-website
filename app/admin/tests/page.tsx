@@ -411,10 +411,6 @@ export default function AdminTestsPage() {
               <Field label="Negative Marks (per wrong)" name="negMarks" type="number"
                 value={form.negMarks ?? 0.25}
                 onChange={(v) => set("negMarks", parseFloat(v))} />
-              <SelectField label="Tier Required" name="tierRequired" value={String(form.tierRequired ?? 0)}
-                onChange={(v) => set("tierRequired", parseInt(v))}
-                options={[0, 1, 2, 3].map((n) => ({ value: n, label: n === 0 ? "Free" : `Tier ${n}` }))}
-              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Toggle label="Locked (Premium)" checked={form.isLocked ?? false} onChange={(v) => set("isLocked", v)} />

@@ -12,7 +12,11 @@ type Phase = "loading" | "active" | "result" | "error";
 
 function mapQ(raw: any): Question {
   let opts: string[] = [];
-  try { opts = typeof raw.options === "string" ? JSON.parse(raw.options) : (raw.options || []); }
+  try {
+    const rawOpts = typeof raw.options === "string" ? JSON.parse(raw.options) : (raw.options || []);
+    // Backend may return [{text: string}] objects or plain strings
+    opts = rawOpts.map((o: any) => (typeof o === "string" ? o : (o?.text ?? "")));
+  }
   catch { opts = []; }
   return {
     id: raw.id,
@@ -122,6 +126,8 @@ export default function PYQExamPage() {
       setPhase("result");
     } catch (e: any) {
       console.error("Submit error", e);
+      setError(e?.message || "Failed to submit your paper. Please try again.");
+      setPhase("error");
     }
   };
 

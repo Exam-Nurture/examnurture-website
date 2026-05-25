@@ -66,8 +66,8 @@ export default function AdminUsersPage() {
       key: "role", label: "Role",
       render: (u: AuthUser) => (
         <span className="text-xs font-semibold px-1.5 py-0.5 rounded" style={{
-          background: u.role === "ADMIN" ? "var(--violet-soft)" : "var(--blue-soft)",
-          color: u.role === "ADMIN" ? "var(--violet)" : "var(--blue)",
+          background: (u.role === "ADMIN" || u.role === "SUPERADMIN") ? "var(--violet-soft)" : "var(--blue-soft)",
+          color: (u.role === "ADMIN" || u.role === "SUPERADMIN") ? "var(--violet)" : "var(--blue)",
         }}>{u.role}</span>
       ),
     },
@@ -127,7 +127,7 @@ export default function AdminUsersPage() {
               name="role"
               value={editForm.role}
               onChange={(v) => setEditForm((f) => ({ ...f, role: v }))}
-              options={[{ value: "STUDENT", label: "Student" }, { value: "ADMIN", label: "Admin" }]}
+              options={[{ value: "STUDENT", label: "Student" }, { value: "ADMIN", label: "Admin" }, { value: "SUPERADMIN", label: "Super Admin" }]}
             />
             <SelectField
               label="Verified"

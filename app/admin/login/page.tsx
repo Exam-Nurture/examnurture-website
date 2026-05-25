@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { apiAdminLogin, ApiError } from "@/lib/api";
+import { apiAdminLogin, apiGoogleAuth, ApiError } from "@/lib/api";
+
+declare const google: any;
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -10,6 +12,63 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const googleBtnRef = useRef<HTMLDivElement>(null);
+
+  // Render Google Sign-In button
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId || typeof google === "undefined" || !googleBtnRef.current) return;
+
+    const tryInit = () => {
+      if (typeof google === "undefined" || !googleBtnRef.current) {
+        setTimeout(tryInit, 500);
+        return;
+      }
+      try {
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCallback,
+          auto_select: false,
+        });
+        google.accounts.id.renderButton(googleBtnRef.current, {
+          theme: "outline",
+          size: "large",
+          width: googleBtnRef.current.offsetWidth || 340,
+          text: "signin_with",
+          shape: "rectangular",
+        });
+      } catch (e) {
+        console.warn("Google Sign-In init error:", e);
+      }
+    };
+
+    tryInit();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleGoogleCallback(response: { credential: string }) {
+    setError("");
+    setLoading(true);
+    try {
+      const data = await apiGoogleAuth(response.credential);
+      if (data.user.role !== "ADMIN" && data.user.role !== "SUPERADMIN") {
+        setError("Access denied. Admin or superadmin account required.");
+        return;
+      }
+      router.push("/admin");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 403) {
+          setError("Access denied. Admin or superadmin account required.");
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError("Google sign-in failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -17,7 +76,7 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       const data = await apiAdminLogin(email, password);
-      if (data.user.role !== "ADMIN") {
+      if (data.user.role !== "ADMIN" && data.user.role !== "SUPERADMIN") {
         setError("You do not have admin access.");
         return;
       }
@@ -43,6 +102,23 @@ export default function AdminLoginPage() {
               <h1 className="text-lg font-bold" style={{ color: "var(--ink-1)" }}>ExamNurture Admin</h1>
               <p className="text-sm" style={{ color: "var(--ink-3)" }}>Sign in to manage content</p>
             </div>
+          </div>
+
+          {/* Google Sign-In */}
+          {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? (
+            <div className="mb-6">
+              <div ref={googleBtnRef} className="w-full flex justify-center" />
+              {loading && (
+                <p className="text-xs text-center mt-2" style={{ color: "var(--ink-3)" }}>Verifying…</p>
+              )}
+            </div>
+          ) : null}
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-px" style={{ background: "var(--line)" }} />
+            <span className="text-xs" style={{ color: "var(--ink-4)" }}>or sign in with email</span>
+            <div className="flex-1 h-px" style={{ background: "var(--line)" }} />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">

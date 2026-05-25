@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { useRouter } from "next/navigation";
 import {
   apiGetProfile, apiLogin, apiRegister, apiLogout, apiGoogleAuth, apiFirebaseLogin,
-  clearToken, tryRefreshSession, type UserProfile,
+  clearToken, tryRefreshSession, type UserProfile, type AuthUser,
 } from "./api";
 
 declare const google: any;
@@ -13,7 +13,7 @@ interface AuthState {
   user: UserProfile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (credential: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<AuthUser>;
   loginWithPhone: (idToken: string, phone: string) => Promise<void>;
   register: (data: { name: string; email: string; phone?: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
@@ -63,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithGoogle = useCallback(async (credential: string) => {
     const data = await apiGoogleAuth(credential);
     setUser(data.user as UserProfile);
+    return data.user;
   }, []);
 
   const loginWithPhone = useCallback(async (idToken: string, phone: string) => {
@@ -101,12 +102,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         google.accounts.id.initialize({
           client_id: clientId,
           callback: async (response: any) => {
+            // Only handle One Tap on non-admin pages; admin login page manages its own Google button
+            if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) return;
             setLoading(true);
             try {
-              await loginWithGoogle(response.credential);
-              router.push('/dashboard');
+              const user = await loginWithGoogle(response.credential);
+              if (user.role === "ADMIN" || user.role === "SUPERADMIN") {
+                router.push("/admin");
+              } else {
+                router.push("/dashboard");
+              }
             } catch (err) {
-              console.error("Google Auth Error:", err);
+              console.warn("Google One Tap sign-in failed:", err);
             } finally {
               setLoading(false);
             }

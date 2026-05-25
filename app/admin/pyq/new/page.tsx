@@ -240,11 +240,6 @@ export default function NewPYQPage() {
                   onChange={(v) => setField("type", v)}
                   options={["OBJECTIVE", "SUBJECTIVE", "MIXED"].map((t) => ({ value: t, label: t }))}
                 />
-                <SelectField
-                  label="Tier Required" name="tierRequired" value={String(form.tierRequired ?? 0)}
-                  onChange={(v) => setField("tierRequired", parseInt(v))}
-                  options={[0, 1, 2, 3].map((n) => ({ value: n, label: n === 0 ? "Free" : `Tier ${n}` }))}
-                />
               </div>
 
               <Field label="PDF URL (Optional)" name="pdfUrl" value={form.pdfUrl ?? ""} onChange={(v) => setField("pdfUrl", v)} placeholder="https://..." />

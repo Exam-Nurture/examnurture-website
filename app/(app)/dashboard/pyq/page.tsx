@@ -492,14 +492,6 @@ function PaperCard({ paper: p }: { paper: any }) {
         >
           {p.exam?.name ?? "PYQ"}
         </span>
-        {p.tierRequired > 0 && (
-          <span
-            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-            style={{ background: "var(--amber-soft)", color: "var(--amber)" }}
-          >
-            PRO
-          </span>
-        )}
       </div>
 
       <div

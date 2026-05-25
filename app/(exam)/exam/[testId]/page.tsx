@@ -12,7 +12,11 @@ type Phase = "loading" | "auth" | "active" | "result" | "error";
 
 function mapQ(raw: any): Question {
   let opts: string[] = [];
-  try { opts = typeof raw.options === "string" ? JSON.parse(raw.options) : (raw.options || []); }
+  try {
+    const rawOpts = typeof raw.options === "string" ? JSON.parse(raw.options) : (raw.options || []);
+    // Backend may return [{text: string}] objects or plain strings
+    opts = rawOpts.map((o: any) => (typeof o === "string" ? o : (o?.text ?? "")));
+  }
   catch { opts = []; }
   return {
     id: raw.id,
@@ -57,7 +61,9 @@ export default function ExamPage() {
       try {
         const test: any = await apiGetTest(testId);
         setTestData(test);
-        const qs = (test.questions || []).map(mapQ);
+        // Backend returns questions nested in sections[0].questions
+        const rawQs = test.questions || test.sections?.[0]?.questions || [];
+        const qs = rawQs.map(mapQ);
         setQuestions(qs);
 
         if (qsAttemptId) {
@@ -66,11 +72,11 @@ export default function ExamPage() {
           const res: any = await apiGetAttemptResult(qsAttemptId);
           setResult({
             totalQuestions: qs.length,
-            correct:        res.correct    ?? 0,
-            wrong:          res.wrong      ?? 0,
-            unattempted:    qs.length - (res.analysis ? Object.keys(res.analysis).length : 0),
-            totalMarks:     res.totalMarks ?? test.totalMarks ?? qs.length,
-            scored:         res.score      ?? 0,
+            correct:        res.correct     ?? 0,
+            wrong:          res.wrong       ?? 0,
+            unattempted:    res.unattempted ?? (res.analysis ? res.analysis.filter((a: any) => a.selectedIndex === null).length : 0),
+            totalMarks:     res.totalMarks  ?? test.totalMarks ?? qs.length,
+            scored:         res.score       ?? 0,
             timeTakenSec:   res.timeTakenSec ?? 0,
             rank:           res.rank,
             subjectStats:   res.subjectStats,
@@ -121,6 +127,8 @@ export default function ExamPage() {
       setPhase("result");
     } catch (e: any) {
       console.error("Submit error", e);
+      setError(e?.message || "Failed to submit your test. Please try again.");
+      setPhase("error");
     }
   };
 
