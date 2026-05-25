@@ -348,7 +348,7 @@ export async function apiGetExamSubjects(examId?: string): Promise<ApiExamSubjec
 }
 
 export interface ApiBoardExam {
-  id: string; name: string; shortName: string; hasTests: boolean; hasPYQ: boolean; tier: number;
+  id: string; name: string; shortName: string; hasTests: boolean; hasPYQ: boolean;
 }
 
 export interface ApiBoard {
@@ -366,15 +366,14 @@ export async function apiGetStates(): Promise<ApiState[]> {
   return apiFetch<ApiState[]>("/states");
 }
 
-export async function apiGetBoards(params?: { tier?: number }): Promise<ApiBoard[]> {
-  const qs = params?.tier ? `?tier=${params.tier}` : "";
+export async function apiGetBoards(params?: {  }): Promise<ApiBoard[]> {
+  const qs = "";
   return apiFetch<ApiBoard[]>(`/boards${qs}`);
 }
 
-export async function apiGetExams(params?: { board?: string; tier?: number }) {
+export async function apiGetExams(params?: { board?: string }) {
   const qs = new URLSearchParams();
   if (params?.board) qs.set("board", params.board);
-  if (params?.tier) qs.set("tier", String(params.tier));
   const s = qs.toString();
   return apiFetch<any[]>(`/exams${s ? `?${s}` : ""}`);
 }
@@ -589,7 +588,7 @@ export async function apiAdminDeleteExamCategory(id: number) {
 // Boards
 export interface AdminBoard {
   id: string; name: string; shortName: string; description: string;
-  tint: string; colorSoft: string; minTier: number; stateId?: number;
+  tint: string; colorSoft: string; stateId?: number;
   logoUrl?: string; website?: string; isActive: boolean;
 }
 export async function apiAdminGetBoards(params?: { page?: number; limit?: number }) {
@@ -608,7 +607,7 @@ export async function apiAdminDeleteBoard(id: string) {
 // Exams
 export interface AdminExam {
   id: string; boardId: string; name: string; shortName: string; fullName?: string;
-  tier: number; eligibility: string; pattern: string; subjects: string;
+  eligibility: string; pattern: string; subjects: string;
   hasTests: boolean; hasPYQ: boolean; hasGuide: boolean; isFeatured: boolean; isActive: boolean;
   upcomingDate?: string; applicationFee?: string; notificationUrl?: string;
 }
@@ -843,6 +842,40 @@ export async function apiAdminUpdateTeamMember(id: string, body: Partial<AdminTe
 }
 export async function apiAdminDeleteTeamMember(id: string) {
   return apiFetch(`/admin/team/${id}`, { method: "DELETE" });
+}
+
+// FAQs & Categories
+export interface AdminFAQCategory {
+  id: string; name: string; slug: string; sortOrder: number; isActive: boolean;
+}
+export async function apiAdminGetFAQCategories(params?: { page?: number }) {
+  return apiFetch<PaginatedResponse<AdminFAQCategory>>(`/admin/faq-categories${buildQS(params ?? {})}`);
+}
+export async function apiAdminCreateFAQCategory(body: Partial<AdminFAQCategory>) {
+  return apiFetch("/admin/faq-categories", { method: "POST", body: JSON.stringify(body) });
+}
+export async function apiAdminUpdateFAQCategory(id: string, body: Partial<AdminFAQCategory>) {
+  return apiFetch(`/admin/faq-categories/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+}
+export async function apiAdminDeleteFAQCategory(id: string) {
+  return apiFetch(`/admin/faq-categories/${id}`, { method: "DELETE" });
+}
+
+export interface AdminFAQ {
+  id: string; categoryId: string; question: string; answer: string;
+  sortOrder: number; isActive: boolean; category?: AdminFAQCategory;
+}
+export async function apiAdminGetFAQs(params?: { page?: number; limit?: number }) {
+  return apiFetch<PaginatedResponse<AdminFAQ>>(`/admin/faqs${buildQS(params ?? {})}`);
+}
+export async function apiAdminCreateFAQ(body: Partial<AdminFAQ>) {
+  return apiFetch("/admin/faqs", { method: "POST", body: JSON.stringify(body) });
+}
+export async function apiAdminUpdateFAQ(id: string, body: Partial<AdminFAQ>) {
+  return apiFetch(`/admin/faqs/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+}
+export async function apiAdminDeleteFAQ(id: string) {
+  return apiFetch(`/admin/faqs/${id}`, { method: "DELETE" });
 }
 
 export async function apiAdminUploadImage(file: File): Promise<{ url: string; key: string }> {

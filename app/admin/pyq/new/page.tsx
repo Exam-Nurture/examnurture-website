@@ -10,19 +10,27 @@ import {
 } from "@/lib/api";
 import { Field, SelectField, Toggle } from "@/components/admin/AdminTable";
 
-type Question = {
-  question?: string;
-  text?: string;
-  option_a?: string;
-  option_b?: string;
-  option_c?: string;
-  option_d?: string;
-  answer?: string | number;
-  explanation?: string;
-  subject?: string;
-  options?: string[];
-  [key: string]: unknown;
+// ─── MCQ Row type ─────────────────────────────────────────────────────────────
+type MCQRow = {
+  question: string;
+  option_a: string; option_b: string; option_c: string; option_d: string;
+  answer?: string; difficulty?: string;
+  subject_superset?: string; subject?: string; chapter?: string; topic?: string;
+  question_hindi?: string;
+  option_a_hindi?: string; option_b_hindi?: string; option_c_hindi?: string; option_d_hindi?: string;
+  explanation?: string; explanation_hindi?: string;
+  year?: number;
 };
+
+const REQUIRED = ["question", "option_a", "option_b", "option_c", "option_d"] as const;
+
+function validateRows(rows: MCQRow[]): string | null {
+  if (!rows.length) return "No questions found.";
+  for (const col of REQUIRED) {
+    if (!rows[0][col]) return `Missing required column: "${col}"`;
+  }
+  return null;
+}
 
 const empty = (): Partial<AdminPYQPaper> => ({
   examId: "", title: "", year: new Date().getFullYear(), shift: "",
@@ -38,8 +46,12 @@ const JSON_SAMPLE = `[
     "option_c": "Kolkata",
     "option_d": "Chennai",
     "answer": "b",
-    "explanation": "New Delhi became India's capital in 1911.",
-    "subject": "Geography"
+    "difficulty": "easy",
+    "subject_superset": "General Knowledge",
+    "subject": "Geography",
+    "chapter": "Indian States",
+    "topic": "Capitals",
+    "explanation": "New Delhi became India's capital in 1911."
   }
 ]`;
 
@@ -49,16 +61,26 @@ const EXCEL_COLS = [
   { col: "option_b",   desc: "Option B text",                   req: true  },
   { col: "option_c",   desc: "Option C text",                   req: true  },
   { col: "option_d",   desc: "Option D text",                   req: true  },
-  { col: "answer",     desc: "Correct option letter: a/b/c/d",  req: true  },
-  { col: "explanation",desc: "Explanation for the answer",       req: false },
+  { col: "answer",     desc: "Correct option letter: a/b/c/d",  req: false },
+  { col: "difficulty", desc: "easy / medium / hard",             req: false },
+  { col: "subject_superset", desc: "High-level subject grouping", req: false },
   { col: "subject",    desc: "Subject or topic category",        req: false },
+  { col: "chapter",    desc: "Specific chapter name",            req: false },
+  { col: "topic",      desc: "Specific topic name",              req: false },
+  { col: "question_hindi", desc: "Hindi translation of question", req: false },
+  { col: "option_a_hindi", desc: "Hindi translation of Option A", req: false },
+  { col: "option_b_hindi", desc: "Hindi translation of Option B", req: false },
+  { col: "option_c_hindi", desc: "Hindi translation of Option C", req: false },
+  { col: "option_d_hindi", desc: "Hindi translation of Option D", req: false },
+  { col: "explanation",desc: "Explanation for the answer",       req: false },
+  { col: "explanation_hindi",desc: "Hindi Explanation",          req: false },
 ];
 
 const TIPS = [
   'The "answer" field must be exactly: a, b, c, or d (lowercase)',
   "Total Questions count is auto-filled from the uploaded file",
-  "Explanation and subject are optional but improve student experience",
-  "Use UTF-8 encoding for Hindi or regional language text",
+  "Explanation, Subject, Chapter, and Topic fields are optional but improve analytics",
+  "Add _hindi columns for dual-language papers",
 ];
 
 const PER_PAGE = 10;
@@ -67,7 +89,7 @@ export default function NewPYQPage() {
   const router = useRouter();
   const [exams, setExams]       = useState<AdminExam[]>([]);
   const [form, setForm]         = useState<Partial<AdminPYQPaper>>(empty());
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<MCQRow[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const [saving, setSaving]     = useState(false);
   const [formatTab, setFormatTab] = useState<"json" | "excel">("json");
@@ -88,28 +110,31 @@ export default function NewPYQPage() {
     setFileError(null);
     setPreviewPage(0);
     const name = file.name.toLowerCase();
+    
     try {
       if (name.endsWith(".json")) {
         const text = await file.text();
         const json = JSON.parse(text) as unknown;
-        if (!Array.isArray(json)) {
-          setFileError("JSON must be an array of question objects.");
-          return;
-        }
-        setQuestions(json as Question[]);
-        setField("totalQs", json.length);
-      } else if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          const wb = XLSX.read(evt.target?.result, { type: "binary" });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const rows = XLSX.utils.sheet_to_json<Question>(ws);
-          setQuestions(rows);
-          setField("totalQs", rows.length);
-        };
-        reader.readAsBinaryString(file);
+        const arr = Array.isArray(json) ? json : (json as any).questions || (json as any).data || [json];
+        
+        const err = validateRows(arr);
+        if (err) { setFileError(err); return; }
+        
+        setQuestions(arr as MCQRow[]);
+        setField("totalQs", arr.length);
+      } else if (name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".csv")) {
+        const buffer = await file.arrayBuffer();
+        const wb = XLSX.read(buffer, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<MCQRow>(ws, { defval: "" });
+        
+        const err = validateRows(rows);
+        if (err) { setFileError(err); return; }
+        
+        setQuestions(rows);
+        setField("totalQs", rows.length);
       } else {
-        setFileError("Unsupported format. Please use .json or .xlsx");
+        setFileError("Unsupported format. Please use .json, .xlsx, or .csv");
       }
     } catch {
       setFileError("Failed to parse file — check the format and try again.");
@@ -205,11 +230,11 @@ export default function NewPYQPage() {
                       </svg>
                     </div>
                     <p className="text-sm font-semibold" style={{ color: "var(--ink-2)" }}>Click to upload questions file</p>
-                    <p className="text-xs" style={{ color: "var(--ink-4)" }}>.json &nbsp;·&nbsp; .xlsx &nbsp;·&nbsp; .xls</p>
+                    <p className="text-xs" style={{ color: "var(--ink-4)" }}>.json &nbsp;·&nbsp; .xlsx &nbsp;·&nbsp; .csv</p>
                   </>
                 )}
               </button>
-              <input ref={fileInputRef} type="file" accept=".json,.xlsx,.xls" onChange={handleFile} className="hidden" />
+              <input ref={fileInputRef} type="file" accept=".json,.xlsx,.xls,.csv" onChange={handleFile} className="hidden" />
               {fileError && <p className="text-xs font-medium" style={{ color: "var(--red)" }}>{fileError}</p>}
             </div>
 
@@ -329,37 +354,11 @@ export default function NewPYQPage() {
                           <code>{JSON_SAMPLE}</code>
                         </pre>
                       </div>
-
-                      {/* Field reference */}
-                      <div>
-                        <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "var(--ink-3)" }}>Field Reference</p>
-                        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--line)" }}>
-                          {EXCEL_COLS.map((c, i) => (
-                            <div
-                              key={c.col}
-                              className="flex items-center gap-3 px-4 py-2.5"
-                              style={{ borderTop: i > 0 ? "1px solid var(--line-soft)" : "none", background: "var(--card)" }}
-                            >
-                              <code className="text-[11px] font-mono font-bold w-28 flex-shrink-0" style={{ color: "var(--blue)" }}>{c.col}</code>
-                              <span className="flex-1 text-xs" style={{ color: "var(--ink-2)" }}>{c.desc}</span>
-                              <span
-                                className="text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0"
-                                style={{
-                                  background: c.req ? "var(--red-soft)" : "var(--bg)",
-                                  color:      c.req ? "var(--red)"      : "var(--ink-4)",
-                                }}
-                              >
-                                {c.req ? "Required" : "Optional"}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
                     </>
                   ) : (
                     <>
                       <p className="text-xs leading-relaxed" style={{ color: "var(--ink-2)" }}>
-                        Upload a <strong style={{ color: "var(--ink-1)" }}>.xlsx</strong> file where the <strong style={{ color: "var(--ink-1)" }}>first row is the header</strong> with
+                        Upload a <strong style={{ color: "var(--ink-1)" }}>.xlsx</strong> or <strong style={{ color: "var(--ink-1)" }}>.csv</strong> file where the <strong style={{ color: "var(--ink-1)" }}>first row is the header</strong> with
                         these exact column names. Each subsequent row is one question.
                       </p>
 
@@ -395,34 +394,6 @@ export default function NewPYQPage() {
                             ))}
                           </tbody>
                         </table>
-                      </div>
-
-                      {/* Sample row preview */}
-                      <div>
-                        <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "var(--ink-3)" }}>Sample Row</p>
-                        <div className="rounded-xl p-3 overflow-x-auto" style={{ background: "#0F172A" }}>
-                          <table className="text-[10px] font-mono whitespace-nowrap">
-                            <thead>
-                              <tr style={{ color: "rgba(255,255,255,0.4)" }}>
-                                {EXCEL_COLS.map((c) => (
-                                  <th key={c.col} className="px-2 py-1 text-left font-semibold">{c.col}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr style={{ color: "#94d3ac" }}>
-                                <td className="px-2 py-1">What is the capital…</td>
-                                <td className="px-2 py-1">Mumbai</td>
-                                <td className="px-2 py-1">New Delhi</td>
-                                <td className="px-2 py-1">Kolkata</td>
-                                <td className="px-2 py-1">Chennai</td>
-                                <td className="px-2 py-1">b</td>
-                                <td className="px-2 py-1" style={{ color: "rgba(255,255,255,0.3)" }}>New Delhi became…</td>
-                                <td className="px-2 py-1" style={{ color: "rgba(255,255,255,0.3)" }}>Geography</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
                       </div>
                     </>
                   )}
@@ -487,15 +458,23 @@ export default function NewPYQPage() {
                           >
                             {idx + 1}
                           </span>
-                          <p className="text-sm leading-relaxed font-medium" style={{ color: "var(--ink-1)" }}>
-                            {String(q.question || q.text || "—")}
-                          </p>
+                          <div className="space-y-1 w-full">
+                            <p className="text-sm leading-relaxed font-medium" style={{ color: "var(--ink-1)" }}>
+                              {String(q.question || "—")}
+                            </p>
+                            {q.question_hindi && (
+                              <p className="text-sm leading-relaxed font-medium" style={{ color: "var(--ink-2)" }}>
+                                {String(q.question_hindi)}
+                              </p>
+                            )}
+                          </div>
                         </div>
 
                         {/* Options */}
                         <div className="grid grid-cols-2 gap-1.5 pl-9">
                           {(["a", "b", "c", "d"] as const).map((opt) => {
-                            const text    = String(q[`option_${opt}`] ?? (Array.isArray(q.options) ? q.options[["a","b","c","d"].indexOf(opt)] : "") ?? "");
+                            const text    = String(q[`option_${opt}`] ?? "");
+                            const textHin = q[`option_${opt}_hindi`];
                             const correct = ans === opt;
                             return (
                               <div
@@ -509,34 +488,61 @@ export default function NewPYQPage() {
                                 }}
                               >
                                 <span className="font-bold uppercase flex-shrink-0" style={{ opacity: 0.6 }}>{opt}.</span>
-                                <span>{text}</span>
+                                <div>
+                                  <div>{text}</div>
+                                  {textHin && <div style={{ color: "var(--ink-3)", fontWeight: 400 }}>{String(textHin)}</div>}
+                                </div>
                               </div>
                             );
                           })}
                         </div>
 
                         {/* Explanation */}
-                        {q.explanation && (
+                        {(q.explanation || q.explanation_hindi) && (
                           <div
-                            className="ml-9 px-3 py-2 rounded-lg text-xs leading-relaxed"
+                            className="ml-9 px-3 py-2 rounded-lg text-xs leading-relaxed space-y-1"
                             style={{ background: "var(--blue-soft)", border: "1px solid var(--line-soft)", color: "var(--ink-2)" }}
                           >
-                            <span className="font-semibold mr-1" style={{ color: "var(--blue)" }}>Explanation:</span>
-                            {String(q.explanation)}
+                            <div>
+                              <span className="font-semibold mr-1" style={{ color: "var(--blue)" }}>Explanation:</span>
+                              {String(q.explanation || "")}
+                            </div>
+                            {q.explanation_hindi && (
+                              <div style={{ color: "var(--ink-3)" }}>
+                                {String(q.explanation_hindi)}
+                              </div>
+                            )}
                           </div>
                         )}
 
-                        {/* Subject tag */}
-                        {q.subject && (
-                          <div className="ml-9">
-                            <span
-                              className="text-[10px] font-semibold px-2 py-0.5 rounded"
-                              style={{ background: "var(--violet-soft)", color: "var(--violet)" }}
-                            >
+                        {/* Metadata Tags */}
+                        <div className="ml-9 flex flex-wrap gap-2 pt-1">
+                          {q.difficulty && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: "var(--amber-soft)", color: "var(--amber)" }}>
+                              {String(q.difficulty)}
+                            </span>
+                          )}
+                          {q.subject_superset && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: "var(--violet-soft)", color: "var(--violet)" }}>
+                              {String(q.subject_superset)}
+                            </span>
+                          )}
+                          {q.subject && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: "var(--blue-soft)", color: "var(--blue)" }}>
                               {String(q.subject)}
                             </span>
-                          </div>
-                        )}
+                          )}
+                          {q.chapter && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: "var(--green-soft)", color: "var(--green)" }}>
+                              Ch: {String(q.chapter)}
+                            </span>
+                          )}
+                          {q.topic && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: "var(--ink-soft)", color: "var(--ink-2)" }}>
+                              Top: {String(q.topic)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     );
                   })}

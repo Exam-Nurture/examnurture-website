@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { auth } from "@/lib/firebase";
+import BrandLogo from "@/components/ui/BrandLogo";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
 declare const google: {
@@ -239,11 +240,8 @@ export default function AuthModal({ onClose, next = "/dashboard" }: Props) {
 
           {/* Header */}
           <div className="px-8 pt-8 pb-6 relative z-10">
-            <div className="flex items-center gap-2.5 mb-5">
-              <img src="/examnurture-logo.jpg" alt="ExamNurture" className="h-9 w-9 rounded-xl object-cover shadow-sm" />
-              <span className="font-extrabold text-base tracking-tight" style={{ fontFamily: "var(--font-sora)", color: "var(--ink-1)" }}>
-                Exam<span style={{ color: "var(--cyan)" }}>Nurture</span>
-              </span>
+            <div className="mb-5">
+              <BrandLogo size="md" />
             </div>
 
             <h2 className="text-xl font-bold mb-1.5 tracking-tight" style={{ fontFamily: "var(--font-sora)", color: "var(--ink-1)" }}>

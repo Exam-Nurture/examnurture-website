@@ -10,7 +10,7 @@ import { AdminTable, Pagination, Modal, Field, SelectField, Toggle } from "@/com
 
 const empty = (): Partial<AdminBoard> => ({
   id: "", name: "", shortName: "", description: "", tint: "#2563EB", colorSoft: "#EFF6FF",
-  minTier: 0, logoUrl: "", website: "", isActive: true, stateId: undefined,
+  logoUrl: "", website: "", isActive: true, stateId: undefined,
 });
 
 export default function AdminBoardsPage() {
@@ -53,7 +53,6 @@ export default function AdminBoardsPage() {
         logoUrl: form.logoUrl || undefined,
         website: form.website || undefined,
         stateId: form.stateId || undefined,
-        minTier: form.minTier ?? 0,
       };
       if (modal === "create") await apiAdminCreateBoard(payload);
       else await apiAdminUpdateBoard(form.id!, payload);

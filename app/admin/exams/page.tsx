@@ -8,7 +8,7 @@ import {
 import { AdminTable, Pagination, Modal, Field, SelectField, Toggle } from "@/components/admin/AdminTable";
 
 const empty = (): Partial<AdminExam> => ({
-  id: "", boardId: "", name: "", shortName: "", fullName: "", tier: 0,
+  id: "", boardId: "", name: "", shortName: "", fullName: "",
   eligibility: "", pattern: "", subjects: '["GK","Reasoning","Math"]',
   hasTests: false, hasPYQ: false, hasGuide: false, isFeatured: false, isActive: true,
 });
@@ -47,7 +47,7 @@ export default function AdminExamsPage() {
     try {
       const payload = {
         ...form,
-        tier: Number(form.tier ?? 0),
+
         notificationUrl: form.notificationUrl || undefined,
         bannerUrl: (form as any).bannerUrl || undefined,
       };
@@ -77,7 +77,7 @@ export default function AdminExamsPage() {
       )
     },
     { key: "shortName", label: "Short" },
-    { key: "tier", label: "Tier", render: (e: AdminExam) => `Tier ${e.tier}` },
+
     {
       key: "hasTests", label: "Flags",
       render: (e: AdminExam) => (
@@ -131,13 +131,7 @@ export default function AdminExamsPage() {
             <Field label="Name" name="name" value={form.name ?? ""} onChange={(v) => set("name", v)} required />
             <div className="grid grid-cols-2 gap-3">
               <Field label="Short Name" name="shortName" value={form.shortName ?? ""} onChange={(v) => set("shortName", v)} required />
-              <SelectField
-                label="Min Tier"
-                name="tier"
-                value={String(form.tier ?? 0)}
-                onChange={(v) => set("tier", parseInt(v))}
-                options={[0, 1, 2, 3].map((n) => ({ value: n, label: n === 0 ? "Free" : `Tier ${n}` }))}
-              />
+
             </div>
             <Field label="Full Name" name="fullName" value={form.fullName ?? ""} onChange={(v) => set("fullName", v)} />
             <Field label="Eligibility" name="eligibility" value={form.eligibility ?? ""} onChange={(v) => set("eligibility", v)} />

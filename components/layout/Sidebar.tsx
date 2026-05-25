@@ -8,6 +8,7 @@ import {
   Menu, User, GraduationCap, BookMarked
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import BrandLogo from "@/components/ui/BrandLogo";
 
 /* ── Main nav items ── */
 const NAV_ITEMS = [
@@ -102,15 +103,7 @@ export default function Sidebar() {
             </button>
           ) : (
             <>
-              <Link href="/" className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity overflow-hidden">
-                <img src="/examnurture-logo.jpg" alt="ExamNurture"
-                  className="w-8 h-8 rounded-lg object-cover shrink-0" />
-                <span className="font-bold text-[15px] tracking-tight whitespace-nowrap"
-                  style={{ fontFamily: "var(--font-sora)" }}>
-                  <span style={{ color: "var(--ink-1)" }}>Exam</span>
-                  <span style={{ color: "var(--cyan)" }}>Nurture</span>
-                </span>
-              </Link>
+              <BrandLogo size="sm" className="min-w-0 flex-1 overflow-hidden" />
               <button onClick={() => setCollapsed(true)}
                 className="ml-1 w-8 h-8 flex items-center justify-center rounded-[8px] shrink-0 transition-all hover:bg-[var(--bg)]"
                 style={{ color: "var(--ink-4)" }} title="Collapse sidebar">

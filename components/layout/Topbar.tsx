@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import BrandLogo from "@/components/ui/BrandLogo";
 
 const FREE_ITEMS = [
   {
@@ -109,24 +110,12 @@ export default function Topbar({ hideSidebarItems = false }: { hideSidebarItems?
       <div className="flex items-center gap-4 min-w-0">
         {/* Logo — only on mobile (sidebar has it on desktop) OR when no sidebar */}
         {(!hideSidebarItems) && (
-          <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity shrink-0">
-            <img src="/examnurture-logo.jpg" alt="ExamNurture" className="h-8 w-8 rounded-lg object-cover" />
-            <span className="font-bold text-[15px] tracking-tight hidden sm:block" style={{ fontFamily: "var(--font-sora)" }}>
-              <span style={{ color: "var(--ink-1)" }}>Exam</span>
-              <span style={{ color: "var(--cyan)" }}>Nurture</span>
-            </span>
-          </Link>
+          <BrandLogo size="sm" />
         )}
 
         {/* Mobile logo when sidebar is hidden on mobile */}
         {hideSidebarItems && (
-          <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity shrink-0 md:hidden">
-            <img src="/examnurture-logo.jpg" alt="ExamNurture" className="h-8 w-8 rounded-lg object-cover" />
-            <span className="font-bold text-[15px] tracking-tight" style={{ fontFamily: "var(--font-sora)" }}>
-              <span style={{ color: "var(--ink-1)" }}>Exam</span>
-              <span style={{ color: "var(--cyan)" }}>Nurture</span>
-            </span>
-          </Link>
+          <BrandLogo size="sm" className="md:hidden" />
         )}
 
         {/* Page title breadcrumb — desktop, when sidebar is present */}

@@ -51,12 +51,6 @@ const PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=com.kvebrk.
  *              navy CTA block
  */
 
-/* ── Marquee exam names ── */
-const MARQUEE_ITEMS = [
-  "JPSC Prelims", "SBI PO", "IBPS PO", "SSC CGL", "Railway NTPC",
-  "Daroga SI", "RBI Grade B", "UET", "BPSC", "UPPSC", "MPPSC", "RPSC",
-];
-
 const FEATURE_EMOJIS = ["📝", "📚", "📰", "🏛️"];
 
 const features = [
@@ -67,15 +61,6 @@ const features = [
 ];
 
 
-const FALLBACK_FAQS = [
-  { question: "What exams does ExamNurture cover?", answer: "ExamNurture covers a wide range of competitive exams including JPSC Prelims & Mains, SBI PO, IBPS PO, RBI Grade B, SSC CGL, Railway NTPC, Daroga SI, UET, and many more state and central government exams." },
-  { question: "Is ExamNurture free to use?", answer: "Yes! ExamNurture offers a free tier with access to a selection of mock tests and PYQ papers. Premium plans unlock unlimited test series, full PYQ archives, AI analytics, and real-time percentile ranking." },
-  { question: "How are the mock tests structured?", answer: "All mock tests use a CBT (Computer-Based Test) interface that mirrors the actual exam — question palette, auto-timer, section switching, and negative marking. Results are instant with detailed subject-wise analysis." },
-  { question: "How does the AI weak-area analysis work?", answer: "After each test, our AI analyses your response patterns across topics and difficulty levels. It identifies your weakest areas and suggests targeted practice sets, helping you prioritise study time effectively." },
-  { question: "Can I access ExamNurture on my phone?", answer: "Absolutely. ExamNurture works on any browser on mobile or desktop. We also have an Android app on the Play Store with offline support for downloaded tests." },
-  { question: "How often are PYQ papers added?", answer: "Previous Year Question papers are added within days of each official exam. Our content team also back-fills older papers so you get the most complete archive available." },
-  { question: "I'm a beginner — where should I start?", answer: "Start with our Exam page, pick your target exam, and browse the syllabus and exam pattern. Then take a diagnostic mock test to benchmark yourself, and let the AI recommendations guide your study plan from there." },
-];
 
 const planHighlights = [
   "Unlimited Test Series",
@@ -122,12 +107,12 @@ function useTestimonials(): TestimonialData[] {
 interface FAQData { question: string; answer: string; }
 
 function useFAQs(): FAQData[] {
-  const [data, setData] = useState<FAQData[]>(FALLBACK_FAQS);
+  const [data, setData] = useState<FAQData[]>([]);
   useEffect(() => {
-    fetch(`${API_URL}/faqs`)
+    fetch(`${API_URL}/faqs?category=landing-page`)
       .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((items) => { if (items?.length) setData(items); })
-      .catch(() => { /* keep fallback */ });
+      .then((items) => { if (items) setData(items); })
+      .catch(() => {});
   }, []);
   return data;
 }
@@ -343,10 +328,10 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
         {/* Stats row — display-lg numbers, figmaMono labels */}
         <div className="flex flex-wrap items-center justify-center gap-10 lg:gap-16 pt-8 border-t border-[#EAE8EC] dark:border-[var(--line-soft)]">
           {[
-            { value: stats?.users      ? `${Math.floor(stats.users / 1000)}K+` : "10K+", label: "Students Preparing" },
-            { value: stats?.exams      ? `${stats.exams}+`                     : "50+",  label: "Exams Covered"      },
-            { value: stats?.pyqPapers  ? `${stats.pyqPapers}+`                 : "500+", label: "PYQ Papers"         },
-            { value: stats?.testSeries ? `${stats.testSeries}+`                : "100+", label: "Test Series"        },
+            { value: stats?.users ? `${stats.users}+` : "0", label: "Students Preparing" },
+            { value: stats?.exams ? `${stats.exams}+` : "0",  label: "Exams Covered"      },
+            { value: stats?.pyqPapers ? `${stats.pyqPapers}+` : "0", label: "PYQ Papers"         },
+            { value: stats?.testSeries ? `${stats.testSeries}+` : "0", label: "Test Series"        },
           ].map(({ value, label }) => (
             <div key={label} className="text-center">
               <div
@@ -374,8 +359,9 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
    MARQUEE STRIP — black ribbon (inverse-canvas)
    marquee-strip token: bg #000, text white, mono, 36px tall
 ───────────────────────────────────────────────────────────── */
-function MarqueeStrip() {
-  const doubled = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS, ...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
+function MarqueeStrip({ items }: { items: string[] }) {
+  if (!items || items.length === 0) return null;
+  const doubled = [...items, ...items, ...items, ...items];
   return (
     <div className="h-14 bg-black dark:bg-[#12151C] border-y border-black dark:border-[rgba(255,255,255,0.05)] overflow-hidden flex items-center select-none pointer-events-none" aria-hidden="true">
       <div className="en-marquee flex gap-16 whitespace-nowrap">
@@ -394,46 +380,204 @@ function MarqueeStrip() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   FEATURES — white canvas, feature-illustration-tile cards
+   FEATURE CARD ILLUSTRATIONS — minimal single-colour line art
+───────────────────────────────────────────────────────────── */
+function IllustrationTestSeries({ className = "" }: { className?: string }) {
+  return (
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" className={className}>
+      <rect x="8" y="4" width="24" height="34" rx="3" stroke="currentColor" strokeWidth="1.75"/>
+      <line x1="13" y1="16" x2="28" y2="16" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+      <line x1="13" y1="22" x2="28" y2="22" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+      <path d="M13 29.5l3.5 3.5 8-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function IllustrationPYQ({ className = "" }: { className?: string }) {
+  return (
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" className={className}>
+      <rect x="14" y="10" width="20" height="26" rx="2.5" stroke="currentColor" strokeWidth="1.5"/>
+      <rect x="9" y="5" width="20" height="26" rx="2.5" stroke="currentColor" strokeWidth="1.75"/>
+      <line x1="14" y1="13" x2="24" y2="13" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+      <line x1="14" y1="18" x2="24" y2="18" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+      <line x1="14" y1="23" x2="19" y2="23" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function IllustrationBlog({ className = "" }: { className?: string }) {
+  return (
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" className={className}>
+      <rect x="5" y="7" width="34" height="30" rx="3" stroke="currentColor" strokeWidth="1.75"/>
+      <line x1="5" y1="15" x2="39" y2="15" stroke="currentColor" strokeWidth="1.5"/>
+      <circle cx="10.5" cy="11" r="1.5" fill="currentColor"/>
+      <circle cx="15.5" cy="11" r="1.5" fill="currentColor"/>
+      <circle cx="20.5" cy="11" r="1.5" fill="currentColor"/>
+      <line x1="11" y1="21.5" x2="33" y2="21.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+      <line x1="11" y1="26" x2="33" y2="26" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+      <line x1="11" y1="30.5" x2="24" y2="30.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function IllustrationExams({ className = "" }: { className?: string }) {
+  return (
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" className={className}>
+      <path d="M22 8L39 16L22 24L5 16Z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round"/>
+      <path d="M13 21v9c0 3.5 4 6 9 6s9-2.5 9-6v-9" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round"/>
+      <line x1="39" y1="16" x2="39" y2="27" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+      <circle cx="39" cy="29" r="2" stroke="currentColor" strokeWidth="1.5"/>
+    </svg>
+  );
+}
+
+const FEATURE_ILLUSTRATIONS = [IllustrationTestSeries, IllustrationPYQ, IllustrationBlog, IllustrationExams];
+
+const FEATURE_ACCENT = [
+  { iconBg: "bg-[#EEF2FF] dark:bg-[rgba(79,70,229,0.12)]",  iconText: "text-[#3730A3] dark:text-[#818CF8]", tag: "CBT Interface",   hoverBgLight: "#EEF2FF", hoverBgDark: "rgba(79,70,229,0.06)",  spotlightRgb: "99,102,241"  },
+  { iconBg: "bg-[#D1FAE5] dark:bg-[rgba(5,150,105,0.12)]",  iconText: "text-[#065F46] dark:text-[#34D399]", tag: "With Solutions",  hoverBgLight: "#ECFDF5", hoverBgDark: "rgba(5,150,105,0.06)",  spotlightRgb: "16,185,129"  },
+  { iconBg: "bg-[#FEF3C7] dark:bg-[rgba(217,119,6,0.12)]",  iconText: "text-[#92400E] dark:text-[#FCD34D]", tag: "Expert Articles", hoverBgLight: "#FFFBEB", hoverBgDark: "rgba(217,119,6,0.06)",  spotlightRgb: "245,158,11"  },
+  { iconBg: "bg-[#EDE9FE] dark:bg-[rgba(124,58,237,0.12)]", iconText: "text-[#5B21B6] dark:text-[#A78BFA]", tag: "50+ Exams",       hoverBgLight: "#F5F3FF", hoverBgDark: "rgba(124,58,237,0.06)", spotlightRgb: "139,92,246"  },
+];
+
+/* ─────────────────────────────────────────────────────────────
+   SPOTLIGHT CARD — cursor-tracked border glow + inner radial
+   design-taste: "Spotlight Border Card" pattern
+───────────────────────────────────────────────────────────── */
+function SpotlightCard({
+  children,
+  hoverBgLight,
+  spotlightRgb,
+  className = "",
+}: {
+  children: React.ReactNode;
+  hoverBgLight: string;
+  spotlightRgb: string;
+  className?: string;
+}) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos]       = useState({ x: 0, y: 0 });
+  const [hovered, setHovered] = useState(false);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!outerRef.current) return;
+    const r = outerRef.current.getBoundingClientRect();
+    setPos({ x: e.clientX - r.left, y: e.clientY - r.top });
+  }, []);
+
+  return (
+    <div
+      ref={outerRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`relative p-px rounded-[26px] transition-all duration-300 ${className}`}
+      style={{
+        background: hovered
+          ? `radial-gradient(380px at ${pos.x}px ${pos.y}px, rgba(${spotlightRgb},0.35), transparent 65%)`
+          : "rgba(226,232,240,0.65)",
+        transform: hovered ? "translateY(-10px)" : "translateY(0)",
+        boxShadow: hovered
+          ? `0 28px 64px -12px rgba(${spotlightRgb},0.18), 0 10px 24px -8px rgba(${spotlightRgb},0.10)`
+          : "0 20px 40px -15px rgba(0,0,0,0.04)",
+      }}
+    >
+      {/* Card surface */}
+      <div
+        className="relative bg-white dark:bg-[var(--card)] rounded-[25px] h-full flex flex-col overflow-hidden transition-colors duration-300"
+        style={{ backgroundColor: hovered ? hoverBgLight : undefined }}
+      >
+        {/* Inner radial glow follows cursor */}
+        <div
+          className="absolute inset-0 rounded-[25px] pointer-events-none transition-opacity duration-300"
+          style={{
+            opacity: hovered ? 1 : 0,
+            background: `radial-gradient(300px at ${pos.x}px ${pos.y}px, rgba(${spotlightRgb},0.07), transparent 70%)`,
+          }}
+        />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FEATURES — Marc Lou H2 + design-taste bento + spotlight cards
 ───────────────────────────────────────────────────────────── */
 function FeaturesSection() {
   return (
-    <section className="py-24 lg:py-28 bg-white dark:bg-[var(--bg)]">
+    <section className="py-24 lg:py-32 bg-[#f9fafb] dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-6 lg:px-8">
 
-        {/* Centered header */}
-        <div className="mb-14 max-w-2xl mx-auto text-center">
-          <h2
-            className="text-[40px] sm:text-[52px] lg:text-[64px] leading-[1.10] text-[#2C2C2E] dark:text-[var(--ink-1)]"
-            style={{ fontWeight: 300, letterSpacing: "-0.96px" }}
-          >
+        {/* Section header — Marc Lou badge + font-black H2 */}
+        <div className="mb-16 max-w-2xl mx-auto text-center">
+
+          {/* Marc Lou rule: font-black, leading-none, -0.03em */}
+          <h2 className="text-[32px] sm:text-[48px] font-black leading-none tracking-[-0.03em] text-[#1d1d1b] dark:text-[var(--ink-1)] mb-5">
             One platform.<br />Complete prep.
           </h2>
+          <p className="text-[17px] text-gray-500 dark:text-[var(--ink-3)] leading-relaxed max-w-[42ch] mx-auto">
+            Tests, papers, insights, and exam guides — all in one place for serious aspirants.
+          </p>
         </div>
 
-        {/* feature-illustration-tile grid (2x2 centered) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          {features.map((f, i) => (
-            <Link key={f.title} href={f.href} className="group">
-              <div className="bg-[#EAE8EC] dark:bg-[var(--card)] rounded-[16px] p-6 h-full flex flex-col hover:bg-[#CBCDD5] dark:hover:bg-[rgba(255,255,255,0.04)] transition-colors duration-200 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] dark:border dark:border-[rgba(255,255,255,0.06)]">
-                <div className="text-[40px] mb-4 select-none leading-none">{FEATURE_EMOJIS[i]}</div>
-                {/* card-title: 24px / weight 700 */}
-                <h3 className="text-[22px] text-[#2C2C2E] dark:text-[var(--ink-1)] mb-2 leading-[1.45]" style={{ fontWeight: 700 }}>
-                  {f.title}
-                </h3>
-                {/* body-sm: 16px / weight 330 */}
-                <p className="text-[16px] text-[#666872] dark:text-[var(--ink-3)] leading-[1.45] flex-1" style={{ fontWeight: 330, letterSpacing: "-0.14px" }}>
-                  {f.desc}
-                </p>
-                <div
-                  className="mt-5 flex items-center gap-1 text-[15px] text-[#0D287E] dark:text-[var(--ink-1)] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  style={{ fontWeight: 500 }}
-                >
-                  Explore <ChevronRight className="h-4 w-4" />
-                </div>
-              </div>
-            </Link>
-          ))}
+        {/* Bento grid — staggered reveal + spotlight cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-5">
+          {features.map((f, i) => {
+            const Illus  = FEATURE_ILLUSTRATIONS[i];
+            const accent = FEATURE_ACCENT[i];
+            const isWide = i === 0 || i === 3;
+            return (
+              <motion.div
+                key={f.title}
+                initial={{ opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.55, delay: i * 0.09, ease: [0.16, 1, 0.3, 1] }}
+                className={`group ${isWide ? "lg:col-span-3" : "lg:col-span-2"}`}
+              >
+                <Link href={f.href} className="block h-full">
+                  <SpotlightCard
+                    hoverBgLight={accent.hoverBgLight}
+                    spotlightRgb={accent.spotlightRgb}
+                    className="h-full"
+                  >
+                    <div className="p-7 lg:p-8 flex flex-col" style={{ minHeight: "240px" }}>
+
+                      {/* Icon + tag row */}
+                      <div className="flex items-start justify-between mb-6">
+                        <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110 ${accent.iconBg}`}>
+                          <Illus className={accent.iconText} />
+                        </div>
+                        <span
+                          className="text-[11px] px-2.5 py-1 rounded-full bg-white/70 dark:bg-[var(--bg)] text-gray-400 dark:text-[var(--ink-3)] border border-gray-200 dark:border-[var(--line-soft)] whitespace-nowrap transition-all duration-200 group-hover:text-[#0D287E] group-hover:border-[#0D287E]/25 dark:group-hover:text-[var(--blue)]"
+                          style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.3px" }}
+                        >
+                          {accent.tag}
+                        </span>
+                      </div>
+
+                      {/* Title — design-taste: tracking-tight, bold */}
+                      <h3 className="text-[19px] font-bold tracking-[-0.02em] text-[#1d1d1b] dark:text-[var(--ink-1)] mb-3 leading-[1.25]">
+                        {f.title}
+                      </h3>
+
+                      {/* Description */}
+                      <p className="text-[14.5px] text-gray-500 dark:text-[var(--ink-3)] leading-[1.68] flex-1">
+                        {f.desc}
+                      </p>
+
+                      {/* CTA row — gap widens, arrow slides on hover */}
+                      <div className="mt-7 pt-5 border-t border-gray-100 dark:border-[rgba(255,255,255,0.06)] flex items-center gap-1.5 group-hover:gap-3 text-[13px] font-semibold text-[#0D287E] dark:text-[var(--blue)] transition-all duration-200">
+                        Explore
+                        <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
+                      </div>
+                    </div>
+                  </SpotlightCard>
+                </Link>
+              </motion.div>
+            );
+          })}
         </div>
 
       </div>
@@ -753,6 +897,8 @@ function TestimonialsSection({ testimonials }: { testimonials: TestimonialData[]
 function FAQSection({ faqItems }: { faqItems: FAQData[] }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
+  if (!faqItems || faqItems.length === 0) return null;
+
   return (
     <section className="py-20 lg:py-24 bg-white dark:bg-[var(--bg)] border-t border-[#EAE8EC] dark:border-[var(--line-soft)]">
       <div className="max-w-[720px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -909,7 +1055,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white dark:bg-[var(--bg)]">
       {showModal && <AuthModal onClose={() => setShowModal(false)} next="/dashboard" />}
       <HeroSection onLogin={openLogin} stats={stats} />
-      <MarqueeStrip />
+      <MarqueeStrip items={featuredExams.map(e => e.name)} />
       <FeaturesSection />
       <ExamCategoriesSection examCategories={featuredExams} />
       <TestimonialsSection testimonials={testimonials} />

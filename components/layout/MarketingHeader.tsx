@@ -13,6 +13,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import AuthModal from "@/components/auth/AuthModal";
+import BrandLogo from "@/components/ui/BrandLogo";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=com.kvebrk.rwwkrt";
@@ -294,13 +295,8 @@ export default function MarketingHeader() {
           <div className="flex items-center justify-between gap-3 h-16">
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity flex-shrink-0">
-              <img src="/examnurture-logo.jpg" alt="ExamNurture" className="h-9 w-9 rounded-xl object-cover shadow-sm" />
-              <span className="font-bold text-[17px] tracking-tight hidden sm:block" style={{ fontFamily: "var(--font-sora, sans-serif)" }}>
-                <span className="text-[var(--ink-1)]">Exam</span>
-                <span className="text-[var(--blue)]">Nurture</span>
-              </span>
-            </Link>
+            <BrandLogo size="md" className="hidden sm:flex" />
+            <BrandLogo size="sm" className="flex sm:hidden" />
 
             {/* Desktop nav */}
             <div className="hidden lg:flex flex-1 justify-center">
