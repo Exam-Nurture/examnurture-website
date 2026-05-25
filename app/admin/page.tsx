@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiAdminDashboard, AuthUser } from "@/lib/api";
+import { apiAdminDashboard, AuthUser, apiGetProfile } from "@/lib/api";
 
 const STAT_LABELS: Record<string, string> = {
   users: "Total Users",
@@ -32,10 +32,14 @@ export default function AdminDashboard() {
     recentPayments: { id: string; amountPaise: number; status: string; createdAt: string; user?: { name: string; email: string } }[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState("ADMIN");
 
   useEffect(() => {
-    apiAdminDashboard()
-      .then(setData)
+    Promise.all([apiAdminDashboard(), apiGetProfile()])
+      .then(([dashData, profile]) => {
+        setData(dashData);
+        setRole(profile.role);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -54,7 +58,7 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {Object.entries(stats).map(([key, value]) => (
+        {Object.entries(stats).filter(([key]) => key !== "users" || role === "SUPERADMIN").map(([key, value]) => (
           <div key={key} className="rounded-xl p-4" style={{ background: "var(--card)", boxShadow: "var(--shadow)" }}>
             <p className="text-xs font-medium mb-1" style={{ color: "var(--ink-3)" }}>{STAT_LABELS[key] ?? key}</p>
             <p className="text-2xl font-bold" style={{ color: STAT_COLORS[key] ?? "var(--ink-1)" }}>{value.toLocaleString()}</p>
@@ -64,7 +68,8 @@ export default function AdminDashboard() {
 
       <div className="grid md:grid-cols-2 gap-4">
         {/* Recent users */}
-        <div className="rounded-xl" style={{ background: "var(--card)", boxShadow: "var(--shadow)" }}>
+        {role === "SUPERADMIN" && (
+          <div className="rounded-xl" style={{ background: "var(--card)", boxShadow: "var(--shadow)" }}>
           <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--line)" }}>
             <h2 className="text-sm font-semibold" style={{ color: "var(--ink-1)" }}>Recent Users</h2>
             <Link href="/admin/users" className="text-xs font-medium" style={{ color: "var(--blue)" }}>View all</Link>
@@ -84,8 +89,12 @@ export default function AdminDashboard() {
                 )}
               </div>
             ))}
+            {(data?.recentUsers ?? []).length === 0 && (
+              <p className="px-4 py-4 text-sm" style={{ color: "var(--ink-3)" }}>No records found</p>
+            )}
           </div>
         </div>
+        )}
 
         {/* Recent payments */}
         <div className="rounded-xl" style={{ background: "var(--card)", boxShadow: "var(--shadow)" }}>
@@ -125,7 +134,7 @@ export default function AdminDashboard() {
           {[
             { label: "Add Board", href: "/admin/boards" },
             { label: "Add Exam", href: "/admin/exams" },
-            { label: "Add Test Series", href: "/admin/test-series" },
+            { label: "Add Test Series", href: "/admin/tests" },
             { label: "Add PYQ Paper", href: "/admin/pyq" },
             { label: "Add Study Material", href: "/admin/study-materials" },
           ].map((a) => (
