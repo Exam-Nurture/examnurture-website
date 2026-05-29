@@ -40,3 +40,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env.production
+
+# ── Private secrets (added centrally) ──────────────────────────────
+private/
+*-service-account.json
+*service_account*.json
+gcp-*.json
+google-credentials*.json
+client_secret*.json
+*.pem
+*.key
