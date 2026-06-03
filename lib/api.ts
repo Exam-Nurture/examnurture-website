@@ -664,7 +664,10 @@ export async function apiAdminDeleteTest(id: string) {
   return apiFetch(`/admin/tests/${id}`, { method: "DELETE" });
 }
 export async function apiAdminExportTest(id: string, format: "json" | "zip" = "json", lang: "en" | "hi" | "both" = "both"): Promise<Blob> {
-  const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+  // Use the module-level BASE so this resolves the backend identically to every
+  // other call. Previously it shadowed BASE with weaker logic that dropped
+  // NEXT_PUBLIC_BACKEND_API_URL — silently hitting localhost:4000 in prod when
+  // only that var was set.
   const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
   const res = await fetch(`${BASE}/admin/tests/${id}/export?format=${format}&lang=${lang}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
