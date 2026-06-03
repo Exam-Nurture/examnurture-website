@@ -5,8 +5,9 @@
  * - Refresh token is httpOnly (set/cleared by backend automatically)
  * - Auto-refreshes on 401 and retries the original request once
  */
+import { API_BASE } from "@/lib/config";
 
-const BASE = process.env.NEXT_PUBLIC_BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+const BASE = API_BASE;
 
 const TOKEN_COOKIE = "en_token";
 

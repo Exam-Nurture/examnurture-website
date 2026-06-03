@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { ArrowRight, Globe, Mail } from "lucide-react";
+import { API_BASE } from "@/lib/config";
 
 function LinkedInIcon({ className }: { className?: string }) {
   return (
@@ -19,7 +20,7 @@ function GithubIcon({ className }: { className?: string }) {
   );
 }
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+const API_URL = API_BASE;
 
 interface TeamMember {
   id: string | number;
