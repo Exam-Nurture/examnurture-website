@@ -317,6 +317,12 @@
   border-radius: var(--radius-sm);
 }
 
+/* ====== Spotlight card hover surface — theme-aware tint ====== */
+/* JS sets --spot-bg-light / --spot-bg-dark per card; CSS picks the right one per theme,
+   so a hovered card never flips to a light-only background while dark-mode text stays light. */
+.spotlight-surface[data-hovered="true"] { background-color: var(--spot-bg-light, transparent); }
+.dark .spotlight-surface[data-hovered="true"] { background-color: var(--spot-bg-dark, transparent); }
+
 /* ====== Tabular numbers (scores, stats, timers) ====== */
 .tabular { font-variant-numeric: tabular-nums; }
 .font-sora { font-family: var(--font-sora); }
@@ -587,6 +593,398 @@ body::after {
   .bento-span-8, .bento-span-4, .bento-span-6,
   .bento-span-5, .bento-span-7 { grid-column: span 1; }
 }
+
+/* ══════════════════════════════════════════════════════
+   STUDENT FOCUS HUB — Dashboard design system
+   Scoped to `.dash` so marketing surfaces are untouched.
+   Every token is declared in BOTH light and dark.
+══════════════════════════════════════════════════════ */
+
+.dash {
+  /* Surfaces — off-white, never pure #FFF.
+     The page sits *between* the bezel shell and the card so the shell reads
+     as a recessed groove rather than a stray outline. */
+  --d-bg:        #F4F5F8;
+  --d-bg-tint:   #EEF0F4;
+  --d-surface:   #FFFFFF;
+  --d-inset:     #F5F6F9;
+  --d-inset-2:   #E9EBF0;
+
+  /* Bezel shell — a real tone, darker than the page */
+  --d-shell:      #E8EAEF;
+  --d-shell-line: rgba(17, 17, 17, 0.075);
+  --d-inner-edge: rgba(17, 17, 17, 0.055);
+  --d-ring:       rgba(17, 17, 17, 0.05);
+
+  /* Lines */
+  --d-line:      rgba(17, 17, 17, 0.10);
+  --d-line-soft: rgba(17, 17, 17, 0.065);
+
+  /* Ink */
+  --d-ink:       #111114;
+  --d-ink-2:     #5A5C66;
+  --d-ink-3:     #85878F;
+  --d-ink-4:     #A9ACB5;
+
+  /* Elevation */
+  --d-lift: 0 1px 2px rgba(17,17,17,.04),
+            0 6px 16px -8px rgba(17,17,17,.10);
+  --d-lift-lg: 0 1px 2px rgba(17,17,17,.05),
+               0 12px 32px -12px rgba(17,17,17,.16),
+               0 32px 64px -32px rgba(17,17,17,.10);
+
+  /* Shimmer sweep colour */
+  --d-shimmer: rgba(255, 255, 255, 0.72);
+
+  /* Re-point the base tokens so shared chrome (sidebar, topbar, mobile nav)
+     and not-yet-migrated pages adopt the hub palette automatically. */
+  --bg:            var(--d-bg);
+  --bg-secondary:  var(--d-bg-tint);
+  --card:          var(--d-surface);
+  --surface-hover: var(--d-inset);
+  --line:          var(--d-line);
+  --line-soft:     var(--d-line-soft);
+  --ink-1:         var(--d-ink);
+  --ink-2:         var(--d-ink-2);
+  --ink-3:         var(--d-ink-3);
+  --ink-4:         var(--d-ink-4);
+  --glass:         rgba(250, 250, 250, 0.78);
+  --glass-border:  var(--d-line);
+
+  background: var(--d-bg);
+  color: var(--d-ink);
+}
+
+.dark .dash {
+  /* Deep navy-ink, not flat grey. Card sits clearly above the page. */
+  --d-bg:        #06080D;
+  --d-bg-tint:   #0A0D14;
+  --d-surface:   #141926;
+  --d-inset:     #1A2030;
+  --d-inset-2:   #222939;
+
+  --d-shell:      #0A0D14;
+  --d-shell-line: rgba(255, 255, 255, 0.08);
+  --d-inner-edge: rgba(255, 255, 255, 0.07);
+  --d-ring:       rgba(255, 255, 255, 0.05);
+
+  --d-line:      rgba(255, 255, 255, 0.11);
+  --d-line-soft: rgba(255, 255, 255, 0.075);
+
+  --d-ink:       #F2F5FA;
+  --d-ink-2:     #AEB6C6;
+  --d-ink-3:     #7F8798;
+  --d-ink-4:     #5C6473;
+
+  --d-lift: 0 1px 2px rgba(0,0,0,.5),
+            0 8px 24px -12px rgba(0,0,0,.7);
+  --d-lift-lg: 0 1px 2px rgba(0,0,0,.5),
+               0 16px 40px -16px rgba(0,0,0,.8),
+               0 40px 80px -40px rgba(0,0,0,.6);
+
+  --d-shimmer: rgba(255, 255, 255, 0.06);
+
+  --glass:        rgba(11, 14, 21, 0.78);
+  --glass-border: var(--d-line);
+  --elevated:     var(--d-inset-2);
+}
+
+/* ── Ambient page glow — large, extremely soft ── */
+.dash-ambient { position: relative; isolation: isolate; }
+.dash-ambient::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 46% at 18% -6%, rgba(13, 40, 126, 0.055) 0%, transparent 62%),
+    radial-gradient(ellipse 62% 40% at 92% 4%,  rgba(99, 102, 241, 0.045) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 44% at 52% 104%, rgba(6, 182, 212, 0.030) 0%, transparent 60%);
+}
+.dark .dash-ambient::before {
+  background:
+    radial-gradient(ellipse 90% 46% at 18% -6%, rgba(53, 87, 199, 0.16) 0%, transparent 62%),
+    radial-gradient(ellipse 62% 40% at 92% 4%,  rgba(129, 140, 248, 0.10) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 44% at 52% 104%, rgba(34, 211, 238, 0.055) 0%, transparent 60%);
+}
+
+/* ── Card ──────────────────────────────────────────────
+   One crisp edge. An outer "shell" ring was tried and removed: at these
+   tonal distances it read as a stray offset outline around every card
+   rather than as a frame. Depth now comes from a single hairline border
+   plus a layered shadow, and the *inner* wells provide the second bezel.
+──────────────────────────────────────────────────────── */
+.d-bezel {
+  border-radius: 18px;
+  transition: transform 320ms var(--ease-spring);
+}
+.d-bezel-inner {
+  position: relative;
+  border-radius: 18px;
+  background: var(--d-surface);
+  border: 1px solid var(--d-line-soft);
+  box-shadow: var(--d-lift);
+  overflow: hidden;
+  transition: border-color 300ms var(--ease-smooth),
+              box-shadow  320ms var(--ease-spring);
+}
+/* Crown light along the top edge — reads as a lit surface, not a flat fill */
+.d-bezel-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    transparent, rgba(255, 255, 255, 0.85) 22%, rgba(255, 255, 255, 0.85) 78%, transparent);
+  z-index: 2;
+}
+.dark .d-bezel-inner::before {
+  background: linear-gradient(90deg,
+    transparent, rgba(255, 255, 255, 0.09) 22%, rgba(255, 255, 255, 0.09) 78%, transparent);
+}
+
+/* Interactive card — lifts as one unit */
+.d-bezel-hover:hover { transform: translateY(-3px); }
+.d-bezel-hover:hover .d-bezel-inner {
+  border-color: rgba(29, 78, 216, 0.28);
+  box-shadow: var(--d-lift-lg);
+}
+.dark .d-bezel-hover:hover .d-bezel-inner {
+  border-color: rgba(99, 130, 245, 0.32);
+}
+.d-bezel-hover:active { transform: translateY(-1px) scale(0.997); }
+
+/* Flush variant — no outer shell padding, single crisp edge */
+.d-flat {
+  border-radius: 18px;
+  background: var(--d-surface);
+  border: 1px solid var(--d-line-soft);
+  box-shadow: var(--d-lift);
+}
+
+/* Inset well — recessed area inside a card */
+.d-well {
+  background: var(--d-inset);
+  border: 1px solid var(--d-line-soft);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 3px rgba(17, 17, 17, 0.035);
+}
+.dark .d-well { box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4); }
+
+/* ── Typography helpers ── */
+.d-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--d-ink-4);
+}
+.d-title    { letter-spacing: -0.02em; color: var(--d-ink); font-weight: 600; }
+.d-display  { letter-spacing: -0.032em; color: var(--d-ink); font-weight: 600; line-height: 1.05; }
+.d-measure  { max-width: 62ch; }
+.dash p     { max-width: 62ch; }
+.d-num      { font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+
+/* ── Glass filter bar (sticky) ── */
+.d-glass {
+  background: rgba(250, 250, 250, 0.72);
+  backdrop-filter: blur(22px) saturate(1.6);
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  border: 1px solid var(--d-line);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset,
+              0 8px 28px -18px rgba(17, 17, 17, 0.35);
+}
+.dark .d-glass {
+  background: rgba(11, 14, 21, 0.72);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset,
+              0 8px 28px -14px rgba(0, 0, 0, 0.8);
+}
+
+/* ── Shimmer skeleton ── */
+@keyframes d-shimmer {
+  100% { transform: translateX(100%); }
+}
+.d-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--d-inset);
+  border-radius: 8px;
+}
+.d-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--d-shimmer) 50%,
+    transparent 100%);
+  animation: d-shimmer 1.6s var(--ease-smooth) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .d-skel::after { animation: none; }
+}
+
+/* ── Progress track ── */
+.d-track {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--d-inset-2);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(17, 17, 17, 0.06);
+}
+.dark .d-track { box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
+.d-track > span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  transition: width 900ms var(--ease-expo);
+}
+
+/* ── Focus ring, dashboard flavour ── */
+.d-focus:focus-visible {
+  outline: 2px solid var(--blue-ink);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+/* ── Hairline divider ── */
+.d-rule { height: 1px; background: var(--d-line-soft); border: 0; }
+
+/* ── Scroll rail (horizontal card rows) ── */
+.d-rail {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+.d-rail::-webkit-scrollbar { display: none; }
+.d-rail > * { scroll-snap-align: start; }
+
+/* ══════════════════════════════════════════════════════
+   EXAM SHELL — the test-taking surface
+   Calm, high-contrast, distraction-free. Own token scope so exam chrome
+   never inherits dashboard ambience. Full light + dark pairs.
+══════════════════════════════════════════════════════ */
+
+.exam-shell {
+  --x-bg:       #EFF1F5;   /* desk */
+  --x-surface:  #FFFFFF;   /* paper */
+  --x-inset:    #F4F6F9;
+  --x-inset-2:  #E9ECF2;
+  --x-line:     rgba(17, 17, 17, 0.10);
+  --x-line-soft:rgba(17, 17, 17, 0.065);
+  --x-ink:      #14161C;
+  --x-ink-2:    #4E525E;
+  --x-ink-3:    #7C818F;
+  --x-ink-4:    #A5AAB6;
+  --x-lift:     0 1px 2px rgba(17,17,17,.05), 0 8px 24px -14px rgba(17,17,17,.22);
+
+  /* Question-palette states (NTA convention, tokenised for dark mode) */
+  --x-answered:      #1A9E5C;
+  --x-answered-ink:  #FFFFFF;
+  --x-unanswered:    #DC5757;
+  --x-unanswered-ink:#FFFFFF;
+  --x-marked:        #7C5CF0;
+  --x-marked-ink:    #FFFFFF;
+  --x-unvisited:     #FFFFFF;
+  --x-unvisited-ink: #6E727E;
+  --x-unvisited-line:rgba(17,17,17,0.16);
+
+  background: var(--x-bg);
+  color: var(--x-ink);
+}
+
+.dark .exam-shell {
+  --x-bg:       #05070B;
+  --x-surface:  #11151E;
+  --x-inset:    #171C27;
+  --x-inset-2:  #1F2532;
+  --x-line:     rgba(255, 255, 255, 0.11);
+  --x-line-soft:rgba(255, 255, 255, 0.07);
+  --x-ink:      #F2F5FA;
+  --x-ink-2:    #AFB7C6;
+  --x-ink-3:    #838B9B;
+  --x-ink-4:    #626A79;
+  --x-lift:     0 1px 2px rgba(0,0,0,.5), 0 10px 28px -14px rgba(0,0,0,.75);
+
+  --x-answered:      #34B978;
+  --x-answered-ink:  #04140C;
+  --x-unanswered:    #F0736E;
+  --x-unanswered-ink:#1A0707;
+  --x-marked:        #9C86F7;
+  --x-marked-ink:    #0D0820;
+  --x-unvisited:     #1B2130;
+  --x-unvisited-ink: #99A0AE;
+  --x-unvisited-line:rgba(255,255,255,0.16);
+}
+
+/* Paper card */
+.x-paper {
+  background: var(--x-surface);
+  border: 1px solid var(--x-line-soft);
+  border-radius: 18px;
+  box-shadow: var(--x-lift);
+}
+
+.x-well {
+  background: var(--x-inset);
+  border: 1px solid var(--x-line-soft);
+  border-radius: 14px;
+}
+
+.x-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--x-ink-4);
+}
+
+/* Timer pulse when time is nearly up */
+@keyframes x-urgent {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 87, 87, 0.35); }
+  50%      { box-shadow: 0 0 0 6px rgba(220, 87, 87, 0); }
+}
+.x-urgent { animation: x-urgent 1.6s var(--ease-smooth) infinite; }
+@media (prefers-reduced-motion: reduce) { .x-urgent { animation: none; } }
+
+/* Option press feedback */
+.x-option {
+  transition: border-color 180ms var(--ease-smooth),
+              background   180ms var(--ease-smooth),
+              transform    200ms var(--ease-spring),
+              box-shadow   200ms var(--ease-smooth);
+}
+.x-option:not(:disabled):hover { transform: translateY(-1px); }
+.x-option:not(:disabled):active { transform: translateY(0) scale(0.995); }
+
+/* Rich text inside questions */
+.rich-text { overflow-wrap: anywhere; }
+.rich-text p { max-width: none; margin: 0 0 0.6em; }
+.rich-text p:last-child { margin-bottom: 0; }
+.rich-text ul, .rich-text ol { margin: 0.5em 0; padding-left: 1.4em; }
+.rich-text ul { list-style: disc; }
+.rich-text ol { list-style: decimal; }
+.rich-text table { border-collapse: collapse; margin: 0.6em 0; }
+.rich-text th, .rich-text td {
+  border: 1px solid var(--x-line);
+  padding: 0.35em 0.7em;
+  text-align: left;
+}
+.rich-text sub, .rich-text sup { font-size: 0.75em; }
 
 /* ====== Blog HTML content renderer ====== */
 .blog-content { color: var(--ink-2); line-height: 1.8; font-size: 1rem; }

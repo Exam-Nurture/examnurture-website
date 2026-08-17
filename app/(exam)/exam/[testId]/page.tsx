@@ -7,6 +7,7 @@ import TestPortal from "@/components/exam/TestPortal";
 import ResultView, { AttemptResult } from "@/components/exam/ResultView";
 import { apiGetTest, apiSubmitAttempt, apiGetAttemptResult, apiEmailReport } from "@/lib/api";
 import type { Question } from "@/components/exam/QuestionViewer";
+import { ExamLoading, ExamError } from "@/components/exam/ExamStates";
 
 type Phase = "loading" | "auth" | "active" | "result" | "error";
 
@@ -46,6 +47,8 @@ function mapQ(raw: any): Question {
     questionHindiImages: parseImageArray(raw.questionHindiImages),
     optionImages: parseOptionImages(raw.optionImages),
     optionHindiImages: parseOptionImages(raw.optionHindiImages),
+    // Any additional language published under an ISO code (bn, ta, te, …)
+    translations: raw.translations ?? null,
     subject: raw.subject ?? null,
     topic: raw.topic ?? null,
     difficulty: raw.difficulty ?? null,
@@ -156,54 +159,26 @@ export default function ExamPage() {
 
   // Loading / auth pending
   if (authLoading || phase === "loading") {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "var(--card)" }}>
-        <div className="text-center">
-          <div className="w-10 h-10 rounded-full border-4 border-blue-600/20 border-t-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-sm font-medium" style={{ color: "var(--ink-3)" }}>Loading test…</p>
-        </div>
-      </div>
-    );
+    return <ExamLoading label="Loading your test…" />;
   }
 
   if (phase === "error") {
     return (
-      <div className="flex items-center justify-center min-h-screen" style={{ background: "var(--bg)" }}>
-        <div className="text-center px-4">
-          <p className="text-red-500 font-bold mb-4">{error}</p>
-          <button
-            onClick={() => router.push("/dashboard/series")}
-            className="px-5 py-2.5 rounded-full bg-[var(--blue)] text-white text-sm font-medium"
-          >
-            Back to Test Series
-          </button>
-        </div>
-      </div>
+      <ExamError message={error} onBack={() => router.push("/dashboard/series")} />
     );
   }
 
   if (phase === "result" && result) {
+    // ResultView carries its own back action, so no duplicate top bar here.
     return (
-      <div className="min-h-screen" style={{ background: "var(--bg)" }}>
-        {/* Minimal top bar */}
-        <div className="sticky top-0 z-10 flex items-center px-5 h-14 border-b" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
-          <button
-            onClick={() => router.push("/dashboard/series")}
-            className="text-[13px] font-medium hover:underline"
-            style={{ color: "var(--ink-3)" }}
-          >
-            ← Back to Dashboard
-          </button>
-        </div>
-        <ResultView
-          result={result}
-          questions={questions}
-          userAnswers={userAnswers}
-          testTitle={testData?.title}
-          onBack={() => router.push("/dashboard/series")}
-          onEmailReport={attemptId ? () => apiEmailReport({ attemptId, kind: "test" }).then(() => {}) : undefined}
-        />
-      </div>
+      <ResultView
+        result={result}
+        questions={questions}
+        userAnswers={userAnswers}
+        testTitle={testData?.title}
+        onBack={() => router.push("/dashboard/series")}
+        onEmailReport={attemptId ? () => apiEmailReport({ attemptId, kind: "test" }).then(() => {}) : undefined}
+      />
     );
   }
 

@@ -37,6 +37,25 @@ const STATE_EMOJI: Record<string, string> = {
 };
 function emojiFor(name: string) { return STATE_EMOJI[name] ?? "📋"; }
 
+const SEARCH_PLACEHOLDERS = ["Search JPSC…", "Search SBI PO…", "Search SSC CGL…", "Search Railway NTPC…", "Search RBI Grade B…"];
+
+function useCyclingPlaceholder(pause: boolean) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (pause) return;
+    const id = setInterval(() => setIdx((i) => (i + 1) % SEARCH_PLACEHOLDERS.length), 2400);
+    return () => clearInterval(id);
+  }, [pause]);
+  return SEARCH_PLACEHOLDERS[idx];
+}
+
+const EXAM_HERO_STATS = [
+  { value: "50+", label: "Exams" },
+  { value: "15",  label: "States" },
+  { value: "2,400+", label: "Tests" },
+  { value: "8,700+", label: "PYQ Papers" },
+];
+
 interface StateGroup {
   id: number | null;
   name: string;
@@ -67,6 +86,8 @@ function AllExamsPageInner() {
 
   const [search, setSearch]                     = useState(searchParams.get("q") ?? "");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [searchFocused, setSearchFocused]       = useState(false);
+  const cyclingPlaceholder = useCyclingPlaceholder(searchFocused || search.length > 0);
 
   const examFilter = useExamFilter({
     stateIds: parseIds(searchParams.get("stateIds"), Number),
@@ -145,16 +166,18 @@ function AllExamsPageInner() {
           <p className="text-lg max-w-2xl mx-auto mb-10 leading-relaxed" style={{ color: "var(--ink-2)" }}>
             Explore our comprehensive catalogue of government and competitive exams. Get access to syllabus, important dates, mock tests, and previous year papers.
           </p>
-          <div className="max-w-2xl mx-auto relative">
+          <div className="max-w-2xl mx-auto relative glass rounded-2xl">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <Search className="h-5 w-5" style={{ color: "var(--ink-4)" }} />
             </div>
             <input
               type="text"
-              className="block w-full pl-12 pr-10 py-4 sm:text-lg border-2 rounded-2xl focus:outline-none transition-all"
-              style={{ background: "var(--bg)", borderColor: "var(--line-soft)", color: "var(--ink-1)" }}
-              placeholder="Search for an exam (e.g., SSC CGL, IBPS PO)…"
+              className="block w-full pl-12 pr-10 py-4 sm:text-lg bg-transparent rounded-2xl focus:outline-none transition-all"
+              style={{ color: "var(--ink-1)" }}
+              placeholder={search ? "Search for an exam…" : cyclingPlaceholder}
               value={search}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
@@ -167,6 +190,16 @@ function AllExamsPageInner() {
                 <X size={18} />
               </button>
             )}
+          </div>
+
+          {/* Stats row */}
+          <div className="max-w-2xl mx-auto mt-10 grid grid-cols-2 sm:grid-cols-4 gap-6">
+            {EXAM_HERO_STATS.map((s) => (
+              <div key={s.label}>
+                <div className="text-2xl sm:text-3xl font-black tabular-nums" style={{ color: "var(--ink-1)" }}>{s.value}</div>
+                <div className="mt-1 text-[11px] uppercase font-semibold" style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.5px", color: "var(--ink-4)" }}>{s.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

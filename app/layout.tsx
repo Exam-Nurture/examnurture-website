@@ -78,7 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head />
       <body className="min-h-full bg-[var(--bg)] text-[var(--ink-1)]" suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <ScrollReveal />
             {children}

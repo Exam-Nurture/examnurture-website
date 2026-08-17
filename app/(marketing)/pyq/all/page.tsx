@@ -584,7 +584,7 @@ function HeroSection({ stats, onRequireAuth }: {
               href="/dashboard/pyq?tab=attempts"
               onClick={(e) => onRequireAuth("/dashboard/pyq?tab=attempts", e)}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-white text-[15px] font-medium transition-colors hover:opacity-85"
-              style={{ background: "var(--ink-1)", fontWeight: 480, letterSpacing: "-0.10px" }}
+              style={{ background: "var(--blue)", fontWeight: 480, letterSpacing: "-0.10px" }}
             >
               My PYQ Attempts <ArrowRight className="h-4 w-4" />
             </Link>
@@ -614,7 +614,7 @@ function HeroSection({ stats, onRequireAuth }: {
 function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
     <div className="rounded-[16px] border p-5 transition-colors hover:border-[var(--ink-1)]" style={{ background: "var(--bg-secondary)", borderColor: "var(--line-soft)" }}>
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[8px] text-white" style={{ background: "var(--ink-1)" }}>
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[8px] text-white" style={{ background: "var(--blue)" }}>
         <Icon className="h-5 w-5" />
       </div>
       <p className="text-[28px] font-black tracking-tight tabular-nums leading-none" style={{ color: "var(--ink-1)" }}>{value}</p>

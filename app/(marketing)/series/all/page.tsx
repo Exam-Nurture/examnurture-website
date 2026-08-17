@@ -579,7 +579,7 @@ function HeroSection({ stats, loading, onRequireAuth }: {
               href="/dashboard/series"
               onClick={(e) => onRequireAuth("/dashboard/series", e)}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-white text-[15px] transition-opacity hover:opacity-85"
-              style={{ background: "var(--ink-1)", fontWeight: 480, letterSpacing: "-0.10px" }}
+              style={{ background: "var(--blue)", fontWeight: 480, letterSpacing: "-0.10px" }}
             >
               My Series <ArrowRight size={16} />
             </Link>
@@ -603,7 +603,7 @@ function HeroSection({ stats, loading, onRequireAuth }: {
             { icon: Users,         label: "Students",      value: "Growing"                             },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="rounded-[16px] border p-5 transition-colors hover:border-[var(--ink-1)]" style={{ background: "var(--bg-secondary)", borderColor: "var(--line-soft)" }}>
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[8px] text-white" style={{ background: "var(--ink-1)" }}>
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[8px] text-white" style={{ background: "var(--blue)" }}>
                 <Icon size={18} />
               </div>
               <p className="text-[28px] font-black tracking-tight leading-none tabular-nums" style={{ color: "var(--ink-1)" }}>{value}</p>
@@ -717,7 +717,7 @@ function SeriesCard({ series: s, bookmarked, onBookmark, onRequireAuth }: {
           <Link
             href={`/series/${s.id}`}
             className="flex flex-1 items-center justify-center gap-1 py-2 rounded-full text-[12px] font-semibold text-white transition-opacity hover:opacity-85"
-            style={{ background: "var(--ink-1)" }}
+            style={{ background: "var(--blue)" }}
           >
             Explore <ArrowRight size={11} />
           </Link>

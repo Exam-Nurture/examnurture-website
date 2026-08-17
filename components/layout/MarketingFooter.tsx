@@ -1,4 +1,8 @@
+"use client";
+
+
 import Link from "next/link";
+import { Lock, LogIn, CreditCard } from "lucide-react";
 
 const PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=com.examnurture";
 
@@ -24,6 +28,23 @@ const footerLinks = {
     { name: "Refund Policy",      href: "/refund"               },
   ],
 };
+
+// No guaranteed static slugs exist for these exams yet, so all quick-links
+// safely route to the browse-all page instead of a possibly-404ing slug.
+const popularExams = [
+  { name: "JPSC",         href: "/exams" },
+  { name: "SBI PO",       href: "/exams" },
+  { name: "SSC CGL",      href: "/exams" },
+  { name: "Railway NTPC", href: "/exams" },
+];
+
+const trustBadges = [
+  { label: "SSL Secured",       icon: Lock       },
+  { label: "Google Sign-In",    icon: LogIn      },
+  { label: "Razorpay Payments", icon: CreditCard },
+];
+
+
 
 const socialLinks: { href: string; label: string; external: boolean; svg: React.ReactNode }[] = [
   {
@@ -94,6 +115,8 @@ export default function MarketingFooter() {
   return (
     <footer className="bg-[var(--bg)] border-t border-[var(--line-soft)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-14">
+
+
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-10 lg:gap-8">
 
           {/* Brand column */}
@@ -184,6 +207,19 @@ export default function MarketingFooter() {
                   </li>
                 ))}
               </ul>
+
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-[var(--ink-3)] mt-6 mb-3">
+                Popular Exams
+              </p>
+              <ul className="space-y-2.5">
+                {popularExams.map((item) => (
+                  <li key={item.name}>
+                    <Link href={item.href} className="text-sm text-[var(--ink-3)] hover:text-[var(--blue)] transition-colors">
+                      {item.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
 
             {/* Account */}
@@ -230,10 +266,23 @@ export default function MarketingFooter() {
           </div>
         </div>
 
+        {/* Trust badges */}
+        <div className="border-t border-[var(--line-soft)] mt-12 pt-7 flex flex-wrap items-center gap-2.5">
+          {trustBadges.map(({ label, icon: Icon }) => (
+            <span
+              key={label}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--line-soft)] bg-[var(--bg-secondary)] text-[12px] text-[var(--ink-3)]"
+            >
+              <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              {label}
+            </span>
+          ))}
+        </div>
+
         {/* Bottom bar */}
-        <div className="border-t border-[var(--line-soft)] mt-12 pt-7 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="border-t border-[var(--line-soft)] mt-7 pt-7 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-sm text-[var(--ink-3)]">
-            &copy; {currentYear} ExamNurture. All rights reserved.
+            &copy; {currentYear} ExamNurture. Made with ❤️ in Ranchi, Jharkhand. All rights reserved.
           </p>
           <p className="text-sm text-[var(--ink-3)]">
             Built for India's competitive exam aspirants 🇮🇳

@@ -10,16 +10,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/");
   }
   return (
-    <div className="min-h-screen flex" style={{ background: "var(--bg)" }}>
-      {/* Collapsible sidebar — desktop only */}
+    /* `dash` scopes the Student Focus Hub token layer (light + dark pairs);
+       `dash-ambient` paints the fixed, very soft brand glow behind content. */
+    <div className="dash dash-ambient min-h-screen flex">
       <Sidebar />
 
-      {/* Right column: topbar + content */}
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar hideSidebarItems />
 
-        <main className="flex-1 pt-14 pb-20 md:pb-6" style={{ minHeight: "100vh" }}>
-          <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-6">
+        <main className="flex-1 pt-14 pb-24 md:pb-10">
+          <div className="max-w-[1240px] mx-auto px-4 md:px-6 py-5 md:py-7">
             {children}
           </div>
         </main>

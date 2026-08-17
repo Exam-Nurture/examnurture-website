@@ -59,6 +59,120 @@ const NAV_TABS = [
    MAIN PAGE
    ═══════════════════════════════════════════════ */
 
+/* ── Static fallback exam data (shown when API is offline) ── */
+const SLUG_FALLBACK_MAP: Record<string, any> = {
+  "jpsc-combined": {
+    id: "jpsc-combined", name: "JPSC Combined Civil Services", shortName: "JPSC", slug: "jpsc-combined",
+    description: "The Jharkhand Public Service Commission (JPSC) Combined Civil Services Examination is the premier state-level exam for recruitment to Group A & B posts in the Jharkhand government. It is held in two stages: Preliminary (objective) and Mains (descriptive), followed by a Personality Test (Interview).",
+    eligibility: "Bachelor's degree in any discipline from a recognized university. Age: 21–35 years (relaxation for reserved categories as per Jharkhand government norms).",
+    pattern: "Prelims: 2 objective papers (GS Paper I + GS Paper II/CSAT), 200 marks each. Mains: 6 papers including General Hindi, General English, and subject-specific papers. Interview: 100 marks.",
+    subjects: "Jharkhand GK,Indian History,Indian Geography,Indian Polity,Indian Economy,General Science,Current Affairs,Aptitude & Reasoning",
+    languages: "Hindi,English",
+    stages: "Preliminary Exam ➔ Mains Exam ➔ Personality Test (Interview)",
+    _count: { testSeries: 48, pyqPapers: 12 },
+    board: { id: 1, name: "JPSC", tint: "#0D287E", state: { id: 1, name: "Jharkhand" } },
+  },
+  "jssc-cgl": {
+    id: "jssc-cgl", name: "JSSC CGL", shortName: "JSSC CGL", slug: "jssc-cgl",
+    description: "The Jharkhand Staff Selection Commission Combined Graduate Level examination recruits for Group C posts including Clerks, Stenographers, Accountants, and other allied positions in state government departments.",
+    eligibility: "Bachelor's degree in any stream. Age: 21–35 years with category-based relaxations applicable.",
+    pattern: "Single-stage CBT: 3 papers — General Knowledge (120 Q), Regional Language (40 Q), General Maths/Reasoning (40 Q). Total 200 questions, 600 marks.",
+    subjects: "Jharkhand GK,Indian GK,Regional Language,Mathematics,Reasoning,Computer Knowledge",
+    languages: "Hindi,English",
+    stages: "CBT Written Exam ➔ Document Verification ➔ Medical Test",
+    _count: { testSeries: 36, pyqPapers: 8 },
+    board: { id: 2, name: "JSSC", tint: "#059669", state: { id: 1, name: "Jharkhand" } },
+  },
+  "sbi-po": {
+    id: "sbi-po", name: "SBI PO", shortName: "SBI PO", slug: "sbi-po",
+    description: "The State Bank of India Probationary Officer examination is one of the most prestigious banking exams in India. Selected candidates join as Probationary Officers and are confirmed as Assistant Managers after successful completion of probation.",
+    eligibility: "Bachelor's degree in any discipline. Age: 21–30 years.",
+    pattern: "Phase I (Prelims): 100 Q, 100 marks, 60 min — English (30), Quantitative Aptitude (35), Reasoning (35). Phase II (Mains): 250 marks — Data Analysis (35), Reasoning (45), GK & Economy (40), English (35), Computer (20).",
+    subjects: "English Language,Quantitative Aptitude,Reasoning Ability,Data Analysis & Interpretation,General/Economy/Banking Awareness,Computer Aptitude",
+    languages: "English,Hindi",
+    stages: "Phase I Prelims ➔ Phase II Mains ➔ Group Exercise & Interview",
+    _count: { testSeries: 62, pyqPapers: 15 },
+    board: { id: 3, name: "SBI", tint: "#2563EB", state: null },
+  },
+  "ibps-po": {
+    id: "ibps-po", name: "IBPS PO", shortName: "IBPS PO", slug: "ibps-po",
+    description: "The IBPS PO exam conducted by the Institute of Banking Personnel Selection recruits Probationary Officers for 19 participating nationalised banks across India including PNB, Bank of Baroda, Canara Bank, and others.",
+    eligibility: "Bachelor's degree. Age: 20–30 years with SC/ST/OBC/PWD relaxations.",
+    pattern: "Prelims: 100 Q, 100 marks, 60 min. Mains: 200 marks (Objective) + 25 marks (English letter/essay). Interview: 100 marks. Final merit: Mains 80% + Interview 20%.",
+    subjects: "English Language,Quantitative Aptitude,Reasoning Ability,General Awareness,Computer Knowledge",
+    languages: "English,Hindi",
+    stages: "Prelims ➔ Mains ➔ Interview",
+    _count: { testSeries: 55, pyqPapers: 18 },
+    board: { id: 4, name: "IBPS", tint: "#7C3AED", state: null },
+  },
+  "ssc-cgl": {
+    id: "ssc-cgl", name: "SSC CGL", shortName: "SSC CGL", slug: "ssc-cgl",
+    description: "The Staff Selection Commission Combined Graduate Level exam recruits for Group B and Group C posts in various Ministries, Departments, and Organisations of the Central Government including Income Tax Officer, Auditor, Assistant, and Inspector roles.",
+    eligibility: "Bachelor's degree in any stream. Age: 18–32 years depending on post (varies).",
+    pattern: "Tier I: 100 Q, 200 marks, 60 min (GK, Reasoning, Maths, English — 25 each). Tier II: Papers I & II covering Quantitative Ability (200 marks) and English & Comprehension (200 marks).",
+    subjects: "General Intelligence & Reasoning,General Awareness,Quantitative Aptitude,English Comprehension,Statistics (for specific posts)",
+    languages: "English,Hindi",
+    stages: "Tier I (CBT) ➔ Tier II (CBT) ➔ Document Verification",
+    _count: { testSeries: 78, pyqPapers: 22 },
+    board: { id: 5, name: "SSC", tint: "#D97706", state: null },
+  },
+  "railway-ntpc": {
+    id: "railway-ntpc", name: "Railway NTPC", shortName: "RRB NTPC", slug: "railway-ntpc",
+    description: "RRB NTPC (Non-Technical Popular Categories) recruitment is conducted by Railway Recruitment Boards for posts like Junior Clerk cum Typist, Accounts Clerk cum Typist, Junior Time Keeper, Trains Clerk, Commercial cum Ticket Clerk, Traffic Assistant, Goods Guard, and more.",
+    eligibility: "12th Pass / Bachelor's Degree depending on post. Age: 18–30 years (post-specific).",
+    pattern: "CBT 1: 100 Q, 90 min — Mathematics (30), GI & Reasoning (30), GK & Current Affairs (40). CBT 2: 120 Q, 90 min — Mathematics (35), GI & Reasoning (35), GK & Current Affairs (50). Typing Test/Skill Test for specific posts.",
+    subjects: "Mathematics,General Intelligence & Reasoning,General Awareness & Current Affairs",
+    languages: "English,Hindi",
+    stages: "CBT Stage 1 ➔ CBT Stage 2 ➔ Skill Test/Typing Test ➔ Document Verification",
+    _count: { testSeries: 44, pyqPapers: 16 },
+    board: { id: 6, name: "RRB", tint: "#DC2626", state: null },
+  },
+  "rbi-grade-b": {
+    id: "rbi-grade-b", name: "RBI Grade B Officer", shortName: "RBI Grade B", slug: "rbi-grade-b",
+    description: "The Reserve Bank of India Grade B Officer exam is one of India's most prestigious and well-paying banking exams. Grade B Officers join as Assistant Managers in RBI's various departments handling monetary policy, regulation, and financial inclusion.",
+    eligibility: "Bachelor's degree with min 60% marks (55% for SC/ST). Age: 21–30 years.",
+    pattern: "Phase I: Objective — GS (80 Q), English (30 Q), Quantitative Aptitude (30 Q), Reasoning (60 Q) — 200 marks. Phase II: Paper I ESI (100 marks) + Paper II Finance & Management (100 marks) + Paper III English (100 marks). Phase III: Interview (75 marks).",
+    subjects: "English,Quantitative Aptitude,Reasoning,General Awareness,Economic & Social Issues,Finance & Management",
+    languages: "English",
+    stages: "Phase I ➔ Phase II ➔ Interview",
+    _count: { testSeries: 32, pyqPapers: 10 },
+    board: { id: 7, name: "RBI", tint: "#0891B2", state: null },
+  },
+  "daroga-si": {
+    id: "daroga-si", name: "JSSC Daroga (Sub-Inspector)", shortName: "Daroga SI", slug: "daroga-si",
+    description: "The Jharkhand Daroga (Sub-Inspector) exam is conducted by JSSC for recruitment to the Jharkhand Police force. It is one of the most applied-for state police exams in Jharkhand, attracting lakhs of candidates each cycle.",
+    eligibility: "Bachelor's degree. Age: 21–25 years (general), with relaxation for reserved categories.",
+    pattern: "Written Exam: Paper I — General Knowledge & Jharkhand GK (100 Q); Paper II — General Hindi/Regional Language (50 Q). Physical Efficiency Test (PET). Medical Examination.",
+    subjects: "Jharkhand GK,Indian History & Polity,General Science,Current Affairs,Hindi/Regional Language,Aptitude",
+    languages: "Hindi",
+    stages: "Written Exam ➔ Physical Efficiency Test ➔ Medical Exam ➔ Document Verification",
+    _count: { testSeries: 24, pyqPapers: 5 },
+    board: { id: 2, name: "JSSC", tint: "#059669", state: { id: 1, name: "Jharkhand" } },
+  },
+  "bihar-police-si": {
+    id: "bihar-police-si", name: "Bihar Police SI", shortName: "BPSSC SI", slug: "bihar-police-si",
+    description: "Bihar Police Sub-Inspector exam conducted by Bihar Police Subordinate Services Commission (BPSSC) for recruitment to Sub-Inspector (Constable Executive) and Sergeant posts in the Bihar Police.",
+    eligibility: "Bachelor's degree. Age: 20–37 years for men, 20–40 years for women.",
+    pattern: "Prelims: 100 Q, 200 marks, 2 hours — GK, Current Affairs, Hindi, Maths, Reasoning. Mains: 200 marks. PET/PMT. Character Verification.",
+    subjects: "General Hindi,General Knowledge,Current Affairs,Mathematics,Reasoning",
+    languages: "Hindi",
+    stages: "Preliminary Written Test ➔ PET/PMT ➔ Mains Written Test ➔ Character Verification",
+    _count: { testSeries: 28, pyqPapers: 6 },
+    board: { id: 8, name: "BPSSC", tint: "#B45309", state: { id: 2, name: "Bihar" } },
+  },
+  "bpsc-70th": {
+    id: "bpsc-70th", name: "BPSC 70th Combined Competitive Exam", shortName: "BPSC 70th", slug: "bpsc-70th",
+    description: "The Bihar Public Service Commission 70th Combined Competitive Examination recruits candidates for Class I, II, and III civil services posts in the state of Bihar. It is one of the most competitive state PSC exams in India, with candidates typically requiring 1–2 years of dedicated preparation.",
+    eligibility: "Bachelor's degree from a recognised university. Age: 20–37 years (general). Relaxation: SC/ST up to 42 years, OBC/EBC/Women up to 40 years.",
+    pattern: "Prelims (PT): 150 Q, 150 marks, 2 hours — General Studies (History, Polity, Geography, Economy, Science, Current Affairs). Mains: 8 papers — General Hindi (100 marks qualifying), Essay (300 marks), 2 × General Studies papers (300 marks each), 4 Optional papers (300 marks each). Interview: 120 marks.",
+    subjects: "Indian History,Indian Polity,Indian Geography,Indian Economy,General Science,Bihar GK,Current Affairs,Essay Writing,Optional Subjects",
+    languages: "Hindi,English",
+    stages: "Preliminary Exam (PT) ➔ Mains Exam (8 Papers) ➔ Interview/Personality Test",
+    _count: { testSeries: 40, pyqPapers: 14 },
+    board: { id: 9, name: "BPSC", tint: "#7C3AED", state: { id: 2, name: "Bihar" } },
+  },
+};
+
 export default function ExamHubPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { user } = useAuth();
@@ -82,8 +196,19 @@ export default function ExamHubPage({ params }: { params: Promise<{ slug: string
       })
       .catch((err: any) => {
         const status = err?.status ?? err?.statusCode;
-        if (status === 404) setNotFoundError(true);
-        else setNetworkError(true);
+        if (status === 404) {
+          setNotFoundError(true);
+        } else {
+          // API offline — try static fallback before showing error
+          const fallback = SLUG_FALLBACK_MAP[slug];
+          if (fallback) {
+            setExam(fallback);
+            setBoard(fallback.board);
+            setState(fallback.board?.state ?? null);
+          } else {
+            setNetworkError(true);
+          }
+        }
       })
       .finally(() => setLoadingExam(false));
   }, [slug]);

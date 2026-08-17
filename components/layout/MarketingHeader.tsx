@@ -282,17 +282,21 @@ export default function MarketingHeader() {
 
       {showAuthModal && <AuthModal onClose={handleCloseAuthModal} next={nextParam} />}
 
-      {/* ── Main Header — flat DocuSeal style ── */}
+      {/* ── Main Header — floating detached glass capsule ── */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-500 ${isHidden ? "-translate-y-full" : "translate-y-0"} ${
-          isScrolled
-            ? "bg-[rgba(251,251,251,0.92)] dark:bg-[rgba(18,21,28,0.92)] border-b border-[var(--line-soft)] backdrop-blur-2xl shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:shadow-[0_1px_0_rgba(255,255,255,0.04),0_2px_20px_rgba(0,0,0,0.5)]"
-            : "bg-[rgba(251,251,251,0.85)] dark:bg-[rgba(11,13,18,0.85)] border-b border-[var(--line-soft)] backdrop-blur-xl"
+        className={`fixed left-0 right-0 z-50 transition-[transform,top] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isHidden ? "-translate-y-[calc(100%+24px)]" : "translate-y-0"} ${
+          isScrolled ? "top-3" : "top-5"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative w-full">
-          <div className="flex items-center justify-between gap-3 h-16">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+        <div
+          className={`relative w-full rounded-[26px] border transition-[box-shadow,background-color,border-color] duration-500 ${
+            isScrolled
+              ? "bg-[rgba(251,251,251,0.90)] dark:bg-[rgba(18,21,28,0.90)] border-[var(--glass-border)] shadow-[0_8px_28px_-6px_rgba(32,34,40,0.16),0_0_0_1px_rgba(255,255,255,0.6)_inset] dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.06)_inset]"
+              : "bg-[rgba(251,251,251,0.72)] dark:bg-[rgba(11,13,18,0.72)] border-[var(--glass-border)] shadow-[0_2px_16px_-4px_rgba(32,34,40,0.08)] dark:shadow-[0_2px_20px_-4px_rgba(0,0,0,0.5)]"
+          } backdrop-blur-2xl backdrop-saturate-150`}
+        >
+          <div className="flex items-center justify-between gap-3 h-16 px-4 sm:px-5">
 
             {/* Logo */}
             <BrandLogo size="md" className="hidden sm:flex" />
@@ -306,7 +310,12 @@ export default function MarketingHeader() {
                 <NavLink href="/about">About</NavLink>
                 <NavLink href="/series/all">Test Series</NavLink>
 
-                <NavLink href="/exams">Exams</NavLink>
+                <span className="relative">
+                  <NavLink href="/exams">Exams</NavLink>
+                  <span className="pointer-events-none absolute -top-1.5 -right-2.5 px-1.5 py-[1px] rounded-full text-[9px] font-mono font-bold tracking-wide bg-[var(--blue-soft)] text-[var(--blue)] border border-[var(--blue)]/15 dark:border-[var(--blue)]/30">
+                    50+
+                  </span>
+                </span>
 
                 <NavLink href="/pyq/all">Previous Year Papers</NavLink>
                 <NavLink href="/blogs">Blogs</NavLink>
@@ -441,35 +450,35 @@ export default function MarketingHeader() {
 
             </div>
           </div>
-        </div>
 
-        {/* Mobile search bar (expands below header) */}
-        <AnimatePresence>
-          {showSearch && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="md:hidden overflow-hidden bg-[var(--bg)]/95 backdrop-blur-xl border-t border-[var(--line-soft)] px-4 py-3"
-            >
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--line-soft)]">
-                <Search className="w-4 h-4 text-[var(--ink-4)] shrink-0" />
-                <input
-                  autoFocus
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search exams, tests, topics…"
-                  className="flex-1 text-sm outline-none bg-transparent text-[var(--ink-1)] placeholder-[var(--ink-4)]"
-                />
-                {searchQuery
-                  ? <button onClick={() => setSearchQuery("")}><X className="w-4 h-4 text-[var(--ink-4)]" /></button>
-                  : <button onClick={() => setShowSearch(false)}><X className="w-4 h-4 text-[var(--ink-4)]" /></button>
-                }
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          {/* Mobile search bar (expands below nav row, within the capsule) */}
+          <AnimatePresence>
+            {showSearch && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="md:hidden overflow-hidden border-t border-[var(--line-soft)] px-4 py-3 rounded-b-[26px]"
+              >
+                <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--line-soft)]">
+                  <Search className="w-4 h-4 text-[var(--ink-4)] shrink-0" />
+                  <input
+                    autoFocus
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search exams, tests, topics…"
+                    className="flex-1 text-sm outline-none bg-transparent text-[var(--ink-1)] placeholder-[var(--ink-4)]"
+                  />
+                  {searchQuery
+                    ? <button onClick={() => setSearchQuery("")}><X className="w-4 h-4 text-[var(--ink-4)]" /></button>
+                    : <button onClick={() => setShowSearch(false)}><X className="w-4 h-4 text-[var(--ink-4)]" /></button>
+                  }
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
         </div>
       </header>
 

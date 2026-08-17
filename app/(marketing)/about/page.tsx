@@ -1,7 +1,19 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ArrowRight, Globe, Mail } from "lucide-react";
+import {
+  ArrowRight,
+  Globe,
+  Mail,
+  Calendar,
+  MapPin,
+  Users,
+  BookOpen,
+  Accessibility,
+  Award,
+  Eye,
+  GraduationCap,
+} from "lucide-react";
 import { API_BASE } from "@/lib/config";
 
 function LinkedInIcon({ className }: { className?: string }) {
@@ -34,10 +46,79 @@ interface TeamMember {
   bio?: string;
 }
 
+/* ── Static fallback team, rendered whenever the /team API is offline or empty ── */
+const FALLBACK_TEAM: TeamMember[] = [
+  {
+    id: "fallback-1",
+    name: "Dilip Kumar",
+    role: "Co-founder & CTO",
+    photo_image_url: null,
+    linkedin_url: undefined,
+    github_url: undefined,
+  },
+  {
+    id: "fallback-2",
+    name: "Vikash Kashyap",
+    role: "Co-founder & CEO",
+    photo_image_url: null,
+    linkedin_url: undefined,
+    github_url: undefined,
+  },
+  {
+    id: "fallback-3",
+    name: "Suraj Kumar",
+    role: "Co-founder & Subject Expert",
+    photo_image_url: null,
+    linkedin_url: undefined,
+    github_url: undefined,
+  },
+];
+
+/* ── Distinct, decorative avatar colors for initials — cycles by index ── */
+const AVATAR_COLORS = ["#0D287E", "#7C3AED", "#059669", "#B45309"];
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join("");
+}
+
+const COMPANY_STATS = [
+  { icon: Calendar, value: "2023", label: "Founded" },
+  { icon: MapPin, value: "Ranchi, JH", label: "Headquarters" },
+  { icon: Users, value: "12,400+", label: "Students" },
+  { icon: BookOpen, value: "50+", label: "Exams Covered" },
+];
+
+const VALUES = [
+  {
+    icon: Accessibility,
+    title: "Accessibility",
+    desc: "Quality exam prep shouldn't depend on coaching-center access or budget.",
+  },
+  {
+    icon: Award,
+    title: "Quality",
+    desc: "Every test series and PYQ paper is reviewed before it reaches students.",
+  },
+  {
+    icon: Eye,
+    title: "Transparency",
+    desc: "Clear pricing, honest analytics, and no hidden conditions on what's free.",
+  },
+  {
+    icon: GraduationCap,
+    title: "Student-First",
+    desc: "Product decisions are weighed against one question: does this help a student pass?",
+  },
+];
+
 export default function AboutPage() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`${API_URL}/team`)
@@ -62,10 +143,12 @@ export default function AboutPage() {
       })
       .catch((err) => {
         console.error("Error fetching team members:", err);
-        setError("Could not load team members");
+        // No banner shown to the user — FALLBACK_TEAM below covers this case.
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const displayTeam = teamMembers.length ? teamMembers : FALLBACK_TEAM;
 
   return (
     <div className="min-h-screen bg-bg text-ink-1">
@@ -88,8 +171,35 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* Company stats */}
+      <section className="pb-20 px-4 sm:px-6 lg:px-8 bg-bg">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {COMPANY_STATS.map((stat) => (
+              <div key={stat.label} className="card-bezel">
+                <div className="card-bezel-inner p-5 lg:p-6 flex flex-col items-start">
+                  <stat.icon className="w-5 h-5 text-blue mb-4" aria-hidden="true" />
+                  <div
+                    className="text-[22px] lg:text-[26px] leading-none text-ink-1"
+                    style={{ fontWeight: 400, letterSpacing: "-0.4px" }}
+                  >
+                    {stat.value}
+                  </div>
+                  <div
+                    className="mt-2 text-[11px] uppercase text-ink-3"
+                    style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.5px" }}
+                  >
+                    {stat.label}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Mission */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-bg-secondary">
+      <section className="hero-atmospheric py-20 px-4 sm:px-6 lg:px-8 bg-bg-secondary">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="w-full flex justify-center">
@@ -114,7 +224,7 @@ export default function AboutPage() {
               </h2>
               <p className="text-[18px] leading-[1.45] text-ink-2"
                  style={{ fontWeight: 300, letterSpacing: "-0.26px" }}>
-                To provide every student in India with comprehensive, accessible, and high-quality test series, courses, and study materials — enabling them to excel in competitive exams with confidence and clarity.
+                ExamNurture exists to make serious exam preparation accessible to every aspirant in Jharkhand and beyond — regardless of coaching-center access or budget. We provide test series, PYQ papers, and study materials so students can prepare with confidence wherever they are.
               </p>
               <div className="pt-2 flex items-center gap-2 text-ink-1 font-medium text-[15px]">
                 <span>Transforming education</span>
@@ -177,20 +287,15 @@ export default function AboutPage() {
               </h2>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                { icon: "✨", title: "Excellence", desc: "We pursue the highest standards in everything we do, ensuring quality in every interaction." },
-                { icon: "🌍", title: "Accessibility", desc: "Quality education should be available to everyone, regardless of background or location." },
-                { icon: "🚀", title: "Innovation", desc: "We constantly evolve and adapt to serve students better with cutting-edge solutions." },
-                { icon: "🤝", title: "Integrity", desc: "We build trust through transparency, honesty, and ethical practices in all dealings." },
-                { icon: "🎯", title: "Impact", desc: "We measure success by student achievement and real-world outcomes." },
-                { icon: "❤️", title: "Community", desc: "Together, we create a supportive ecosystem where every student can thrive and succeed." },
-              ].map((value, idx) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {VALUES.map((value) => (
                 <div
-                  key={idx}
+                  key={value.title}
                   className="bg-card rounded-[8px] p-7 border border-line hover:border-ink-1 transition-colors duration-200"
                 >
-                  <div className="text-4xl mb-4">{value.icon}</div>
+                  <div className="w-11 h-11 rounded-[10px] bg-blue-soft flex items-center justify-center mb-4">
+                    <value.icon className="w-5 h-5 text-blue" aria-hidden="true" />
+                  </div>
                   <h3 className="text-[18px] font-semibold text-ink-1 mb-2">{value.title}</h3>
                   <p className="text-[15px] text-ink-2 leading-relaxed">{value.desc}</p>
                 </div>
@@ -222,40 +327,9 @@ export default function AboutPage() {
               <div className="animate-spin rounded-full h-10 w-10 border-2 border-line border-t-ink-1 mx-auto" />
               <p className="text-ink-2 mt-4 text-sm">Loading team members...</p>
             </div>
-          ) : error || teamMembers.length === 0 ? (
-            <div className="relative">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="rounded-[12px] bg-bg-secondary border border-line overflow-hidden">
-                    <div className="aspect-square bg-surface-hover flex items-center justify-center">
-                      <div className="w-20 h-20 rounded-full bg-surface-hover flex items-center justify-center border border-line">
-                        <svg className="w-10 h-10 text-ink-3" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-2">
-                      <div className="h-4 bg-surface-hover rounded w-3/4" />
-                      <div className="h-3 bg-surface-hover rounded w-1/2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center bg-bg/80 backdrop-blur-sm rounded-[16px]">
-                <div className="text-center px-6 py-8">
-                  <div className="w-14 h-14 bg-bg-secondary rounded-[12px] flex items-center justify-center mx-auto mb-4 border border-line">
-                    <svg className="w-7 h-7 text-ink-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-[18px] font-semibold text-ink-1 mb-2">Team Directory Coming Soon</h3>
-                  <p className="text-ink-2 text-sm max-w-xs mx-auto">Our amazing team will be introduced here shortly!</p>
-                </div>
-              </div>
-            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {teamMembers.map((member) => (
+              {displayTeam.map((member, idx) => (
                 <div
                   key={member.id}
                   className="rounded-[12px] bg-bg-secondary border border-line overflow-hidden hover:border-ink-1 transition-colors duration-200"
@@ -264,8 +338,14 @@ export default function AboutPage() {
                     {member.photo_image_url ? (
                       <img src={member.photo_image_url} alt={member.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-5xl font-bold text-ink-2">{member.name.charAt(0).toUpperCase()}</span>
+                      <div
+                        className="w-full h-full flex items-center justify-center"
+                        style={{ backgroundColor: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
+                        aria-hidden="true"
+                      >
+                        <span className="text-4xl font-semibold text-white">
+                          {getInitials(member.name)}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -308,4 +388,3 @@ export default function AboutPage() {
     </div>
   );
 }
-

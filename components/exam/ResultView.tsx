@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import {
-  CheckCircle2, XCircle, MinusCircle, Trophy, BarChart3,
-  ChevronDown, Mail, Loader2, CheckCheck, AlertCircle,
-  Clock, Target, TrendingUp, Award, BookOpen,
+  CheckCircle2, XCircle, MinusCircle, BarChart3, ChevronDown, Mail,
+  Loader2, CheckCheck, AlertCircle, Clock, Target, TrendingUp, Award,
+  BookOpen, ArrowLeft, Trophy,
 } from "lucide-react";
 import QuestionViewer, { Question } from "./QuestionViewer";
+import LanguageSelect from "./LanguageSelect";
+import { availableLanguages } from "./languages";
 
 /* ─── Types ─────────────────────────────────── */
 export interface AttemptResult {
@@ -33,402 +36,622 @@ export interface ResultViewProps {
 }
 
 type EmailStatus = "idle" | "sending" | "sent" | "error";
+type ReviewFilter = "all" | "correct" | "wrong" | "skipped";
 
-/* ─── Helpers ────────────────────────────────── */
+/* ─── Helpers ───────────────────────────────── */
 function pct(n: number, d: number) {
-  if (!d) return 0;
-  return Math.round((n / d) * 100);
+  return d ? Math.round((n / d) * 100) : 0;
 }
 
 function formatTime(sec: number) {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   const s = sec % 60;
-  if (h > 0) return `${h}h ${m}m ${String(s).padStart(2, "0")}s`;
+  if (h > 0) return `${h}h ${m}m`;
   return `${m}m ${String(s).padStart(2, "0")}s`;
 }
 
-function getGrade(p: number) {
-  if (p >= 90) return { label: "A+", bg: "rgba(16,185,129,0.18)" };
-  if (p >= 75) return { label: "A",  bg: "rgba(16,185,129,0.15)" };
-  if (p >= 60) return { label: "B+", bg: "rgba(59,130,246,0.18)" };
-  if (p >= 50) return { label: "B",  bg: "rgba(99,102,241,0.18)" };
-  if (p >= 40) return { label: "C",  bg: "rgba(245,158,11,0.20)" };
-  return           { label: "D",  bg: "rgba(239,68,68,0.18)"  };
+function grading(p: number) {
+  if (p >= 90) return { grade: "A+", tone: "var(--x-answered)", title: "Outstanding", sub: "Top-tier preparation. Hold this standard." };
+  if (p >= 75) return { grade: "A",  tone: "var(--x-answered)", title: "Excellent work", sub: "Strong score — refine the weaker sections." };
+  if (p >= 60) return { grade: "B+", tone: "var(--blue-ink)",   title: "Good job", sub: "Solid result. Target your low-scoring topics next." };
+  if (p >= 50) return { grade: "B",  tone: "var(--blue-ink)",   title: "On track", sub: "You cleared the bar. Consistency will lift this." };
+  if (p >= 40) return { grade: "C",  tone: "var(--amber)",      title: "Keep practising", sub: "Review weak subjects and attempt more mocks." };
+  return { grade: "D", tone: "var(--x-unanswered)", title: "Build the base", sub: "Start from fundamentals, one section at a time." };
 }
 
-function getPerformance(p: number) {
-  if (p >= 90) return { title: "Outstanding! 🎉",         sub: "Top scorer — excellent preparation!" };
-  if (p >= 75) return { title: "Excellent Work! 🌟",       sub: "Great score. Keep refining weak areas." };
-  if (p >= 60) return { title: "Good Job! 👍",             sub: "Solid result. Focus on low-scoring topics." };
-  if (p >= 50) return { title: "Average Performance",      sub: "You passed — consistent practice will improve this." };
-  if (p >= 40) return { title: "Keep Practicing",          sub: "Review your weak subjects and attempt more mocks." };
-  return             { title: "Needs More Preparation",    sub: "Start from fundamentals and build section by section." };
-}
-
-/* ─── Score Ring ─────────────────────────────── */
-function ScoreRing({ p, size = 136 }: { p: number; size?: number }) {
-  const r    = size * 0.38;
+/* ─── Score ring ────────────────────────────── */
+function ScoreRing({ p, tone, size = 148 }: { p: number; tone: string; size?: number }) {
+  const stroke = 11;
+  const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
-  const dash = (p / 100) * circ;
-  const color = p >= 60 ? "#10b981" : p >= 40 ? "#f59e0b" : "#ef4444";
-  const cx = size / 2, cy = size / 2;
   return (
-    <svg width={size} height={size} className="rotate-[-90deg]">
-      <circle cx={cx} cy={cy} r={r} fill="none" strokeWidth={10} stroke="rgba(255,255,255,0.15)" />
-      <circle
-        cx={cx} cy={cy} r={r}
-        fill="none" strokeWidth={10} stroke={color}
-        strokeDasharray={`${dash} ${circ - dash}`}
+    <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} stroke="var(--x-inset-2)" />
+      <motion.circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        strokeWidth={stroke}
+        stroke={tone}
         strokeLinecap="round"
-        style={{ transition: "stroke-dasharray 1.2s ease" }}
+        strokeDasharray={circ}
+        initial={{ strokeDashoffset: circ }}
+        animate={{ strokeDashoffset: circ - (p / 100) * circ }}
+        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
       />
     </svg>
   );
 }
 
-/* ─── Component ──────────────────────────────── */
+/* ─── Component ─────────────────────────────── */
 export default function ResultView({
-  result, questions, userAnswers,
-  testTitle, onBack, onEmailReport,
+  result,
+  questions,
+  userAnswers,
+  testTitle,
+  onBack,
+  onEmailReport,
 }: ResultViewProps) {
-  const [reviewOpen, setReviewOpen]   = useState(false);
-  const [reviewIdx, setReviewIdx]     = useState(0);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewIdx, setReviewIdx] = useState(0);
+  const [filter, setFilter] = useState<ReviewFilter>("all");
   const [emailStatus, setEmailStatus] = useState<EmailStatus>("idle");
+  const [lang, setLang] = useState("en");
 
-  const scorePct   = pct(result.scored, result.totalMarks);
-  const accuracy   = pct(result.correct, result.correct + result.wrong);
-  const grade      = getGrade(scorePct);
-  const { title: perfTitle, sub: perfSub } = getPerformance(scorePct);
-  const avgTimeSec = result.timeTakenSec && result.totalQuestions
-    ? Math.round(result.timeTakenSec / result.totalQuestions) : null;
+  const languages = useMemo(() => availableLanguages(questions), [questions]);
+
+  const scorePct = pct(result.scored, result.totalMarks);
+  const accuracy = pct(result.correct, result.correct + result.wrong);
+  const g = grading(scorePct);
+  const avgTimeSec =
+    result.timeTakenSec && result.totalQuestions
+      ? Math.round(result.timeTakenSec / result.totalQuestions)
+      : null;
+
+  const statusOf = (q: Question): ReviewFilter => {
+    const ua = userAnswers[q.id];
+    if (ua === undefined) return "skipped";
+    return ua === q.correctIndex ? "correct" : "wrong";
+  };
+
+  const visible = useMemo(
+    () =>
+      questions
+        .map((q, idx) => ({ q, idx }))
+        .filter(({ q }) => filter === "all" || statusOf(q) === filter),
+    // statusOf closes over userAnswers, which is stable for a submitted attempt
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [questions, filter, userAnswers],
+  );
 
   const reviewQuestion = questions[reviewIdx];
 
   const handleEmail = async () => {
+    if (!onEmailReport) return;
     setEmailStatus("sending");
     try {
-      if (onEmailReport) {
-        await onEmailReport();
-      } else {
-        // Placeholder — wire up real API when backend endpoint is ready
-        await new Promise(r => setTimeout(r, 1500));
-      }
+      await onEmailReport();
       setEmailStatus("sent");
     } catch {
       setEmailStatus("error");
     }
   };
 
+  const STATS = [
+    { label: "Correct",     value: result.correct,     icon: CheckCircle2, tone: "var(--x-answered)",   bg: "var(--green-soft)" },
+    { label: "Wrong",       value: result.wrong,       icon: XCircle,      tone: "var(--x-unanswered)", bg: "var(--red-soft)" },
+    { label: "Unattempted", value: result.unattempted, icon: MinusCircle,  tone: "var(--x-ink-3)",      bg: "var(--x-inset)" },
+    { label: "Accuracy",    value: `${accuracy}%`,     icon: Target,       tone: "var(--blue-ink)",     bg: "var(--blue-soft)" },
+  ];
+
+  const FILTERS: { id: ReviewFilter; label: string; count: number }[] = [
+    { id: "all", label: "All", count: questions.length },
+    { id: "correct", label: "Correct", count: result.correct },
+    { id: "wrong", label: "Wrong", count: result.wrong },
+    { id: "skipped", label: "Skipped", count: result.unattempted },
+  ];
+
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 flex flex-col gap-5 fade-up">
-
-      {/* ── Hero Score Card ── */}
-      <div
-        className="relative overflow-hidden rounded-3xl"
-        style={{ background: "linear-gradient(135deg, #0D287E 0%, #091E60 100%)" }}
-      >
-        {/* Ambient circles */}
-        <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full pointer-events-none"
-             style={{ background: "rgba(255,255,255,0.05)" }} />
-        <div className="absolute -bottom-12 -left-12 w-40 h-40 rounded-full pointer-events-none"
-             style={{ background: "rgba(255,255,255,0.04)" }} />
-        <div className="absolute top-1/2 right-1/4 w-28 h-28 rounded-full pointer-events-none"
-             style={{ background: "rgba(29,78,216,0.20)" }} />
-
-        <div className="relative z-10 p-6 md:p-8">
-          {testTitle && (
-            <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-4">{testTitle}</p>
-          )}
-
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            {/* Score ring */}
-            <div className="relative shrink-0">
-              <ScoreRing p={scorePct} size={136} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                <span className="text-4xl font-black leading-none">{result.scored}</span>
-                <span className="text-[11px] text-white/55 mt-0.5">/ {result.totalMarks}</span>
-                <span className="text-[10px] font-bold text-white/45 mt-1">{scorePct}%</span>
-              </div>
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
-                <span
-                  className="text-xl font-black px-3 py-0.5 rounded-xl"
-                  style={{ background: grade.bg, color: "#fff" }}
-                >
-                  {grade.label}
-                </span>
-                <Award className="w-5 h-5 text-amber-400" />
-              </div>
-              <h2 className="text-[19px] font-extrabold text-white mb-1">{perfTitle}</h2>
-              <p className="text-sm text-white/60 mb-4 leading-relaxed">{perfSub}</p>
-
-              {(result.rank || result.percentile) && (
-                <div className="flex gap-5 justify-center sm:justify-start">
-                  {result.rank && (
-                    <div>
-                      <div className="text-2xl font-black text-white">#{result.rank}</div>
-                      <div className="text-[10px] text-white/45 font-semibold uppercase tracking-wider">Rank</div>
-                    </div>
-                  )}
-                  {result.percentile && (
-                    <div>
-                      <div className="text-2xl font-black text-white">{result.percentile}%ile</div>
-                      <div className="text-[10px] text-white/45 font-semibold uppercase tracking-wider">Percentile</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 4-Stat Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Correct",      value: result.correct,     icon: CheckCircle2, iconColor: "#10b981", accentBg: "#d1fae5", valColor: "#10b981" },
-          { label: "Wrong",        value: result.wrong,       icon: XCircle,      iconColor: "#ef4444", accentBg: "#fee2e2", valColor: "#ef4444" },
-          { label: "Unattempted",  value: result.unattempted, icon: MinusCircle,  iconColor: "#94a3b8", accentBg: "var(--bg-secondary)", valColor: "var(--ink-2)" },
-          { label: "Accuracy",     value: `${accuracy}%`,     icon: Target,       iconColor: "#3b82f6", accentBg: "#dbeafe", valColor: "#3b82f6" },
-        ].map(({ label, value, icon: Icon, iconColor, accentBg, valColor }) => (
+    <div className="exam-shell min-h-screen">
+      <div className="mx-auto flex max-w-[860px] flex-col gap-4 px-4 py-6 sm:py-9">
+        {/* ══ Hero ══ */}
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="x-paper relative overflow-hidden p-5 sm:p-7"
+        >
           <div
-            key={label}
-            className="rounded-2xl p-4 flex flex-col gap-2"
-            style={{ background: "var(--card)", border: "1px solid var(--line-soft)" }}
-          >
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: accentBg }}>
-              <Icon className="w-5 h-5" style={{ color: iconColor }} />
-            </div>
-            <div className="text-2xl font-black" style={{ color: valColor }}>{value}</div>
-            <div className="text-[11px] font-semibold" style={{ color: "var(--ink-4)" }}>{label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Time & Marks strip ── */}
-      {(result.timeTakenSec || avgTimeSec || result.negMarks !== undefined) && (
-        <div
-          className="rounded-2xl p-5 flex flex-wrap gap-5"
-          style={{ background: "var(--card)", border: "1px solid var(--line-soft)" }}
-        >
-          {result.timeTakenSec && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#fef3c7" }}>
-                <Clock className="w-5 h-5 text-amber-500" />
-              </div>
-              <div>
-                <div className="text-sm font-bold" style={{ color: "var(--ink-1)" }}>{formatTime(result.timeTakenSec)}</div>
-                <div className="text-[10px] font-medium" style={{ color: "var(--ink-4)" }}>Time Taken</div>
-              </div>
-            </div>
-          )}
-          {avgTimeSec && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#e0e7ff" }}>
-                <TrendingUp className="w-5 h-5 text-indigo-500" />
-              </div>
-              <div>
-                <div className="text-sm font-bold" style={{ color: "var(--ink-1)" }}>
-                  {avgTimeSec < 60 ? `${avgTimeSec}s` : `${Math.round(avgTimeSec / 60)}m`}
-                </div>
-                <div className="text-[10px] font-medium" style={{ color: "var(--ink-4)" }}>Avg / Question</div>
-              </div>
-            </div>
-          )}
-          {result.negMarks !== undefined && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#fee2e2" }}>
-                <XCircle className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <div className="text-sm font-bold" style={{ color: "var(--ink-1)" }}>-{result.negMarks}</div>
-                <div className="text-[10px] font-medium" style={{ color: "var(--ink-4)" }}>Negative Marks</div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Subject-wise Analysis ── */}
-      {result.subjectStats && result.subjectStats.length > 0 && (
-        <div
-          className="rounded-2xl p-5"
-          style={{ background: "var(--card)", border: "1px solid var(--line-soft)" }}
-        >
-          <div className="flex items-center gap-2 mb-5">
-            <BarChart3 className="w-5 h-5" style={{ color: "var(--blue)" }} />
-            <h2 className="text-[15px] font-bold" style={{ color: "var(--ink-1)" }}>Subject-wise Analysis</h2>
-          </div>
-          <div className="flex flex-col gap-5">
-            {result.subjectStats.map(({ subject, correct, total }) => {
-              const p = pct(correct, total);
-              const barColor = p >= 60 ? "#10b981" : p >= 40 ? "#f59e0b" : "#ef4444";
-              const badgeBg  = p >= 60 ? "#d1fae5" : p >= 40 ? "#fef3c7" : "#fee2e2";
-              const badgeClr = p >= 60 ? "#059669" : p >= 40 ? "#d97706" : "#ef4444";
-              return (
-                <div key={subject}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: "var(--ink-2)" }}>
-                      <BookOpen className="w-3.5 h-3.5" style={{ color: "var(--blue)" }} />
-                      {subject}
-                    </span>
-                    <div className="flex items-center gap-2 text-[12px]">
-                      <span style={{ color: "var(--ink-4)" }}>{correct}/{total}</span>
-                      <span className="font-bold px-2 py-0.5 rounded-lg text-[11px]"
-                            style={{ background: badgeBg, color: badgeClr }}>
-                        {p}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "var(--bg-secondary)" }}>
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${p}%`, background: barColor }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── Question-by-Question Review ── */}
-      <div
-        className="rounded-2xl overflow-hidden"
-        style={{ background: "var(--card)", border: "1px solid var(--line-soft)" }}
-      >
-        <button
-          onClick={() => setReviewOpen(v => !v)}
-          className="w-full flex items-center justify-between p-5 hover:bg-[var(--surface-hover)] transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5" style={{ color: "var(--blue)" }} />
-            <span className="text-[15px] font-bold" style={{ color: "var(--ink-1)" }}>
-              Question Review
-            </span>
-            <span
-              className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-              style={{ background: "var(--bg-secondary)", color: "var(--ink-3)" }}
-            >
-              {questions.length}
-            </span>
-          </div>
-          <ChevronDown
-            className={`w-5 h-5 transition-transform duration-200 ${reviewOpen ? "rotate-180" : ""}`}
-            style={{ color: "var(--ink-3)" }}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: `radial-gradient(ellipse 55% 130% at 88% 0%, ${g.tone}1F 0%, transparent 62%)`,
+            }}
           />
-        </button>
 
-        {reviewOpen && (
-          <div className="px-5 pb-5 border-t" style={{ borderColor: "var(--line-soft)" }}>
-            {/* Legend */}
-            <div className="flex items-center gap-5 py-4 text-[11px] font-semibold" style={{ color: "var(--ink-4)" }}>
-              {[
-                { bg: "#10b981", color: "#fff", label: "Correct" },
-                { bg: "#ef4444", color: "#fff", label: "Wrong"   },
-                { bg: "var(--bg-secondary)", color: "var(--ink-3)", label: "Skipped" },
-              ].map(({ bg, color, label }) => (
-                <div key={label} className="flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full shrink-0" style={{ background: bg }} />
-                  {label}
-                </div>
-              ))}
-            </div>
+          <div className="relative">
+            {testTitle && <p className="x-eyebrow mb-5">{testTitle}</p>}
 
-            {/* Circular question bubbles */}
-            <div className="flex flex-wrap gap-2 mb-5">
-              {questions.map((q, idx) => {
-                const ua        = userAnswers[q.id];
-                const isCorrect = ua !== undefined && ua === q.correctIndex;
-                const isWrong   = ua !== undefined && ua !== q.correctIndex;
-                return (
-                  <button
-                    key={q.id}
-                    onClick={() => setReviewIdx(idx)}
-                    className="w-9 h-9 rounded-full text-[12px] font-bold transition-all flex items-center justify-center"
+            <div className="flex flex-col items-center gap-6 sm:flex-row sm:gap-8">
+              {/* Ring */}
+              <div className="relative shrink-0" style={{ width: 148, height: 148 }}>
+                <ScoreRing p={scorePct} tone={g.tone} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span
+                    className="text-[40px] font-semibold leading-none tabular-nums"
                     style={{
-                      background: isCorrect ? "#10b981" : isWrong ? "#ef4444" : "var(--bg-secondary)",
-                      color: (isCorrect || isWrong) ? "#fff" : "var(--ink-3)",
-                      outline: idx === reviewIdx ? "2.5px solid var(--blue)" : "none",
-                      outlineOffset: "2px",
+                      fontFamily: "var(--font-sora)",
+                      color: "var(--x-ink)",
+                      letterSpacing: "-0.03em",
                     }}
                   >
-                    {idx + 1}
-                  </button>
+                    {result.scored}
+                  </span>
+                  <span className="mt-1 text-[12px]" style={{ color: "var(--x-ink-4)" }}>
+                    of {result.totalMarks}
+                  </span>
+                  <span
+                    className="mt-1.5 rounded-full px-2 py-[2px] text-[10.5px] font-bold tabular-nums"
+                    style={{ background: `${g.tone}1F`, color: g.tone }}
+                  >
+                    {scorePct}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Verdict */}
+              <div className="min-w-0 flex-1 text-center sm:text-left">
+                <div className="mb-3 flex items-center justify-center gap-2 sm:justify-start">
+                  <span
+                    className="rounded-[10px] px-2.5 py-1 text-[15px] font-bold leading-none"
+                    style={{ background: `${g.tone}22`, color: g.tone }}
+                  >
+                    {g.grade}
+                  </span>
+                  <Award size={17} style={{ color: "var(--amber)" }} />
+                </div>
+
+                <h1
+                  className="text-[23px] font-semibold sm:text-[26px]"
+                  style={{
+                    fontFamily: "var(--font-sora)",
+                    color: "var(--x-ink)",
+                    letterSpacing: "-0.028em",
+                  }}
+                >
+                  {g.title}
+                </h1>
+                <p
+                  className="mt-2 text-[13.5px] leading-relaxed"
+                  style={{ color: "var(--x-ink-3)", maxWidth: "46ch" }}
+                >
+                  {g.sub}
+                </p>
+
+                {(result.rank || result.percentile) && (
+                  <div className="mt-5 flex justify-center gap-2.5 sm:justify-start">
+                    {result.rank && (
+                      <div className="x-well px-4 py-2.5">
+                        <div className="x-eyebrow flex items-center gap-1.5">
+                          <Trophy size={10} /> Rank
+                        </div>
+                        <div
+                          className="mt-1.5 text-[18px] font-semibold leading-none tabular-nums"
+                          style={{ fontFamily: "var(--font-sora)", color: "var(--x-ink)" }}
+                        >
+                          #{result.rank}
+                        </div>
+                      </div>
+                    )}
+                    {result.percentile !== undefined && (
+                      <div className="x-well px-4 py-2.5">
+                        <div className="x-eyebrow">Percentile</div>
+                        <div
+                          className="mt-1.5 text-[18px] font-semibold leading-none tabular-nums"
+                          style={{ fontFamily: "var(--font-sora)", color: "var(--x-ink)" }}
+                        >
+                          {result.percentile}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* ══ Stat row ══ */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {STATS.map(({ label, value, icon: Icon, tone, bg }, i) => (
+            <motion.div
+              key={label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 + i * 0.05, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              className="x-paper flex flex-col gap-3 p-4"
+            >
+              <span
+                className="flex h-9 w-9 items-center justify-center rounded-[11px]"
+                style={{ background: bg, color: tone }}
+              >
+                <Icon size={17} />
+              </span>
+              <div>
+                <div
+                  className="text-[25px] font-semibold leading-none tabular-nums"
+                  style={{ fontFamily: "var(--font-sora)", color: tone, letterSpacing: "-0.03em" }}
+                >
+                  {value}
+                </div>
+                <div className="x-eyebrow mt-2.5">{label}</div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* ══ Timing strip ══ */}
+        {(result.timeTakenSec || avgTimeSec || result.negMarks !== undefined) && (
+          <div className="x-paper flex flex-wrap gap-x-8 gap-y-4 p-5">
+            {result.timeTakenSec != null && (
+              <TimeFact
+                icon={<Clock size={17} />}
+                tone="var(--amber)"
+                bg="var(--amber-soft)"
+                value={formatTime(result.timeTakenSec)}
+                label="Time taken"
+              />
+            )}
+            {avgTimeSec != null && (
+              <TimeFact
+                icon={<TrendingUp size={17} />}
+                tone="var(--violet)"
+                bg="var(--violet-soft)"
+                value={avgTimeSec < 60 ? `${avgTimeSec}s` : `${Math.round(avgTimeSec / 60)}m`}
+                label="Avg / question"
+              />
+            )}
+            {result.negMarks !== undefined && result.negMarks > 0 && (
+              <TimeFact
+                icon={<XCircle size={17} />}
+                tone="var(--x-unanswered)"
+                bg="var(--red-soft)"
+                value={`−${result.negMarks}`}
+                label="Negative marks"
+              />
+            )}
+          </div>
+        )}
+
+        {/* ══ Subject analysis ══ */}
+        {result.subjectStats && result.subjectStats.length > 0 && (
+          <section className="x-paper p-5">
+            <div className="mb-5 flex items-center gap-2.5">
+              <BarChart3 size={17} style={{ color: "var(--blue-ink)" }} />
+              <h2
+                className="text-[15.5px] font-semibold"
+                style={{ color: "var(--x-ink)", letterSpacing: "-0.02em" }}
+              >
+                Subject-wise analysis
+              </h2>
+            </div>
+
+            <div className="flex flex-col gap-5">
+              {result.subjectStats.map(({ subject, correct, total }) => {
+                const p = pct(correct, total);
+                const tone =
+                  p >= 60 ? "var(--x-answered)" : p >= 40 ? "var(--amber)" : "var(--x-unanswered)";
+                return (
+                  <div key={subject}>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <span
+                        className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-medium"
+                        style={{ color: "var(--x-ink)" }}
+                      >
+                        <BookOpen size={13} style={{ color: "var(--x-ink-4)" }} />
+                        {subject}
+                      </span>
+                      <span className="flex shrink-0 items-center gap-2 text-[12px]">
+                        <span className="tabular-nums" style={{ color: "var(--x-ink-4)" }}>
+                          {correct}/{total}
+                        </span>
+                        <span
+                          className="rounded-full px-2 py-[3px] text-[11px] font-bold tabular-nums"
+                          style={{ background: `${tone}1F`, color: tone }}
+                        >
+                          {p}%
+                        </span>
+                      </span>
+                    </div>
+                    <div
+                      className="h-2 overflow-hidden rounded-full"
+                      style={{ background: "var(--x-inset-2)" }}
+                    >
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ background: tone }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${p}%` }}
+                        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                      />
+                    </div>
+                  </div>
                 );
               })}
             </div>
-
-            <QuestionViewer
-              question={reviewQuestion}
-              questionNumber={reviewIdx + 1}
-              totalQuestions={questions.length}
-              selectedIndex={userAnswers[reviewQuestion?.id] ?? null}
-              revealed={true}
-              onSelect={() => {}}
-              onPrev={reviewIdx > 0 ? () => setReviewIdx(i => i - 1) : undefined}
-              onNext={reviewIdx < questions.length - 1 ? () => setReviewIdx(i => i + 1) : undefined}
-              showExplanation
-            />
-          </div>
+          </section>
         )}
-      </div>
 
-      {/* ── Email status feedback ── */}
-      {emailStatus === "sent" && (
-        <div
-          className="flex items-center gap-3 px-5 py-4 rounded-2xl"
-          style={{ background: "#d1fae5", border: "1.5px solid #6ee7b7" }}
-        >
-          <CheckCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-          <p className="text-sm font-semibold text-emerald-800">
-            Report sent! Check your registered email inbox within a few minutes.
-          </p>
-        </div>
-      )}
-      {emailStatus === "error" && (
-        <div
-          className="flex items-center gap-3 px-5 py-4 rounded-2xl"
-          style={{ background: "#fee2e2", border: "1.5px solid #fca5a5" }}
-        >
-          <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-          <p className="text-sm font-semibold text-red-700">
-            Could not send the report. Please try again later.
-          </p>
-        </div>
-      )}
-
-      {/* ── Action Buttons ── */}
-      <div className="flex flex-col sm:flex-row gap-3 pb-6">
-        {onBack && (
+        {/* ══ Question review ══ */}
+        <section className="x-paper overflow-hidden">
           <button
-            onClick={onBack}
-            className="flex-1 py-3.5 rounded-2xl text-sm font-bold border transition-all hover:bg-[var(--surface-hover)]"
-            style={{ color: "var(--ink-1)", borderColor: "var(--line)" }}
+            type="button"
+            onClick={() => setReviewOpen((v) => !v)}
+            aria-expanded={reviewOpen}
+            className="flex w-full items-center justify-between p-5 transition-colors d-focus"
           >
-            ← Back to Dashboard
+            <span className="flex items-center gap-2.5">
+              <BookOpen size={17} style={{ color: "var(--blue-ink)" }} />
+              <span
+                className="text-[15.5px] font-semibold"
+                style={{ color: "var(--x-ink)", letterSpacing: "-0.02em" }}
+              >
+                Question review
+              </span>
+              <span
+                className="rounded-full px-2 py-[3px] text-[11px] font-bold tabular-nums"
+                style={{ background: "var(--x-inset)", color: "var(--x-ink-3)" }}
+              >
+                {questions.length}
+              </span>
+            </span>
+            <ChevronDown
+              size={18}
+              className="transition-transform duration-300"
+              style={{
+                color: "var(--x-ink-3)",
+                transform: reviewOpen ? "rotate(180deg)" : "none",
+              }}
+            />
           </button>
-        )}
-        <button
-          onClick={handleEmail}
-          disabled={emailStatus === "sending" || emailStatus === "sent"}
-          className="flex-1 py-3.5 rounded-2xl text-sm font-bold text-white transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-          style={{ background: "var(--blue)" }}
-        >
-          {emailStatus === "sending" ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Sending Report…</>
-          ) : emailStatus === "sent" ? (
-            <><CheckCheck className="w-4 h-4" /> Report Sent!</>
-          ) : (
-            <><Mail className="w-4 h-4" /> Email My Report</>
+
+          {reviewOpen && (
+            <div className="px-5 pb-5" style={{ borderTop: "1px solid var(--x-line-soft)" }}>
+              {/* Filter + language */}
+              <div className="flex flex-wrap items-center gap-2.5 py-4">
+                <div
+                  className="flex items-center gap-0.5 rounded-full p-1"
+                  style={{ background: "var(--x-inset)", border: "1px solid var(--x-line-soft)" }}
+                >
+                  {FILTERS.map((f) => {
+                    const on = filter === f.id;
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setFilter(f.id)}
+                        aria-pressed={on}
+                        className="rounded-full px-3 py-[6px] text-[12px] font-semibold transition-all duration-200 d-focus"
+                        style={
+                          on
+                            ? {
+                                background: "var(--x-surface)",
+                                color: "var(--x-ink)",
+                                boxShadow: "0 1px 3px rgba(0,0,0,.12)",
+                              }
+                            : { color: "var(--x-ink-3)" }
+                        }
+                      >
+                        {f.label}
+                        <span className="ml-1.5 opacity-60 tabular-nums">{f.count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="ml-auto">
+                  <LanguageSelect options={languages} value={lang} onChange={setLang} />
+                </div>
+              </div>
+
+              {/* Bubbles */}
+              {visible.length === 0 ? (
+                <p
+                  className="py-8 text-center text-[13px]"
+                  style={{ color: "var(--x-ink-4)" }}
+                >
+                  No questions in this category.
+                </p>
+              ) : (
+                <div className="mb-5 flex flex-wrap gap-2">
+                  {visible.map(({ q, idx }) => {
+                    const st = statusOf(q);
+                    const bg =
+                      st === "correct"
+                        ? "var(--x-answered)"
+                        : st === "wrong"
+                          ? "var(--x-unanswered)"
+                          : "var(--x-inset)";
+                    const fg =
+                      st === "correct"
+                        ? "var(--x-answered-ink)"
+                        : st === "wrong"
+                          ? "var(--x-unanswered-ink)"
+                          : "var(--x-ink-3)";
+                    return (
+                      <button
+                        key={q.id}
+                        type="button"
+                        onClick={() => setReviewIdx(idx)}
+                        aria-label={`Question ${idx + 1}, ${st}`}
+                        aria-current={idx === reviewIdx}
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-bold tabular-nums transition-transform duration-150 hover:scale-105 d-focus"
+                        style={{
+                          background: bg,
+                          color: fg,
+                          border: st === "skipped" ? "1px solid var(--x-line)" : "none",
+                          outline: idx === reviewIdx ? "2.5px solid var(--blue-ink)" : "none",
+                          outlineOffset: 2,
+                        }}
+                      >
+                        {idx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {reviewQuestion && (
+                <div className="x-well p-4 sm:p-5">
+                  <QuestionViewer
+                    question={reviewQuestion}
+                    questionNumber={reviewIdx + 1}
+                    totalQuestions={questions.length}
+                    selectedIndex={userAnswers[reviewQuestion.id] ?? null}
+                    revealed
+                    onSelect={() => {}}
+                    onPrev={reviewIdx > 0 ? () => setReviewIdx((i) => i - 1) : undefined}
+                    onNext={
+                      reviewIdx < questions.length - 1
+                        ? () => setReviewIdx((i) => i + 1)
+                        : undefined
+                    }
+                    showExplanation
+                    lang={lang}
+                  />
+                </div>
+              )}
+            </div>
           )}
-        </button>
+        </section>
+
+        {/* ══ Email feedback ══ */}
+        {emailStatus === "sent" && (
+          <Banner
+            tone="var(--x-answered)"
+            bg="var(--green-soft)"
+            icon={<CheckCheck size={17} />}
+            text="Report sent. Check your registered email inbox in a few minutes."
+          />
+        )}
+        {emailStatus === "error" && (
+          <Banner
+            tone="var(--x-unanswered)"
+            bg="var(--red-soft)"
+            icon={<AlertCircle size={17} />}
+            text="Could not send the report. Please try again in a moment."
+          />
+        )}
+
+        {/* ══ Actions ══ */}
+        <div className="flex flex-col gap-2.5 pb-8 sm:flex-row">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full py-3.5 text-[13.5px] font-semibold transition-transform duration-200 hover:-translate-y-[1px] d-focus"
+              style={{
+                color: "var(--x-ink)",
+                background: "var(--x-surface)",
+                border: "1px solid var(--x-line)",
+              }}
+            >
+              <ArrowLeft size={15} />
+              Back to dashboard
+            </button>
+          )}
+          {onEmailReport && (
+            <button
+              type="button"
+              onClick={handleEmail}
+              disabled={emailStatus === "sending" || emailStatus === "sent"}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full py-3.5 text-[13.5px] font-semibold text-white transition-transform duration-200 hover:-translate-y-[1px] disabled:opacity-60 d-focus"
+              style={{
+                background: "var(--blue-ink)",
+                boxShadow: "0 10px 26px -12px rgba(13,40,126,.7)",
+              }}
+            >
+              {emailStatus === "sending" ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" /> Sending report…
+                </>
+              ) : emailStatus === "sent" ? (
+                <>
+                  <CheckCheck size={15} /> Report sent
+                </>
+              ) : (
+                <>
+                  <Mail size={15} /> Email my report
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+/* ─── Small parts ───────────────────────────── */
+
+function TimeFact({
+  icon,
+  tone,
+  bg,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  tone: string;
+  bg: string;
+  value: string;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px]"
+        style={{ background: bg, color: tone }}
+      >
+        {icon}
+      </span>
+      <span>
+        <span
+          className="block text-[15px] font-semibold leading-none tabular-nums"
+          style={{ color: "var(--x-ink)" }}
+        >
+          {value}
+        </span>
+        <span className="x-eyebrow mt-2 block">{label}</span>
+      </span>
+    </div>
+  );
+}
+
+function Banner({
+  tone,
+  bg,
+  icon,
+  text,
+}: {
+  tone: string;
+  bg: string;
+  icon: React.ReactNode;
+  text: string;
+}) {
+  return (
+    <div
+      className="flex items-center gap-3 rounded-[14px] px-4 py-3.5"
+      style={{ background: bg, border: `1px solid ${tone}44` }}
+    >
+      <span className="shrink-0" style={{ color: tone }}>
+        {icon}
+      </span>
+      <p className="text-[13px] font-medium" style={{ color: tone }}>
+        {text}
+      </p>
     </div>
   );
 }

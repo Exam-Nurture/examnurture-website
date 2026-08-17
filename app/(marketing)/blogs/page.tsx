@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import {
   Search, Clock, Eye, Calendar, ArrowRight, Rss, BookOpen,
-  TrendingUp, Sparkles, Filter, ChevronLeft, ChevronRight, X, RotateCcw,
+  TrendingUp, Filter, ChevronLeft, ChevronRight, X, RotateCcw,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
@@ -49,6 +49,12 @@ function parseTags(raw: string): string[] {
   try { return JSON.parse(raw); } catch { return []; }
 }
 
+/** Stable per-post placeholder cover — seeded on the post's real id/slug so it never
+ *  changes on re-render, used only when the backend hasn't supplied a coverUrl. */
+function fallbackCover(post: PublicBlogPost, w = 600, h = 400) {
+  return `https://picsum.photos/seed/${encodeURIComponent(post.slug || post.id)}/${w}/${h}`;
+}
+
 /* ── Blog Card ── */
 function BlogCard({ post }: { post: PublicBlogPost }) {
   const tags = parseTags(post.tags).slice(0, 2);
@@ -59,18 +65,13 @@ function BlogCard({ post }: { post: PublicBlogPost }) {
       className="group flex flex-col bg-[var(--card)] border border-[var(--line)] rounded-[12px] overflow-hidden hover:border-[var(--blue)] transition-colors duration-200"
     >
       {/* Cover */}
-      <div className="relative h-44 w-full shrink-0 overflow-hidden">
-        {post.coverUrl ? (
-          <img
-            src={post.coverUrl}
-            alt={post.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-[var(--surface-hover)]">
-            <BookOpen size={40} className="text-[var(--ink-2)]" strokeWidth={1} />
-          </div>
-        )}
+      <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden rounded-t-[12px] bg-[var(--bg-secondary)]">
+        <img
+          src={post.coverUrl || fallbackCover(post)}
+          alt={post.title}
+          loading="lazy"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
         <span className="absolute bottom-3 left-3 text-[11px] font-medium px-2.5 py-1 rounded-full bg-black text-white">
           {post.category}
         </span>
@@ -137,14 +138,13 @@ function FeaturedCard({ post }: { post: PublicBlogPost }) {
       href={`/blog/${post.slug}`}
       className="group relative flex flex-col md:flex-row bg-[var(--card)] border border-[var(--line)] rounded-[16px] overflow-hidden hover:border-[var(--blue)] transition-colors duration-200"
     >
-      <div className="relative md:w-2/5 h-56 md:h-auto shrink-0 overflow-hidden">
-        {post.coverUrl ? (
-          <img src={post.coverUrl} alt={post.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-[var(--surface-hover)]">
-            <Sparkles size={48} className="text-[var(--ink-2)]" strokeWidth={1} />
-          </div>
-        )}
+      <div className="relative md:w-2/5 aspect-[16/10] md:aspect-auto md:h-auto shrink-0 overflow-hidden bg-[var(--bg-secondary)]">
+        <img
+          src={post.coverUrl || fallbackCover(post, 800, 500)}
+          alt={post.title}
+          loading="lazy"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
         <span className="absolute top-4 left-4 text-[11px] font-medium px-2.5 py-1 rounded-full bg-black text-white">
           {post.category}
         </span>
@@ -183,6 +183,45 @@ function FeaturedCard({ post }: { post: PublicBlogPost }) {
         </span>
       </div>
     </Link>
+  );
+}
+
+/* ── Pill-style category tabs (upgrades the visual for the existing `category`
+   URL-param filter — same CATEGORIES config + updateFilter used by the sidebar) ── */
+function CategoryTabs({
+  active,
+  onSelect,
+}: {
+  active: string;
+  onSelect: (key: string) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Filter posts by category"
+      className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {CATEGORIES.map((c) => {
+        const isActive = active === c.key;
+        return (
+          <button
+            key={c.key}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onSelect(c.key)}
+            className="shrink-0 whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-medium transition-colors duration-200"
+            style={{
+              background: isActive ? "var(--blue)" : "var(--card)",
+              borderColor: isActive ? "var(--blue)" : "var(--line)",
+              color: isActive ? "#fff" : "var(--ink-2)",
+            }}
+          >
+            {c.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -369,6 +408,8 @@ function BlogPageContent() {
 
           {/* Right Content */}
           <div className="flex-1 min-w-0 flex flex-col gap-4">
+            <CategoryTabs active={category} onSelect={(v) => updateFilter("category", v)} />
+
             <MobileFilterBar
               searchQuery={query}
               onSearchChange={(v) => updateFilter("q", v)}
@@ -401,12 +442,21 @@ function BlogPageContent() {
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 gap-4 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--line)]">
-                <BookOpen size={48} strokeWidth={1} style={{ color: "var(--ink-3)" }} />
-                <p className="text-lg font-semibold" style={{ color: "var(--ink-2)" }}>No articles found</p>
-                <button onClick={resetFilters} className="px-4 py-2 rounded-lg text-sm font-semibold text-white mt-2 bg-[var(--blue)]">
-                  Clear all filters
-                </button>
+              <div className="flex flex-col items-center justify-center py-24 px-6 gap-3 text-center bg-[var(--bg-secondary)] rounded-2xl border border-[var(--line)]">
+                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-[var(--card)] border border-[var(--line-soft)]">
+                  <BookOpen size={28} strokeWidth={1.5} style={{ color: "var(--ink-3)" }} />
+                </div>
+                <p className="text-lg font-semibold" style={{ color: "var(--ink-1)" }}>No articles found</p>
+                <p className="text-sm max-w-sm" style={{ color: "var(--ink-3)" }}>
+                  {activeFilterCount > 0
+                    ? "Nothing matches these filters yet. Try a different category or clear your filters to see all articles."
+                    : "New articles are on the way — check back soon for exam strategies and current affairs updates."}
+                </p>
+                {activeFilterCount > 0 && (
+                  <button onClick={resetFilters} className="px-4 py-2 rounded-full text-sm font-semibold text-white mt-2 bg-[var(--blue)] hover:opacity-90 transition-opacity">
+                    Clear all filters
+                  </button>
+                )}
               </div>
             ) : (
               <>

@@ -58,13 +58,13 @@ export default function SeriesDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <div className="min-h-screen" style={{ background: "var(--bg)" }}>
         <div className="max-w-5xl mx-auto px-4 py-12">
-          <div className="h-8 w-32 rounded-lg bg-gray-100 animate-pulse mb-8" />
-          <div className="h-48 rounded-3xl bg-gray-100 animate-pulse mb-8" />
+          <div className="h-8 w-32 rounded-lg bg-[var(--line-soft)] animate-pulse mb-8" />
+          <div className="h-48 rounded-3xl bg-[var(--line-soft)] animate-pulse mb-8" />
           <div className="flex flex-col gap-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-20 rounded-2xl bg-gray-100 animate-pulse" />
+              <div key={i} className="h-20 rounded-2xl bg-[var(--line-soft)] animate-pulse" />
             ))}
           </div>
         </div>
@@ -74,14 +74,14 @@ export default function SeriesDetailPage() {
 
   if (error || !series) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-page)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
         <div className="text-center max-w-sm mx-auto px-4">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <p className="text-lg font-bold mb-2" style={{ color: "var(--ink-1)" }}>Series not found</p>
           <p className="text-sm mb-6" style={{ color: "var(--ink-4)" }}>{error || "This series doesn't exist or may have been removed."}</p>
           <Link
             href="/series/all"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--blue)] text-white text-sm font-semibold"
           >
             Browse All Series
           </Link>
@@ -97,7 +97,7 @@ export default function SeriesDetailPage() {
 
   return (
     <>
-      <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <div className="min-h-screen" style={{ background: "var(--bg)" }}>
 
         {/* Top Nav */}
         <div

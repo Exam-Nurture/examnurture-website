@@ -13,13 +13,13 @@ export default function BrandLogo({ size = "md", className = "" }: BrandLogoProp
   return (
     <Link
       href="/"
-      className={`flex items-center gap-2.5 hover:opacity-90 transition-opacity shrink-0 ${className}`}
+      className={`group flex items-center gap-2.5 shrink-0 ${className}`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/examnurture-logo.jpg"
         alt="ExamNurture"
-        className={`${imgCls} rounded-xl object-cover shadow-sm shrink-0`}
+        className={`${imgCls} rounded-xl object-cover shadow-sm shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-110 group-hover:-rotate-2`}
       />
       <span
         className={`font-bold ${textCls} tracking-tight whitespace-nowrap`}

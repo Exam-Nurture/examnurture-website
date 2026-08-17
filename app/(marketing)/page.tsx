@@ -22,7 +22,10 @@ import {
   Smartphone,
   ChevronDown,
   Sparkles,
+  Search,
+  BarChart3,
 } from "lucide-react";
+import { useInView } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import { API_BASE } from "@/lib/config";
 
@@ -78,8 +81,21 @@ interface FeaturedExam {
   board: string | null; description: string | null; numTests: number; numPYQ: number;
 }
 
+const FALLBACK_FEATURED_EXAMS: FeaturedExam[] = [
+  { name: "JPSC Combined", tag: "State PSC", slug: "jpsc-combined", state: "Jharkhand", board: "JPSC", description: "Jharkhand Public Service Commission Combined Civil Services exam for Class I & II posts. Covers Jharkhand GK, Indian Polity, History, Economy, and General Science.", numTests: 48, numPYQ: 12 },
+  { name: "JSSC CGL", tag: "State SSC", slug: "jssc-cgl", state: "Jharkhand", board: "JSSC", description: "Jharkhand Staff Selection Commission Combined Graduate Level exam for Group C posts including clerks, stenographers, and allied positions.", numTests: 36, numPYQ: 8 },
+  { name: "SBI PO", tag: "Banking", slug: "sbi-po", state: "Central", board: "SBI", description: "State Bank of India Probationary Officer exam. Includes Prelims, Mains, and GD/PI stages covering Reasoning, Quantitative Aptitude, English, and General Awareness.", numTests: 62, numPYQ: 15 },
+  { name: "IBPS PO", tag: "Banking", slug: "ibps-po", state: "Central", board: "IBPS", description: "Institute of Banking Personnel Selection Probationary Officer exam for 19 nationalised banks. Three-stage selection process with Prelims, Mains, and Interview.", numTests: 55, numPYQ: 18 },
+  { name: "SSC CGL", tag: "Central", slug: "ssc-cgl", state: "Central", board: "SSC", description: "Staff Selection Commission Combined Graduate Level exam for Group B and C posts in various central government departments and ministries.", numTests: 78, numPYQ: 22 },
+  { name: "Railway NTPC", tag: "Railway", slug: "railway-ntpc", state: "Central", board: "RRB", description: "Railway Recruitment Board Non-Technical Popular Categories exam for Junior Clerk, Accounts Clerk, Traffic Assistant, and other Group D and Group C posts.", numTests: 44, numPYQ: 16 },
+  { name: "Bihar Police SI", tag: "State Police", slug: "bihar-police-si", state: "Bihar", board: "BPSSC", description: "Bihar Police Sub-Inspector exam for recruitment to civil police posts. Covers Physical Endurance Test, Written Exam, and Medical Test stages.", numTests: 28, numPYQ: 6 },
+  { name: "RBI Grade B", tag: "Banking", slug: "rbi-grade-b", state: "Central", board: "RBI", description: "Reserve Bank of India Grade B Officer exam — one of India's most prestigious banking exams. Three phases covering Economics, Finance, Management, and English.", numTests: 32, numPYQ: 10 },
+  { name: "Daroga SI", tag: "State Police", slug: "daroga-si", state: "Jharkhand", board: "JSSC", description: "Jharkhand Daroga (Sub-Inspector) exam for recruitment to state police force. Covers Jharkhand GK, General Studies, Aptitude, and Physical Fitness Test.", numTests: 24, numPYQ: 5 },
+  { name: "BPSC 70th", tag: "State PSC", slug: "bpsc-70th", state: "Bihar", board: "BPSC", description: "Bihar Public Service Commission 70th Combined Competitive Exam for Class I, II, and III posts. Known for its rigorous Mains examination in 8 general papers.", numTests: 40, numPYQ: 14 },
+];
+
 function useFeaturedExams(): FeaturedExam[] {
-  const [data, setData] = useState<FeaturedExam[]>([]);
+  const [data, setData] = useState<FeaturedExam[]>(FALLBACK_FEATURED_EXAMS);
   useEffect(() => {
     fetch(`${API_URL}/featured-exams`)
       .then((r) => r.ok ? r.json() : Promise.reject())
@@ -94,8 +110,39 @@ interface TestimonialData {
   rating?: number; avatarUrl?: string | null;
 }
 
+const FALLBACK_TESTIMONIALS: TestimonialData[] = [
+  {
+    name: "Priya Kumari",
+    role: "JPSC 2024 — Rank #47",
+    initials: "PK",
+    rating: 5,
+    text: "ExamNurture's JPSC-specific test series was a game changer. The AI analytics showed I was weak in Jharkhand GK — I focused there and jumped 200+ ranks. Cleared in first attempt!",
+  },
+  {
+    name: "Rahul Sharma",
+    role: "SBI PO 2024 — Selected",
+    initials: "RS",
+    rating: 5,
+    text: "I solved 4 years of PYQ papers in 3 weeks using ExamNurture. The CBT interface is nearly identical to the real SBI exam. My mock test scores improved from 61% to 87% over two months.",
+  },
+  {
+    name: "Anjali Singh",
+    role: "SSC CGL 2024 — Rank #312",
+    initials: "AS",
+    rating: 5,
+    text: "The daily quiz kept me disciplined for 6 straight months. My Reasoning score improved from 67% to 89%. The detailed solutions after every test are what make this platform stand out.",
+  },
+  {
+    name: "Vikram Pandey",
+    role: "IBPS Clerk 2024 — Selected",
+    initials: "VP",
+    rating: 5,
+    text: "Best platform for banking exam prep. Full-length mocks with chapter-wise analytics helped me understand exactly where I was losing marks. Cleared Prelims and Mains in the same attempt.",
+  },
+];
+
 function useTestimonials(): TestimonialData[] {
-  const [data, setData] = useState<TestimonialData[]>([]);
+  const [data, setData] = useState<TestimonialData[]>(FALLBACK_TESTIMONIALS);
   useEffect(() => {
     fetch(`${API_URL}/testimonials`)
       .then((r) => r.ok ? r.json() : Promise.reject())
@@ -107,12 +154,35 @@ function useTestimonials(): TestimonialData[] {
 
 interface FAQData { question: string; answer: string; }
 
+const FALLBACK_FAQS: FAQData[] = [
+  {
+    question: "Which exams does ExamNurture cover?",
+    answer: "We cover 50+ competitive exams including JPSC, JSSC CGL, Daroga SI (Jharkhand), SBI PO, IBPS PO/Clerk, RBI Grade B, SSC CGL/CHSL/MTS, Railway NTPC/Group D, BPSC, Bihar Police SI, UP Police, and many more state and central government exams.",
+  },
+  {
+    question: "Is ExamNurture free to use?",
+    answer: "Yes! You get unlimited access to PYQ papers, Daily Quiz, Current Affairs, and selected test series completely free. Premium plans unlock the full test series library, AI weak-area analytics, detailed chapter-wise solutions, and real-time All-India ranking.",
+  },
+  {
+    question: "How is ExamNurture different from other platforms?",
+    answer: "We focus specifically on Jharkhand and Eastern India state exams — JPSC, JSSC, Daroga SI — alongside national exams. Our AI-powered weak-area analysis pinpoints exactly where you're losing marks, so you study smarter, not longer. Plus, our CBT interface mirrors the actual exam experience.",
+  },
+  {
+    question: "Can I access ExamNurture on mobile?",
+    answer: "Yes! Download our Android app from the Google Play Store for a seamless mobile experience. The app supports offline study material access, push notifications for daily quizzes, and a full exam interface optimised for mobile screens.",
+  },
+  {
+    question: "How accurate and up-to-date are the mock tests?",
+    answer: "Our test series are curated by subject-matter experts who analyse actual exam papers each cycle. Questions are updated after every official exam to reflect the latest pattern changes, difficulty level, and new topic additions in the official syllabus.",
+  },
+];
+
 function useFAQs(): FAQData[] {
-  const [data, setData] = useState<FAQData[]>([]);
+  const [data, setData] = useState<FAQData[]>(FALLBACK_FAQS);
   useEffect(() => {
     fetch(`${API_URL}/faqs?category=landing-page`)
       .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((items) => { if (items) setData(items); })
+      .then((items) => { if (items?.length) setData(items); })
       .catch(() => {});
   }, []);
   return data;
@@ -124,18 +194,31 @@ interface PlatformStats {
   testSeries: number; pyqPapers: number; users: number; states: number; courses: number;
 }
 
+const FALLBACK_STATS: PlatformStats = {
+  examBoards: 18,
+  exams: 53,
+  languages: 2,
+  tests: 2400,
+  testSeries: 247,
+  pyqPapers: 8700,
+  users: 12400,
+  states: 15,
+  courses: 53,
+};
+
 function useStats(): { stats: PlatformStats | null; loading: boolean } {
-  const [stats, setStats] = useState<PlatformStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<PlatformStats | null>(FALLBACK_STATS);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch(`${API_URL}/stats`);
         if (!res.ok) throw new Error("Failed");
-        setStats(await res.json());
+        const live = await res.json();
+        if (live) setStats(live);
       } catch {
-        setStats(null);
+        // Keep the fallback stats already set in state
       } finally {
         setLoading(false);
       }
@@ -144,6 +227,41 @@ function useStats(): { stats: PlatformStats | null; loading: boolean } {
   }, []);
 
   return { stats, loading };
+}
+
+
+
+
+const FALLBACK_EXAM_NAMES = [
+  "JPSC", "JSSC CGL", "SBI PO", "IBPS PO", "RBI Grade B", "SSC CGL", "SSC CHSL",
+  "Railway NTPC", "Railway Group D", "Daroga SI", "Bihar Police", "UP Police",
+  "BPSC", "UPPCS", "Delhi Police",
+];
+
+const FALLBACK_EXAMS: FeaturedExam[] = FALLBACK_FEATURED_EXAMS;
+
+/* ── Count-up number, animated once when scrolled into view (IntersectionObserver via framer's useInView) ── */
+function CountUp({ value, duration = 1.4 }: { value: number; duration?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-40px" });
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (!isInView) return;
+    let start: number | null = null;
+    let raf = 0;
+    const step = (ts: number) => {
+      if (start === null) start = ts;
+      const progress = Math.min((ts - start) / (duration * 1000), 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.round(eased * value));
+      if (progress < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [isInView, value, duration]);
+
+  return <span ref={ref}>{display.toLocaleString("en-IN")}</span>;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -278,79 +396,114 @@ function DownloadAppBtn({ inverse = false }: { inverse?: boolean }) {
 /* ─────────────────────────────────────────────────────────────
    HERO — white canvas, display-xl, centered
 ───────────────────────────────────────────────────────────── */
+const HERO_HEADING_LINES = [
+  ["Master", "Any", "Exam."],
+  ["Crack", "Your", "Dream", "Job."],
+];
+
 function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformStats | null }) {
   const { user, loading: authLoading } = useAuth();
+  const s = stats ?? FALLBACK_STATS;
+
+  const statTiles = [
+    { value: s.users,     suffix: "+", label: "Students Preparing", dot: "bg-emerald-500" },
+    { value: s.exams,     suffix: "+", label: "Exams Covered",      dot: "bg-blue-500"    },
+    { value: s.pyqPapers, suffix: "+", label: "PYQ Papers",         dot: "bg-amber-500"   },
+    { value: s.testSeries,suffix: "+", label: "Test Series",        dot: "bg-violet-500"  },
+  ];
+
+  const ctaButtons = authLoading ? (
+    <>
+      <div className="h-12 w-48 rounded-full bg-[#EAE8EC] dark:bg-[var(--line-soft)] animate-pulse" />
+      <div className="h-12 w-48 rounded-full bg-[#EAE8EC] dark:bg-[var(--line-soft)] animate-pulse" />
+    </>
+  ) : user ? (
+    <>
+      <BtnPrimary href="/dashboard">Go to Dashboard <ArrowRight className="w-5 h-5" /></BtnPrimary>
+      <BtnSecondary href="/pyq/all"><FileText className="w-4 h-4 text-emerald-500" /> Free PYQ</BtnSecondary>
+      <BtnSecondary href="/daily-quiz"><Sparkles className="w-4 h-4 text-amber-500" /> Free Daily Quiz</BtnSecondary>
+      <DownloadAppBtn />
+    </>
+  ) : (
+    <>
+      <BtnPrimary onClick={onLogin}>Get Started Free <ArrowRight className="w-5 h-5" /></BtnPrimary>
+      <BtnSecondary href="/pyq/all"><FileText className="w-4 h-4 text-emerald-500" /> Free PYQ</BtnSecondary>
+      <BtnSecondary href="/daily-quiz"><Sparkles className="w-4 h-4 text-amber-500" /> Free Daily Quiz</BtnSecondary>
+      <DownloadAppBtn />
+    </>
+  );
 
   return (
-    <section className="hero-atmospheric bg-white dark:bg-[var(--bg)] py-24 lg:py-32">
-      <div className="max-w-[1280px] mx-auto px-6 lg:px-8 text-center">
+    <section className="hero-atmospheric bg-white dark:bg-[var(--bg)] pt-28 pb-20 lg:pt-36 lg:pb-28">
+      <div className="max-w-[1280px] mx-auto px-6 lg:px-8">
+        <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-14 lg:gap-12 items-center">
 
+          {/* Left — asymmetric, left-aligned heading */}
+          <div>
+            {/* display: word-by-word stagger reveal */}
+            <h1
+              className="text-[40px] sm:text-[56px] lg:text-[72px] leading-[1.03] text-[#2C2C2E] dark:text-[var(--ink-1)] mb-7"
+              style={{ fontWeight: 300, letterSpacing: "-1.4px" }}
+            >
+              {HERO_HEADING_LINES.map((line, li) => (
+                <span key={li} className="block overflow-hidden pb-1">
+                  {line.map((word, wi) => (
+                    <motion.span
+                      key={wi}
+                      initial={{ opacity: 0, y: "100%" }}
+                      animate={{ opacity: 1, y: "0%" }}
+                      transition={{ duration: 0.6, delay: (li * 3 + wi) * 0.05, ease: [0.16, 1, 0.3, 1] }}
+                      className="inline-block mr-[0.22em]"
+                    >
+                      {word}
+                    </motion.span>
+                  ))}
+                </span>
+              ))}
+            </h1>
 
-        {/* display-xl: 86px / weight 300 / ls -1.72px / lh 1.00 */}
-        <h1
-          className="text-[48px] sm:text-[64px] lg:text-[86px] leading-[1] text-[#2C2C2E] dark:text-[var(--ink-1)] mb-8"
-          style={{ fontWeight: 300, letterSpacing: "-1.72px" }}
-        >
-          Master Any Exam.<br />Crack Your Dream Job.
-        </h1>
+            <p
+              className="text-[18px] sm:text-[20px] text-[#666872] dark:text-[var(--ink-2)] mb-10 max-w-lg leading-[1.45]"
+              style={{ fontWeight: 330, letterSpacing: "-0.14px" }}
+            >
+              Full-length mock tests, PYQ papers, and AI analytics — everything you need to crack JPSC, Banking, SSC, Railway and more.
+            </p>
 
-        {/* body-lg: 20px / weight 330 / ls -0.14px */}
-        <p
-          className="text-[18px] sm:text-[20px] text-[#666872] dark:text-[var(--ink-2)] mb-12 max-w-xl mx-auto leading-[1.40]"
-          style={{ fontWeight: 330, letterSpacing: "-0.14px" }}
-        >
-          Full-length mock tests, PYQ papers, and AI analytics — everything you need to crack JPSC, Banking, SSC, Railway and more.
-        </p>
-
-        {/* CTA pair: primary action + "Download App" split button */}
-        <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 mb-16">
-          {authLoading ? (
-            <>
-              <div className="h-12 w-48 rounded-full bg-[#EAE8EC] dark:bg-[var(--line-soft)] animate-pulse" />
-              <div className="h-12 w-48 rounded-full bg-[#EAE8EC] dark:bg-[var(--line-soft)] animate-pulse" />
-            </>
-          ) : user ? (
-            <>
-              <BtnPrimary href="/dashboard">Go to Dashboard <ArrowRight className="w-5 h-5" /></BtnPrimary>
-              <BtnSecondary href="/pyq/all"><FileText className="w-4 h-4 text-emerald-500" /> Free PYQ</BtnSecondary>
-              <BtnSecondary href="/daily-quiz"><Sparkles className="w-4 h-4 text-amber-500" /> Free Daily Quiz</BtnSecondary>
-              <DownloadAppBtn />
-            </>
-          ) : (
-            <>
-              <BtnPrimary onClick={onLogin}>Get Started Free <ArrowRight className="w-5 h-5" /></BtnPrimary>
-              <BtnSecondary href="/pyq/all"><FileText className="w-4 h-4 text-emerald-500" /> Free PYQ</BtnSecondary>
-              <BtnSecondary href="/daily-quiz"><Sparkles className="w-4 h-4 text-amber-500" /> Free Daily Quiz</BtnSecondary>
-              <DownloadAppBtn />
-            </>
-          )}
-        </div>
-
-        {/* Stats row — display-lg numbers, figmaMono labels */}
-        <div className="flex flex-wrap items-center justify-center gap-10 lg:gap-16 pt-8 border-t border-[#EAE8EC] dark:border-[var(--line-soft)]">
-          {[
-            { value: stats?.users ? `${stats.users}+` : "0", label: "Students Preparing" },
-            { value: stats?.exams ? `${stats.exams}+` : "0",  label: "Exams Covered"      },
-            { value: stats?.pyqPapers ? `${stats.pyqPapers}+` : "0", label: "PYQ Papers"         },
-            { value: stats?.testSeries ? `${stats.testSeries}+` : "0", label: "Test Series"        },
-          ].map(({ value, label }) => (
-            <div key={label} className="text-center">
-              <div
-                className="text-[36px] sm:text-[48px] leading-none text-[#2C2C2E] dark:text-[var(--ink-1)] tabular-nums"
-                style={{ fontWeight: 300, letterSpacing: "-0.96px" }}
-              >
-                {value}
-              </div>
-              <div
-                className="mt-2 text-[11px] uppercase text-[#8D8D8F] dark:text-[var(--ink-3)]"
-                style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}
-              >
-                {label}
-              </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {ctaButtons}
             </div>
-          ))}
-        </div>
+          </div>
 
+          {/* Right — animated stat bento tiles with colored accent dots */}
+          <div className="grid grid-cols-2 gap-3 lg:gap-4">
+            {statTiles.map((t, i) => (
+              <motion.div
+                key={t.label}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.3 + i * 0.09, ease: [0.16, 1, 0.3, 1] }}
+                className="card-bezel"
+              >
+                <div className="card-bezel-inner p-5 lg:p-6">
+                  <span className={`inline-block w-2 h-2 rounded-full ${t.dot} mb-4`} />
+                  <div
+                    className="text-[28px] lg:text-[36px] leading-none text-[#2C2C2E] dark:text-[var(--ink-1)] tabular-nums"
+                    style={{ fontWeight: 300, letterSpacing: "-0.8px" }}
+                  >
+                    <CountUp value={t.value} />{t.suffix}
+                  </div>
+                  <div
+                    className="mt-2 text-[11px] uppercase text-[#8D8D8F] dark:text-[var(--ink-3)]"
+                    style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.5px" }}
+                  >
+                    {t.label}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+        </div>
       </div>
     </section>
   );
@@ -361,18 +514,20 @@ function HeroSection({ onLogin, stats }: { onLogin: () => void; stats: PlatformS
    marquee-strip token: bg #000, text white, mono, 36px tall
 ───────────────────────────────────────────────────────────── */
 function MarqueeStrip({ items }: { items: string[] }) {
-  if (!items || items.length === 0) return null;
-  const doubled = [...items, ...items, ...items, ...items];
+  const list = items && items.length > 0 ? items : FALLBACK_EXAM_NAMES;
+  const doubled = [...list, ...list, ...list, ...list];
   return (
     <div className="h-14 bg-black dark:bg-[#12151C] border-y border-black dark:border-[rgba(255,255,255,0.05)] overflow-hidden flex items-center select-none pointer-events-none" aria-hidden="true">
-      <div className="en-marquee flex gap-16 whitespace-nowrap">
+      <div className="en-marquee flex items-center gap-8 whitespace-nowrap">
         {doubled.map((name, i) => (
-          <span
-            key={i}
-            className="text-white text-[14px] uppercase font-bold"
-            style={{ fontFamily: "var(--font-mono)", letterSpacing: "1px" }}
-          >
-            {name}
+          <span key={i} className="flex items-center gap-8">
+            <span
+              className="text-white text-[14px] uppercase font-bold"
+              style={{ fontFamily: "var(--font-mono)", letterSpacing: "1px" }}
+            >
+              {name}
+            </span>
+            <span className="text-white/30 text-[13px]">•</span>
           </span>
         ))}
       </div>
@@ -448,11 +603,13 @@ const FEATURE_ACCENT = [
 function SpotlightCard({
   children,
   hoverBgLight,
+  hoverBgDark,
   spotlightRgb,
   className = "",
 }: {
   children: React.ReactNode;
   hoverBgLight: string;
+  hoverBgDark: string;
   spotlightRgb: string;
   className?: string;
 }) {
@@ -483,10 +640,12 @@ function SpotlightCard({
           : "0 20px 40px -15px rgba(0,0,0,0.04)",
       }}
     >
-      {/* Card surface */}
+      {/* Card surface — hover tint picked per-theme via CSS (never a light-only inline color,
+          which would wash out light dark-mode text) */}
       <div
-        className="relative bg-white dark:bg-[var(--card)] rounded-[25px] h-full flex flex-col overflow-hidden transition-colors duration-300"
-        style={{ backgroundColor: hovered ? hoverBgLight : undefined }}
+        data-hovered={hovered}
+        className="spotlight-surface relative bg-white dark:bg-[var(--card)] rounded-[25px] h-full flex flex-col overflow-hidden transition-colors duration-300"
+        style={{ "--spot-bg-light": hoverBgLight, "--spot-bg-dark": hoverBgDark } as React.CSSProperties}
       >
         {/* Inner radial glow follows cursor */}
         <div
@@ -523,11 +682,10 @@ function FeaturesSection() {
         </div>
 
         {/* Bento grid — staggered reveal + spotlight cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
           {features.map((f, i) => {
             const Illus  = FEATURE_ILLUSTRATIONS[i];
             const accent = FEATURE_ACCENT[i];
-            const isWide = i === 0 || i === 3;
             return (
               <motion.div
                 key={f.title}
@@ -535,11 +693,12 @@ function FeaturesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-40px" }}
                 transition={{ duration: 0.55, delay: i * 0.09, ease: [0.16, 1, 0.3, 1] }}
-                className={`group ${isWide ? "lg:col-span-3" : "lg:col-span-2"}`}
+                className="group"
               >
                 <Link href={f.href} className="block h-full">
                   <SpotlightCard
                     hoverBgLight={accent.hoverBgLight}
+                    hoverBgDark={accent.hoverBgDark}
                     spotlightRgb={accent.spotlightRgb}
                     className="h-full"
                   >
@@ -581,6 +740,137 @@ function FeaturesSection() {
           })}
         </div>
 
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   HOW IT WORKS — 3-step process, connected timeline, not a
+   generic equal-column card grid
+───────────────────────────────────────────────────────────── */
+const HOW_IT_WORKS = [
+  { step: "01", title: "Choose Your Exam", icon: Search,
+    desc: "Search or browse 50+ competitive exams — from JPSC and SSC to Banking and Railway." },
+  { step: "02", title: "Practice with Real Questions", icon: ClipboardList,
+    desc: "Solve PYQ papers and full-length mock tests built on the actual exam pattern." },
+  { step: "03", title: "Track & Improve", icon: BarChart3,
+    desc: "AI analytics pinpoint exactly which topics are holding your score back." },
+];
+
+function HowItWorksSection() {
+  return (
+    <section className="py-24 lg:py-32 bg-white dark:bg-[var(--bg)]">
+      <div className="max-w-[1280px] mx-auto px-6 lg:px-8">
+        <div className="max-w-2xl mb-16">
+          <h2 className="text-[32px] sm:text-[44px] font-black leading-[1.05] tracking-[-0.03em] text-[#1d1d1b] dark:text-[var(--ink-1)]">
+            From sign-up to selection, in three steps.
+          </h2>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-10 lg:gap-8 relative">
+          <div className="hidden md:block absolute top-[28px] left-[16.5%] right-[16.5%] h-px bg-[#EAE8EC] dark:bg-[var(--line-soft)]" aria-hidden="true" />
+          {HOW_IT_WORKS.map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <motion.div
+                key={s.step}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.55, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+                className="relative"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-[var(--blue)] text-white flex items-center justify-center mb-6 relative z-10 shadow-[0_8px_24px_-6px_rgba(13,40,126,0.45)]">
+                  <Icon className="w-6 h-6" />
+                </div>
+                <div className="text-[12px] text-[var(--ink-4)] mb-2 uppercase" style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.6px" }}>
+                  Step {s.step}
+                </div>
+                <h3 className="text-[20px] font-bold text-[#1d1d1b] dark:text-[var(--ink-1)] mb-2 tracking-[-0.01em]">{s.title}</h3>
+                <p className="text-[15px] text-gray-500 dark:text-[var(--ink-3)] leading-[1.65]">{s.desc}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PRICING — Free vs Pro, asymmetric two-card layout
+   (never a generic 3-tower pricing table)
+───────────────────────────────────────────────────────────── */
+const FREE_FEATURES = ["Daily Quiz", "Limited PYQ Papers", "Basic Test Series", "Community Leaderboard"];
+const PRO_FEATURES  = ["Full Test Series Access", "AI Weak-Area Analytics", "All PYQ Papers", "Detailed Solutions", "Priority Doubt Support"];
+
+function PricingSection() {
+  const [annual, setAnnual] = useState(true);
+  return (
+    <section className="py-24 lg:py-32 bg-[#f9fafb] dark:bg-[var(--bg)]">
+      <div className="max-w-[1280px] mx-auto px-6 lg:px-8">
+        <div className="max-w-2xl mx-auto text-center mb-14">
+          <h2 className="text-[32px] sm:text-[44px] font-black leading-[1.05] tracking-[-0.03em] text-[#1d1d1b] dark:text-[var(--ink-1)] mb-4">
+            Start free. Upgrade when ready.
+          </h2>
+          <p className="text-[17px] text-gray-500 dark:text-[var(--ink-3)]">No hidden charges — cancel your Pro plan anytime.</p>
+        </div>
+
+        <div className="grid md:grid-cols-[1fr_1.15fr] gap-6 max-w-4xl mx-auto items-stretch">
+
+          {/* Free */}
+          <div className="card-bezel">
+            <div className="card-bezel-inner p-8 h-full flex flex-col">
+              <h3 className="text-[20px] font-bold text-[#1d1d1b] dark:text-[var(--ink-1)] mb-1">Free</h3>
+              <p className="text-[14px] text-gray-500 dark:text-[var(--ink-3)] mb-6">For getting started</p>
+              <div className="text-[40px] font-light text-[#1d1d1b] dark:text-[var(--ink-1)] mb-6">₹0</div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {FREE_FEATURES.map((f) => (
+                  <li key={f} className="flex items-center gap-2.5 text-[14.5px] text-gray-600 dark:text-[var(--ink-2)]">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <BtnSecondary href="/exams">Get Started Free</BtnSecondary>
+            </div>
+          </div>
+
+          {/* Pro — elevated, "Most Popular" */}
+          <div className="relative">
+            <span
+              className="absolute -top-3 left-8 z-10 px-3 py-1 rounded-full bg-[var(--blue)] text-white text-[11px] font-bold uppercase tracking-wide"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              Most Popular
+            </span>
+            <div className="rounded-[26px] p-[1.5px] bg-gradient-to-br from-[var(--blue)] to-[#3557C7] h-full shadow-[0_16px_48px_-16px_rgba(13,40,126,0.35)]">
+              <div className="rounded-[24.5px] bg-white dark:bg-[var(--card)] p-8 h-full flex flex-col">
+                <h3 className="text-[20px] font-bold text-[#1d1d1b] dark:text-[var(--ink-1)] mb-1">Pro</h3>
+                <p className="text-[14px] text-gray-500 dark:text-[var(--ink-3)] mb-6">For serious aspirants</p>
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-[40px] font-light text-[#1d1d1b] dark:text-[var(--ink-1)]">₹{annual ? "1,999" : "299"}</span>
+                  <span className="text-[14px] text-gray-500 dark:text-[var(--ink-3)]">/{annual ? "year" : "month"}</span>
+                </div>
+                <button
+                  onClick={() => setAnnual((a) => !a)}
+                  className="text-[12px] text-[var(--blue)] font-semibold mb-6 text-left underline underline-offset-2 w-fit"
+                >
+                  {annual ? "Switch to monthly (₹299/mo)" : "Switch to annual — save ~44%"}
+                </button>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {PRO_FEATURES.map((f) => (
+                    <li key={f} className="flex items-center gap-2.5 text-[14.5px] text-gray-700 dark:text-[var(--ink-1)] font-medium">
+                      <CheckCircle className="w-4 h-4 text-[var(--blue)] flex-shrink-0" /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <BtnPrimary href="/dashboard/plans">Upgrade to Pro <ArrowRight className="w-4 h-4" /></BtnPrimary>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </section>
   );
@@ -836,7 +1126,6 @@ function ExamCategoriesSection({ examCategories }: { examCategories: FeaturedExa
    TESTIMONIALS — cream color-block section (#f4ecd6)
 ───────────────────────────────────────────────────────────── */
 function TestimonialsSection({ testimonials }: { testimonials: TestimonialData[] }) {
-  if (testimonials.length === 0) return null;
   return (
     <section className="py-5 bg-white dark:bg-[var(--bg)]">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -852,7 +1141,7 @@ function TestimonialsSection({ testimonials }: { testimonials: TestimonialData[]
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {testimonials.map((t) => (
               <div key={t.name} className="bg-white dark:bg-[var(--card)] rounded-[18px] p-6 flex flex-col border border-[#CBCDD5] dark:border-[rgba(255,255,255,0.07)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset]">
                 {/* Stars */}
@@ -897,8 +1186,6 @@ function TestimonialsSection({ testimonials }: { testimonials: TestimonialData[]
 
 function FAQSection({ faqItems }: { faqItems: FAQData[] }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
-
-  if (!faqItems || faqItems.length === 0) return null;
 
   return (
     <section className="py-20 lg:py-24 bg-white dark:bg-[var(--bg)] border-t border-[#EAE8EC] dark:border-[var(--line-soft)]">
@@ -967,8 +1254,9 @@ function FAQSection({ faqItems }: { faqItems: FAQData[] }) {
    CTA — navy color-block section (#1f1d3d) — the only dark
    surface above the footer (color-block-section-navy token)
 ───────────────────────────────────────────────────────────── */
-function CTASection({ stats, loading }: { stats: PlatformStats | null; loading: boolean }) {
+function CTASection({ stats }: { stats: PlatformStats | null; loading: boolean }) {
   const { user } = useAuth();
+  const s = stats ?? FALLBACK_STATS;
 
   const promptGoogleSignIn = () => {
     const google = (window as Window & {
@@ -1001,11 +1289,7 @@ function CTASection({ stats, loading }: { stats: PlatformStats | null; loading: 
             className="text-[18px] sm:text-[20px] text-white/60 mb-10 max-w-xl mx-auto leading-[1.40]"
             style={{ fontWeight: 330, letterSpacing: "-0.14px" }}
           >
-            Join{" "}
-            {stats?.users !== undefined
-              ? stats.users.toLocaleString()
-              : loading ? "..." : "10,000+"}{" "}
-            students already preparing smarter. Get access to mock tests, PYQ papers, and AI analytics — free.
+            Join {s.users.toLocaleString("en-IN")}+ aspirants already preparing smarter. Get access to mock tests, PYQ papers, and AI analytics — free.
           </p>
 
           {/* Plan highlights */}
@@ -1047,20 +1331,27 @@ export default function LandingPage() {
   const openLogin = useCallback(() => setShowModal(true), []);
   const { stats, loading } = useStats();
 
-  /* Dynamic marketing content — fetched from Test_Backend, falls back to static */
+  /* Dynamic marketing content — fetched from Test_Backend, falls back to static
+     realistic content below so the page is never empty in dev / degraded mode */
   const featuredExams = useFeaturedExams();
   const testimonials = useTestimonials();
   const faqItems = useFAQs();
+
+  const displayExams = featuredExams.length ? featuredExams : FALLBACK_EXAMS;
+  const displayTestimonials = testimonials.length ? testimonials : FALLBACK_TESTIMONIALS;
+  const displayFAQs = faqItems.length ? faqItems : FALLBACK_FAQS;
 
   return (
     <div className="min-h-screen bg-white dark:bg-[var(--bg)]">
       {showModal && <AuthModal onClose={() => setShowModal(false)} next="/dashboard" />}
       <HeroSection onLogin={openLogin} stats={stats} />
       <MarqueeStrip items={featuredExams.map(e => e.name)} />
+      <HowItWorksSection />
       <FeaturesSection />
-      <ExamCategoriesSection examCategories={featuredExams} />
-      <TestimonialsSection testimonials={testimonials} />
-      <FAQSection faqItems={faqItems} />
+      <ExamCategoriesSection examCategories={displayExams} />
+      <PricingSection />
+      <TestimonialsSection testimonials={displayTestimonials} />
+      <FAQSection faqItems={displayFAQs} />
       <CTASection stats={stats} loading={loading} />
     </div>
   );

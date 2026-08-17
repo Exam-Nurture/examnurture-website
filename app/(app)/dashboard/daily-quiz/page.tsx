@@ -7,6 +7,7 @@ import TestPortal from "@/components/exam/TestPortal";
 import ResultView, { AttemptResult } from "@/components/exam/ResultView";
 import { apiGetDailyPractice, apiSubmitDailyPractice, apiEmailReport } from "@/lib/api";
 import type { Question } from "@/components/exam/QuestionViewer";
+import { ExamLoading, ExamError } from "@/components/exam/ExamStates";
 
 type Phase = "loading" | "active" | "result" | "error";
 
@@ -87,53 +88,30 @@ export default function DailyQuizPage() {
   };
 
   if (authLoading || phase === "loading") {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "var(--card)" }}>
-        <div className="text-center">
-          <div className="w-10 h-10 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin mx-auto mb-4" />
-          <p className="text-sm font-medium" style={{ color: "var(--ink-3)" }}>Loading daily quiz…</p>
-        </div>
-      </div>
-    );
+    return <ExamLoading label="Loading daily quiz…" />;
   }
 
   if (phase === "error") {
     return (
-      <div className="flex items-center justify-center min-h-screen" style={{ background: "var(--bg)" }}>
-        <div className="text-center px-4">
-          <p className="text-red-500 font-bold mb-4">{error}</p>
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="px-5 py-2.5 rounded-full bg-[var(--blue)] text-white text-sm font-medium"
-          >
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
+      <ExamError
+        message={error}
+        onBack={() => router.push("/dashboard")}
+        backLabel="Back to dashboard"
+      />
     );
   }
 
   if (phase === "result" && result) {
+    // ResultView carries its own back action, so no duplicate top bar here.
     return (
-      <div className="min-h-screen" style={{ background: "var(--bg)" }}>
-        <div className="sticky top-0 z-10 flex items-center px-5 h-14 border-b" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="text-[13px] font-medium hover:underline"
-            style={{ color: "var(--ink-3)" }}
-          >
-            ← Back to Dashboard
-          </button>
-        </div>
-        <ResultView
-          result={result}
-          questions={questions}
-          userAnswers={userAnswers}
-          testTitle="Daily Quiz"
-          onBack={() => router.push("/dashboard")}
-          onEmailReport={attemptId ? () => apiEmailReport({ attemptId, kind: "daily-quiz" }).then(() => {}) : undefined}
-        />
-      </div>
+      <ResultView
+        result={result}
+        questions={questions}
+        userAnswers={userAnswers}
+        testTitle="Daily Quiz"
+        onBack={() => router.push("/dashboard")}
+        onEmailReport={attemptId ? () => apiEmailReport({ attemptId, kind: "daily-quiz" }).then(() => {}) : undefined}
+      />
     );
   }
 

@@ -1,635 +1,754 @@
 "use client";
 
-import { useState, useEffect, Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, Clock, BookOpen, Download, Play, CheckCircle2, SlidersHorizontal, X } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import {
+  Search, SlidersHorizontal, Download, Play, CheckCircle2, Clock,
+  BookOpen, FileText, Compass, Rows3, Grid2x2, RotateCcw, Trophy,
+} from "lucide-react";
+import { motion } from "framer-motion";
 import { apiGetPYQPapers, apiGetPYQAttempts } from "@/lib/api";
+import {
+  Bezel, Eyebrow, PageHeader, Skel, EmptyState, LoadingRegion, TONE,
+  relativeDate, scoreTone, type Tone,
+} from "@/components/dashboard/ui";
+import {
+  FilterDrawer, FilterChip, StickyToolbar, SearchField, FilterButton,
+  type FilterOpt, type FilterGroup,
+} from "@/components/dashboard/FilterDrawer";
 
-type FilterOpt = { id: string; label: string };
+const ALL = "__all__";
 
-function FilterSection({
-  title, options, selectedId, onChange,
-}: {
-  title: string;
-  options: FilterOpt[];
-  selectedId: string;
-  onChange: (id: string) => void;
-}) {
-  return (
-    <div>
-      <p
-        className="text-[10px] font-bold tracking-widest uppercase mb-2.5"
-        style={{ color: "var(--ink-4)" }}
-      >
-        {title}
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map((opt) => (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => onChange(opt.id)}
-            className="px-3 py-1 rounded-full text-[12px] font-medium transition-all duration-150"
-            style={{
-              background: selectedId === opt.id ? "var(--blue-soft)" : "var(--bg)",
-              color: selectedId === opt.id ? "var(--blue)" : "var(--ink-3)",
-              border: `1px solid ${selectedId === opt.id ? "var(--blue)" : "var(--line)"}`,
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+type Paper = Record<string, any>;
+type Attempt = Record<string, any>;
+type Status = "attempted" | "paused" | "new";
+
+interface Row {
+  paper: Paper;
+  status: Status;
+  attempt?: Attempt;
 }
 
-function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
-      style={{ background: "var(--blue-soft)", color: "var(--blue)", border: "1px solid var(--blue)" }}
-    >
-      {label}
-      <button type="button" onClick={onRemove} className="hover:opacity-70 transition-opacity leading-none">
-        <X size={10} />
-      </button>
-    </span>
-  );
-}
+const STATUS_META: Record<Status, { label: string; tone: Tone; icon: React.ReactNode }> = {
+  attempted: { label: "Attempted",   tone: "green",   icon: <CheckCircle2 size={11} strokeWidth={2.6} /> },
+  paused:    { label: "Paused",      tone: "amber",   icon: <RotateCcw size={11} strokeWidth={2.6} /> },
+  new:       { label: "Unattempted", tone: "neutral", icon: <BookOpen size={11} strokeWidth={2.4} /> },
+};
 
-/* ─────────────────────────────────────────────
-   Page inner (needs useSearchParams)
-───────────────────────────────────────────── */
 function PYQPageInner() {
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<"All" | "My Attempts">(
-    tabParam === "attempts" ? "My Attempts" : "All"
+  const params = useSearchParams();
+
+  const [papers, setPapers] = useState<Paper[]>([]);
+  const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
+  const [view, setView] = useState<"grid" | "list">("grid");
+  const [scope, setScope] = useState<"all" | "attempted" | "new">(
+    params.get("tab") === "attempts" ? "attempted" : "all",
   );
+  const [query, setQuery] = useState("");
 
-  const [papersData, setPapersData] = useState<any>(null);
-  const [papersLoading, setPapersLoading] = useState(false);
-  const [attemptsData, setAttemptsData] = useState<any>(null);
-  const [attemptsLoading, setAttemptsLoading] = useState(false);
-
-  // Filter drawer state
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [filterStateId, setFilterStateId] = useState("__all__");
-  const [filterBoardId, setFilterBoardId] = useState("__all__");
-  const [filterExamId, setFilterExamId] = useState("__all__");
-  const [filterYear, setFilterYear] = useState("__all__");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [stateId, setStateId] = useState(ALL);
+  const [boardId, setBoardId] = useState(ALL);
+  const [examId, setExamId] = useState(ALL);
+  const [year, setYear] = useState(ALL);
 
   useEffect(() => {
-    if (activeTab === "All") {
-      setPapersLoading(true);
-      apiGetPYQPapers({ limit: 100 })
-        .then(setPapersData)
-        .catch(console.error)
-        .finally(() => setPapersLoading(false));
-    } else {
-      setAttemptsLoading(true);
-      apiGetPYQAttempts()
-        .then(setAttemptsData)
-        .catch(console.error)
-        .finally(() => setAttemptsLoading(false));
-    }
-  }, [activeTab]);
+    let alive = true;
+    Promise.allSettled([apiGetPYQPapers({ limit: 200 }), apiGetPYQAttempts()]).then(
+      ([p, a]) => {
+        if (!alive) return;
+        if (p.status === "fulfilled") {
+          setPapers(((p.value as any)?.items ?? []) as Paper[]);
+        }
+        if (a.status === "fulfilled") {
+          setAttempts(Array.isArray(a.value) ? (a.value as Attempt[]) : []);
+        }
+        setFailed(p.status === "rejected");
+        setLoading(false);
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  const allPapers: any[] = papersData?.items || [];
-  const attempts = attemptsData || [];
+  /* ── Merge attempts into papers so status is a first-class property ── */
+  const rows = useMemo<Row[]>(() => {
+    const byPaper = new Map<string, Attempt>();
+    attempts.forEach((a) => {
+      const key = String(a.paperId ?? a.paper?.id ?? "");
+      if (!key) return;
+      const prev = byPaper.get(key);
+      // Keep the most recent attempt per paper.
+      if (!prev || new Date(a.completedAt ?? 0) > new Date(prev.completedAt ?? 0)) {
+        byPaper.set(key, a);
+      }
+    });
 
-  // ── Hierarchy options ────────────────────────────────────────────────────
+    return papers.map((p) => {
+      const a = byPaper.get(String(p.id));
+      const status: Status = !a ? "new" : a.completedAt ? "attempted" : "paused";
+      return { paper: p, status, attempt: a };
+    });
+  }, [papers, attempts]);
 
+  /* ── Filter options ── */
   const stateOptions = useMemo<FilterOpt[]>(() => {
     const map = new Map<string, string>();
-    allPapers.forEach((p) => {
-      const stId = String(p.exam?.board?.state?.id ?? "__national__");
-      const stName = p.exam?.board?.state?.name || "National";
-      map.set(stId, stName);
-    });
-    const sorted = Array.from(map.entries())
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) =>
-        a.label === "National" ? 1 : b.label === "National" ? -1 : a.label.localeCompare(b.label)
-      );
-    return [{ id: "__all__", label: "All" }, ...sorted];
-  }, [allPapers]);
+    papers.forEach((p) =>
+      map.set(
+        String(p.exam?.board?.state?.id ?? "__national__"),
+        p.exam?.board?.state?.name || "National",
+      ),
+    );
+    return [
+      { id: ALL, label: "All" },
+      ...[...map.entries()]
+        .map(([id, label]) => ({ id, label }))
+        .sort((a, b) =>
+          a.label === "National" ? 1 : b.label === "National" ? -1 : a.label.localeCompare(b.label),
+        ),
+    ];
+  }, [papers]);
 
   const boardOptions = useMemo<FilterOpt[]>(() => {
     const map = new Map<string, string>();
-    allPapers.forEach((p) => {
-      const stId = String(p.exam?.board?.state?.id ?? "__national__");
-      if (filterStateId !== "__all__" && stId !== filterStateId) return;
-      if (p.exam?.board?.id) map.set(p.exam.board.id, p.exam.board.shortName || p.exam.board.name);
+    papers.forEach((p) => {
+      const st = String(p.exam?.board?.state?.id ?? "__national__");
+      if (stateId !== ALL && st !== stateId) return;
+      if (p.exam?.board?.id) {
+        map.set(p.exam.board.id, p.exam.board.shortName || p.exam.board.name);
+      }
     });
-    const sorted = Array.from(map.entries())
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-    return [{ id: "__all__", label: "All" }, ...sorted];
-  }, [allPapers, filterStateId]);
+    return [
+      { id: ALL, label: "All" },
+      ...[...map.entries()].map(([id, label]) => ({ id, label })).sort((a, b) => a.label.localeCompare(b.label)),
+    ];
+  }, [papers, stateId]);
 
   const examOptions = useMemo<FilterOpt[]>(() => {
     const map = new Map<string, string>();
-    allPapers.forEach((p) => {
-      const stId = String(p.exam?.board?.state?.id ?? "__national__");
-      if (filterStateId !== "__all__" && stId !== filterStateId) return;
-      if (filterBoardId !== "__all__" && p.exam?.board?.id !== filterBoardId) return;
+    papers.forEach((p) => {
+      const st = String(p.exam?.board?.state?.id ?? "__national__");
+      if (stateId !== ALL && st !== stateId) return;
+      if (boardId !== ALL && p.exam?.board?.id !== boardId) return;
       if (p.exam?.id) map.set(p.exam.id, p.exam.shortName || p.exam.name);
     });
-    const sorted = Array.from(map.entries())
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-    return [{ id: "__all__", label: "All" }, ...sorted];
-  }, [allPapers, filterStateId, filterBoardId]);
+    return [
+      { id: ALL, label: "All" },
+      ...[...map.entries()].map(([id, label]) => ({ id, label })).sort((a, b) => a.label.localeCompare(b.label)),
+    ];
+  }, [papers, stateId, boardId]);
 
   const yearOptions = useMemo<FilterOpt[]>(() => {
     const years = new Set<number>();
-    allPapers.forEach((p) => { if (p.year) years.add(Number(p.year)); });
-    const sorted = Array.from(years).sort((a, b) => b - a);
-    return [
-      { id: "__all__", label: "All Years" },
-      ...sorted.map((y) => ({ id: String(y), label: String(y) })),
-    ];
-  }, [allPapers]);
-
-  // ── Cascade handlers ─────────────────────────────────────────────────────
-
-  function handleStateChange(stId: string) {
-    setFilterStateId(stId);
-    setFilterBoardId("__all__");
-    setFilterExamId("__all__");
-  }
-
-  function handleBoardChange(boardId: string) {
-    setFilterBoardId(boardId);
-    setFilterExamId("__all__");
-  }
-
-  function clearAllFilters() {
-    setFilterStateId("__all__");
-    setFilterBoardId("__all__");
-    setFilterExamId("__all__");
-    setFilterYear("__all__");
-  }
-
-  const activeFilterCount = [filterStateId, filterBoardId, filterExamId, filterYear].filter(
-    (f) => f !== "__all__"
-  ).length;
-
-  // ── Filtered papers ───────────────────────────────────────────────────────
-
-  const papers = useMemo(() => {
-    return allPapers.filter((p) => {
-      const stId = String(p.exam?.board?.state?.id ?? "__national__");
-      const stateOk = filterStateId === "__all__" || stId === filterStateId;
-      const boardOk = filterBoardId === "__all__" || p.exam?.board?.id === filterBoardId;
-      const examOk = filterExamId === "__all__" || p.exam?.id === filterExamId;
-      const yearOk = filterYear === "__all__" || String(p.year) === filterYear;
-      return stateOk && boardOk && examOk && yearOk;
+    papers.forEach((p) => {
+      if (p.year) years.add(Number(p.year));
     });
-  }, [allPapers, filterStateId, filterBoardId, filterExamId, filterYear]);
+    return [
+      { id: ALL, label: "All years" },
+      ...[...years].sort((a, b) => b - a).map((y) => ({ id: String(y), label: String(y) })),
+    ];
+  }, [papers]);
 
-  const stateLabel = stateOptions.find((o) => o.id === filterStateId)?.label;
-  const boardLabel = boardOptions.find((o) => o.id === filterBoardId)?.label;
-  const examLabel = examOptions.find((o) => o.id === filterExamId)?.label;
+  function pickState(id: string) {
+    setStateId(id);
+    setBoardId(ALL);
+    setExamId(ALL);
+  }
+  function pickBoard(id: string) {
+    setBoardId(id);
+    setExamId(ALL);
+  }
+  function clearAll() {
+    setStateId(ALL);
+    setBoardId(ALL);
+    setExamId(ALL);
+    setYear(ALL);
+  }
+
+  const activeCount = [stateId, boardId, examId, year].filter((v) => v !== ALL).length;
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter(({ paper: p, status }) => {
+      if (scope === "attempted" && status === "new") return false;
+      if (scope === "new" && status !== "new") return false;
+      if (q && !`${p.title ?? ""} ${p.exam?.name ?? ""} ${p.year ?? ""}`.toLowerCase().includes(q)) {
+        return false;
+      }
+      const st = String(p.exam?.board?.state?.id ?? "__national__");
+      if (stateId !== ALL && st !== stateId) return false;
+      if (boardId !== ALL && p.exam?.board?.id !== boardId) return false;
+      if (examId !== ALL && p.exam?.id !== examId) return false;
+      if (year !== ALL && String(p.year) !== year) return false;
+      return true;
+    });
+  }, [rows, scope, query, stateId, boardId, examId, year]);
+
+  /* ── Group by year so the year reads as a section, not a chip ── */
+  const grouped = useMemo(() => {
+    const map = new Map<string, Row[]>();
+    filtered.forEach((r) => {
+      const y = String(r.paper.year ?? "Undated");
+      if (!map.has(y)) map.set(y, []);
+      map.get(y)!.push(r);
+    });
+    return [...map.entries()].sort((a, b) => {
+      if (a[0] === "Undated") return 1;
+      if (b[0] === "Undated") return -1;
+      return Number(b[0]) - Number(a[0]);
+    });
+  }, [filtered]);
+
+  const groups: FilterGroup[] = [
+    { key: "year", title: "Year", options: yearOptions, selected: year, onChange: setYear },
+    { key: "state", title: "State", options: stateOptions, selected: stateId, onChange: pickState },
+    { key: "board", title: "Board", options: boardOptions, selected: boardId, onChange: pickBoard },
+    { key: "exam", title: "Exam", options: examOptions, selected: examId, onChange: setExamId },
+  ];
+
+  const label = (opts: FilterOpt[], id: string) => opts.find((o) => o.id === id)?.label;
+  const attemptedCount = rows.filter((r) => r.status === "attempted").length;
+
+  const SCOPES: { id: typeof scope; label: string; count: number }[] = [
+    { id: "all", label: "All papers", count: rows.length },
+    { id: "attempted", label: "Attempted", count: attemptedCount },
+    { id: "new", label: "Unattempted", count: rows.length - attemptedCount },
+  ];
 
   return (
-    <div className="fade-up" style={{ maxWidth: 1200 }}>
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        eyebrow="Real exam papers"
+        title="Previous Year Papers"
+        sub="Solve the actual paper under real timing, or download the PDF to work offline."
+        counts={
+          loading
+            ? undefined
+            : [
+                { label: "papers", value: rows.length },
+                { label: "attempted", value: attemptedCount, tone: "green" },
+              ]
+        }
+        action={{ label: "Browse all", href: "/pyq/all", icon: <Compass size={13} /> }}
+      />
 
-      {/* Page header */}
-      <div className="flex items-start justify-between flex-wrap gap-4 mb-7">
-        <div>
-          <h1
-            className="text-[28px] leading-none"
-            style={{ fontWeight: 300, letterSpacing: "-0.96px", color: "var(--ink-1)" }}
-          >
-            My PYQ Papers
-          </h1>
-          <p className="text-[13px] mt-2" style={{ color: "var(--ink-4)" }}>
-            Your attempted papers with detailed solutions and analytics.
-          </p>
-        </div>
-        <Link
-          href="/pyq/all"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold border transition-all hover:bg-[var(--blue)] hover:text-white hover:border-[var(--blue)]"
-          style={{ color: "var(--ink-2)", borderColor: "var(--line)" }}
-        >
-          Browse All PYQs <ArrowRight size={14} />
-        </Link>
-      </div>
-
-      {/* Filter bar & Tabs */}
-      <div
-        className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5"
-        style={{ borderBottom: "1px solid var(--line-soft)" }}
-      >
-        {/* Main Tabs */}
+      {failed && (
         <div
-          className="flex items-center gap-0.5 p-1 rounded-[10px]"
-          style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
+          className="rounded-[14px] px-4 py-3 text-[12.5px]"
+          style={{
+            background: "var(--red-soft)",
+            color: "var(--red)",
+            border: "1px solid rgba(217,92,92,0.26)",
+          }}
         >
-          {["All", "My Attempts"].map((t) => {
-            const isTabActive = activeTab === t;
-            return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setActiveTab(t as any)}
-                className="px-4 py-1.5 rounded-[7px] text-[13px] font-semibold transition-all duration-150"
-                style={{
-                  background: isTabActive ? "var(--card)" : "transparent",
-                  color: isTabActive ? "var(--ink-1)" : "var(--ink-4)",
-                  boxShadow: isTabActive ? "var(--shadow-xs)" : "none",
-                }}
-              >
-                {t}
-              </button>
-            );
-          })}
+          Could not load previous-year papers. Refresh to try again.
         </div>
+      )}
 
-        {/* Filter controls (All tab only) */}
-        {activeTab === "All" && (
-          <div className="flex items-center gap-2">
-            <span
-              className="text-[12px] pl-3"
-              style={{ color: "var(--ink-4)", borderLeft: "1px solid var(--line)" }}
-            >
-              {papers.length} {papers.length === 1 ? "paper" : "papers"}
-            </span>
-            <button
-              type="button"
-              onClick={() => setFilterOpen(true)}
-              className="relative flex items-center justify-center rounded-[10px] border transition-all duration-150"
-              style={{
-                width: 36, height: 36,
-                background: activeFilterCount > 0 ? "var(--blue-soft)" : "var(--card)",
-                borderColor: activeFilterCount > 0 ? "var(--blue)" : "var(--line)",
-                color: activeFilterCount > 0 ? "var(--blue)" : "var(--ink-3)",
-              }}
-              title="Filter by state, board, exam or year"
-            >
-              <SlidersHorizontal size={14} />
-              {activeFilterCount > 0 && (
-                <span
-                  className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white"
-                  style={{ background: "var(--blue)" }}
+      {rows.length > 0 && (
+        <StickyToolbar>
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            placeholder="Search by paper, exam or year…"
+            icon={<Search size={15} />}
+          />
+
+          {/* Scope segmented control */}
+          <div
+            className="flex shrink-0 items-center gap-0.5 rounded-full p-1"
+            style={{ background: "var(--d-inset)", border: "1px solid var(--d-line-soft)" }}
+          >
+            {SCOPES.map((s) => {
+              const on = scope === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setScope(s.id)}
+                  aria-pressed={on}
+                  className="rounded-full px-3 py-[6px] text-[12px] font-semibold transition-all duration-200 d-focus"
+                  style={
+                    on
+                      ? {
+                          background: "var(--d-surface)",
+                          color: "var(--d-ink)",
+                          boxShadow: "0 1px 3px rgba(17,17,17,.10)",
+                        }
+                      : { color: "var(--d-ink-3)" }
+                  }
                 >
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
+                  {s.label}
+                  <span className="ml-1.5 opacity-60">{s.count}</span>
+                </button>
+              );
+            })}
           </div>
-        )}
-      </div>
 
-      {/* Active filter chips */}
-      {activeFilterCount > 0 && activeTab === "All" && (
-        <div className="flex flex-wrap items-center gap-2 mb-5">
-          {filterStateId !== "__all__" && stateLabel && (
-            <FilterChip label={stateLabel} onRemove={() => handleStateChange("__all__")} />
+          {/* View switch */}
+          <div
+            className="hidden shrink-0 items-center gap-0.5 rounded-full p-1 sm:flex"
+            style={{ background: "var(--d-inset)", border: "1px solid var(--d-line-soft)" }}
+          >
+            {([
+              { id: "grid", icon: <Grid2x2 size={14} />, label: "Grid view" },
+              { id: "list", icon: <Rows3 size={14} />, label: "List view" },
+            ] as const).map((v) => {
+              const on = view === v.id;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setView(v.id)}
+                  aria-label={v.label}
+                  aria-pressed={on}
+                  className="flex h-7 w-7 items-center justify-center rounded-full transition-all duration-200 d-focus"
+                  style={
+                    on
+                      ? {
+                          background: "var(--d-surface)",
+                          color: "var(--d-ink)",
+                          boxShadow: "0 1px 3px rgba(17,17,17,.10)",
+                        }
+                      : { color: "var(--d-ink-4)" }
+                  }
+                >
+                  {v.icon}
+                </button>
+              );
+            })}
+          </div>
+
+          <FilterButton count={activeCount} onClick={() => setDrawerOpen(true)}>
+            <SlidersHorizontal size={14} />
+            Filters
+          </FilterButton>
+        </StickyToolbar>
+      )}
+
+      {activeCount > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {year !== ALL && <FilterChip label={year} onRemove={() => setYear(ALL)} />}
+          {stateId !== ALL && (
+            <FilterChip label={label(stateOptions, stateId) ?? ""} onRemove={() => pickState(ALL)} />
           )}
-          {filterBoardId !== "__all__" && boardLabel && (
-            <FilterChip label={boardLabel} onRemove={() => handleBoardChange("__all__")} />
+          {boardId !== ALL && (
+            <FilterChip label={label(boardOptions, boardId) ?? ""} onRemove={() => pickBoard(ALL)} />
           )}
-          {filterExamId !== "__all__" && examLabel && (
-            <FilterChip label={examLabel} onRemove={() => setFilterExamId("__all__")} />
-          )}
-          {filterYear !== "__all__" && (
-            <FilterChip label={filterYear} onRemove={() => setFilterYear("__all__")} />
+          {examId !== ALL && (
+            <FilterChip label={label(examOptions, examId) ?? ""} onRemove={() => setExamId(ALL)} />
           )}
           <button
             type="button"
-            onClick={clearAllFilters}
-            className="text-[11px] font-medium underline"
-            style={{ color: "var(--ink-4)" }}
+            onClick={clearAll}
+            className="text-[11.5px] font-semibold underline underline-offset-2 d-focus"
+            style={{ color: "var(--d-ink-4)" }}
           >
             Clear all
           </button>
         </div>
       )}
 
-      {/* Content Area */}
-      {activeTab === "All" ? (
-        papersLoading ? (
-          <div className="py-20 text-center text-[14px]" style={{ color: "var(--ink-4)" }}>
-            Loading papers...
+      {/* ── Content ── */}
+      {loading ? (
+        <LoadingRegion label="Loading previous-year papers">
+          <div className="flex flex-col gap-3">
+            <Skel className="h-3 w-16 rounded-full" />
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <PaperSkeleton key={i} />
+              ))}
+            </div>
           </div>
-        ) : papers.length === 0 ? (
-          <div className="text-center py-20 text-[14px]" style={{ color: "var(--ink-4)" }}>
-            No papers match the selected filters.
-            {activeFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={clearAllFilters}
-                className="block mx-auto mt-2 text-[12px] font-semibold underline"
-                style={{ color: "var(--blue)" }}
-              >
-                Clear filters
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 stagger">
-            {papers.map((p: any) => (
-              <PaperCard key={p.id} paper={p} />
-            ))}
-          </div>
-        )
-      ) : attemptsLoading ? (
-        <div className="py-20 text-center text-[14px]" style={{ color: "var(--ink-4)" }}>
-          Loading attempts...
-        </div>
-      ) : attempts.length === 0 ? (
-        <div className="text-center py-20 text-[14px]" style={{ color: "var(--ink-4)" }}>
-          You haven&apos;t attempted any PYQ papers yet.
-        </div>
+        </LoadingRegion>
+      ) : rows.length === 0 ? (
+        <EmptyState
+          eyebrow="Nothing available"
+          title="No papers here yet"
+          body="Previous-year papers for your exams haven't been published yet. Browse the full catalogue to find what's live."
+          action={{ label: "Browse all papers", href: "/pyq/all" }}
+        />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          eyebrow="No matches"
+          title="Nothing fits those filters"
+          body="Try a different year or exam, or clear the filters to see every paper again."
+          secondary={
+            <button
+              type="button"
+              onClick={() => {
+                setScope("all");
+                setQuery("");
+                clearAll();
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full px-4 py-[10px] text-[13px] font-semibold transition-transform hover:-translate-y-[1px] d-focus"
+              style={{
+                background: "var(--d-surface)",
+                color: "var(--d-ink-2)",
+                border: "1px solid var(--d-line)",
+              }}
+            >
+              Reset everything
+            </button>
+          }
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 stagger">
-          {attempts.map((a: any) => (
-            <AttemptCard key={a.id} attempt={a} />
+        <div className="flex flex-col gap-8">
+          {grouped.map(([yr, items]) => (
+            <section key={yr}>
+              {/* Year rule — the year is the loudest element on the page */}
+              <div className="mb-4 flex items-center gap-3.5">
+                <h2
+                  className="d-num text-[22px] font-semibold leading-none"
+                  style={{ fontFamily: "var(--font-sora)", color: "var(--d-ink)", letterSpacing: "-0.03em" }}
+                >
+                  {yr}
+                </h2>
+                <span
+                  className="rounded-full px-2 py-[3px] text-[10px] font-bold leading-none"
+                  style={{
+                    background: "var(--d-inset)",
+                    color: "var(--d-ink-3)",
+                    border: "1px solid var(--d-line-soft)",
+                  }}
+                >
+                  {items.length} {items.length === 1 ? "PAPER" : "PAPERS"}
+                </span>
+                <span className="h-px flex-1" style={{ background: "var(--d-line-soft)" }} />
+              </div>
+
+              <motion.div
+                initial="hidden"
+                animate="show"
+                variants={{ hidden: {}, show: { transition: { staggerChildren: 0.035 } } }}
+                className={
+                  view === "grid"
+                    ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+                    : "flex flex-col gap-2.5"
+                }
+              >
+                {items.map((row) => (
+                  <motion.div
+                    key={row.paper.id}
+                    variants={{
+                      hidden: { opacity: 0, y: 14 },
+                      show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
+                    }}
+                  >
+                    {view === "grid" ? <PaperCard row={row} /> : <PaperRow row={row} />}
+                  </motion.div>
+                ))}
+              </motion.div>
+            </section>
           ))}
         </div>
       )}
 
-      {/* ── Filter Drawer ── */}
-      <AnimatePresence>
-        {filterOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex justify-end"
-          >
-            <div
-              className="absolute inset-0 bg-black/20 backdrop-blur-[2px]"
-              onClick={() => setFilterOpen(false)}
-            />
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative flex flex-col w-80 max-w-[85vw] h-full overflow-hidden"
-              style={{
-                background: "var(--card)",
-                borderLeft: "1px solid var(--line)",
-                boxShadow: "-8px 0 32px rgba(0,0,0,.12)",
-              }}
-            >
-              {/* Header */}
-              <div
-                className="flex items-center justify-between px-5 py-4 shrink-0"
-                style={{ borderBottom: "1px solid var(--line)" }}
-              >
-                <span className="text-[15px] font-semibold" style={{ color: "var(--ink-1)" }}>
-                  Filters
-                </span>
-                <div className="flex items-center gap-3">
-                  {activeFilterCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={clearAllFilters}
-                      className="text-[12px] font-medium"
-                      style={{ color: "var(--blue)" }}
-                    >
-                      Clear all
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setFilterOpen(false)}
-                    className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors hover:bg-[var(--bg)]"
-                    style={{ color: "var(--ink-3)" }}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-6">
-                {stateOptions.length > 2 && (
-                  <FilterSection
-                    title="State"
-                    options={stateOptions}
-                    selectedId={filterStateId}
-                    onChange={handleStateChange}
-                  />
-                )}
-                {boardOptions.length > 1 && (
-                  <FilterSection
-                    title="Board"
-                    options={boardOptions}
-                    selectedId={filterBoardId}
-                    onChange={handleBoardChange}
-                  />
-                )}
-                {examOptions.length > 1 && (
-                  <FilterSection
-                    title="Exam"
-                    options={examOptions}
-                    selectedId={filterExamId}
-                    onChange={setFilterExamId}
-                  />
-                )}
-                {yearOptions.length > 1 && (
-                  <FilterSection
-                    title="Year"
-                    options={yearOptions}
-                    selectedId={filterYear}
-                    onChange={setFilterYear}
-                  />
-                )}
-              </div>
-
-              {/* Footer */}
-              <div
-                className="px-5 py-4 shrink-0"
-                style={{ borderTop: "1px solid var(--line)" }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setFilterOpen(false)}
-                  className="w-full py-2.5 rounded-full text-[13px] font-semibold text-white transition-opacity hover:opacity-85"
-                  style={{ background: "var(--ink-1)" }}
-                >
-                  Show {papers.length} results
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <FilterDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        groups={groups}
+        activeCount={activeCount}
+        onClearAll={clearAll}
+        resultCount={filtered.length}
+      />
     </div>
   );
 }
 
 export default function PYQPage() {
   return (
-    <Suspense fallback={<div className="fade-up" style={{ maxWidth: 1200 }} />}>
+    <Suspense fallback={<PYQFallback />}>
       <PYQPageInner />
     </Suspense>
   );
 }
 
-/* ─────────────────────────────────────────────
-   Paper Card
-───────────────────────────────────────────── */
-function PaperCard({ paper: p }: { paper: any }) {
+function PYQFallback() {
   return (
-    <div
-      className="card card-lift flex flex-col"
-      style={{ padding: "22px 24px 20px", borderRadius: 16 }}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <span
-          className="text-[10px] font-semibold tracking-widest uppercase truncate max-w-[150px]"
-          style={{ color: "var(--ink-4)" }}
-        >
-          {p.exam?.name ?? "PYQ"}
-        </span>
-      </div>
-
-      <div
-        className="text-[17px] font-semibold leading-tight"
-        style={{ fontFamily: "var(--font-sora)", color: "var(--ink-1)" }}
-      >
-        {p.year} — {p.title}
-      </div>
-
-      <div className="text-[12px] mt-1 h-[18px]" style={{ color: "var(--ink-4)" }}>
-        {p.shift ? `Shift: ${p.shift}` : ""}
-      </div>
-
-      <div className="flex items-center gap-0 mt-4">
-        <span
-          className="inline-flex items-center gap-1.5 text-[12px]"
-          style={{ color: "var(--ink-3)" }}
-        >
-          <BookOpen size={12} strokeWidth={1.75} />
-          {p.totalQs} Questions
-        </span>
-        <span className="mx-2.5 text-[11px]" style={{ color: "var(--line)" }}>·</span>
-        <span
-          className="inline-flex items-center gap-1.5 text-[12px]"
-          style={{ color: "var(--ink-3)" }}
-        >
-          <Clock size={12} strokeWidth={1.75} />
-          {p.durationMin} min
-        </span>
-      </div>
-
-      <div className="mt-4" />
-      <div className="mt-auto mb-4" style={{ borderTop: "1px solid var(--line-soft)" }} />
-
-      <div className="flex items-center gap-2">
-        <Link
-          href={`/pyq/${p.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-full text-[13px] font-medium text-white bg-[var(--blue)] hover:bg-[var(--blue-ink)] transition-colors"
-          style={{ height: 38, fontWeight: 480 }}
-        >
-          <Play size={11} fill="white" stroke="none" />
-          Attempt
-        </Link>
-        {p.pdfUrl && (
-          <a
-            href={p.pdfUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center rounded-full transition-colors hover:border-black"
-            style={{ width: 38, height: 38, border: "1px solid var(--line)", color: "var(--ink-4)" }}
-            title="Download paper PDF"
-          >
-            <Download size={14} strokeWidth={1.75} />
-          </a>
-        )}
+    <div className="flex flex-col gap-5">
+      <Skel className="h-8 w-64 rounded-lg" />
+      <Skel className="h-12 w-full rounded-[18px]" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <PaperSkeleton key={i} />
+        ))}
       </div>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────
-   Attempt Card
-───────────────────────────────────────────── */
-function AttemptCard({ attempt: a }: { attempt: any }) {
+/* ══════════════════════════════════════════════════════
+   Status badge
+══════════════════════════════════════════════════════ */
+
+function StatusBadge({ status }: { status: Status }) {
+  const m = STATUS_META[status];
+  const t = TONE[m.tone];
   return (
-    <div
-      className="card flex flex-col"
-      style={{ padding: "22px 24px 20px", borderRadius: 16 }}
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-[4px] text-[10px] font-bold leading-none whitespace-nowrap"
+      style={{ background: t.bg, color: t.fg, border: `1px solid ${t.line}` }}
     >
-      <div className="flex items-center justify-between mb-3">
-        <span
-          className="text-[10px] font-semibold tracking-widest uppercase"
-          style={{ color: "var(--ink-4)" }}
+      {m.icon}
+      {m.label}
+    </span>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   Grid card
+══════════════════════════════════════════════════════ */
+
+function PaperCard({ row }: { row: Row }) {
+  const { paper: p, status, attempt } = row;
+  const pct =
+    attempt && attempt.totalMarks > 0
+      ? Math.round((attempt.score / attempt.totalMarks) * 100)
+      : null;
+
+  return (
+    <Bezel interactive className="h-full group" innerClassName="h-full flex flex-col">
+      <div className="flex flex-1 flex-col p-4">
+        <div className="flex items-start justify-between gap-2">
+          <Eyebrow className="min-w-0 truncate">{p.exam?.shortName || p.exam?.name || "PYQ"}</Eyebrow>
+          <StatusBadge status={status} />
+        </div>
+
+        <h3
+          className="mt-3 line-clamp-2 text-[15px] font-semibold leading-snug"
+          style={{ fontFamily: "var(--font-sora)", color: "var(--d-ink)", letterSpacing: "-0.02em" }}
         >
-          Completed
-        </span>
-        <span
-          className="inline-flex items-center gap-1 text-[11px] font-medium leading-none"
-          style={{ color: "var(--green)" }}
-        >
-          <CheckCircle2 size={11} strokeWidth={2.5} />
-          Done
-        </span>
-      </div>
+          {p.title}
+        </h3>
 
-      <div
-        className="text-[17px] font-semibold leading-tight"
-        style={{ fontFamily: "var(--font-sora)", color: "var(--ink-1)" }}
-      >
-        {a.paper?.year} — {a.paper?.title}
-      </div>
+        {p.shift && (
+          <p className="mt-1 text-[12px]" style={{ color: "var(--d-ink-4)" }}>
+            Shift {p.shift}
+          </p>
+        )}
 
-      <div className="text-[12px] mt-1" style={{ color: "var(--ink-4)" }}>
-        {a.completedAt ? new Date(a.completedAt).toLocaleDateString() : "—"}
-      </div>
+        {/* Facts */}
+        <div className="mt-4 flex flex-wrap items-center gap-x-3.5 gap-y-1.5">
+          <Fact icon={<BookOpen size={12} />} text={`${p.totalQs ?? "—"} questions`} />
+          <Fact icon={<Clock size={12} />} text={`${p.durationMin ?? "—"} min`} />
+        </div>
 
-      <div
-        className="mt-5 p-4 rounded-[10px] flex items-center justify-between"
-        style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
-      >
-        <div>
-          <div
-            className="text-[10px] font-medium uppercase tracking-wider mb-1"
-            style={{ color: "var(--ink-4)" }}
-          >
-            Score
+        {/* Previous result */}
+        {attempt && pct !== null && (
+          <div className="d-well mt-4 flex items-center justify-between px-3.5 py-2.5">
+            <div>
+              <div className="d-eyebrow">Your score</div>
+              <div
+                className="d-num mt-1.5 text-[15px] font-semibold leading-none"
+                style={{ color: "var(--d-ink)" }}
+              >
+                {attempt.score}
+                <span className="text-[11.5px] font-medium" style={{ color: "var(--d-ink-4)" }}>
+                  {" "}
+                  / {attempt.totalMarks}
+                </span>
+              </div>
+            </div>
+            <span
+              className="d-num rounded-full px-2.5 py-1 text-[11px] font-bold"
+              style={{
+                background: TONE[scoreTone(pct)].bg,
+                color: TONE[scoreTone(pct)].fg,
+                border: `1px solid ${TONE[scoreTone(pct)].line}`,
+              }}
+            >
+              {pct}%
+            </span>
           </div>
-          <div className="text-[20px] font-bold font-mono" style={{ color: "var(--ink-1)" }}>
-            {a.score}{" "}
-            <span className="text-[13px] text-[var(--ink-4)]">/ {a.totalMarks}</span>
+        )}
+
+        <div className="mt-auto pt-4">
+          <PaperActions row={row} />
+        </div>
+      </div>
+    </Bezel>
+  );
+}
+
+function Fact({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-[12px]"
+      style={{ color: "var(--d-ink-3)" }}
+    >
+      <span style={{ color: "var(--d-ink-4)" }}>{icon}</span>
+      {text}
+    </span>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   List row — denser scanning mode
+══════════════════════════════════════════════════════ */
+
+function PaperRow({ row }: { row: Row }) {
+  const { paper: p, status, attempt } = row;
+  const pct =
+    attempt && attempt.totalMarks > 0
+      ? Math.round((attempt.score / attempt.totalMarks) * 100)
+      : null;
+
+  return (
+    <Bezel interactive className="group" innerClassName="">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5">
+        {/* Year block */}
+        <div
+          className="flex h-12 w-14 shrink-0 flex-col items-center justify-center rounded-[12px]"
+          style={{ background: "var(--d-inset)", border: "1px solid var(--d-line-soft)" }}
+        >
+          <span
+            className="d-num text-[15px] font-bold leading-none"
+            style={{ color: "var(--d-ink)" }}
+          >
+            {p.year ?? "—"}
+          </span>
+          <span className="d-eyebrow mt-1" style={{ fontSize: 8 }}>
+            YEAR
+          </span>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3
+              className="truncate text-[14px] font-semibold"
+              style={{ color: "var(--d-ink)", letterSpacing: "-0.015em" }}
+            >
+              {p.title}
+            </h3>
+            <StatusBadge status={status} />
+          </div>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <Fact icon={<FileText size={11} />} text={p.exam?.shortName || p.exam?.name || "PYQ"} />
+            <Fact icon={<BookOpen size={11} />} text={`${p.totalQs ?? "—"} Qs`} />
+            <Fact icon={<Clock size={11} />} text={`${p.durationMin ?? "—"} min`} />
+            {attempt?.completedAt && (
+              <Fact icon={<Trophy size={11} />} text={relativeDate(attempt.completedAt)} />
+            )}
           </div>
         </div>
-        <div className="text-right">
-          <div
-            className="text-[10px] font-medium uppercase tracking-wider mb-1"
-            style={{ color: "var(--ink-4)" }}
+
+        {pct !== null && (
+          <span
+            className="d-num shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
+            style={{
+              background: TONE[scoreTone(pct)].bg,
+              color: TONE[scoreTone(pct)].fg,
+              border: `1px solid ${TONE[scoreTone(pct)].line}`,
+            }}
           >
-            Time Taken
-          </div>
-          <div className="text-[14px] font-bold font-mono" style={{ color: "var(--ink-2)" }}>
-            {a.timeTakenSec != null
-              ? `${Math.floor(a.timeTakenSec / 60)}m ${a.timeTakenSec % 60}s`
-              : "—"}
-          </div>
+            {pct}%
+          </span>
+        )}
+
+        <div className="shrink-0">
+          <PaperActions row={row} compact />
         </div>
       </div>
+    </Bezel>
+  );
+}
 
-      <div className="mt-5 mb-4" style={{ borderTop: "1px solid var(--line-soft)" }} />
+/* ══════════════════════════════════════════════════════
+   Split action control
+   Primary = attempt / review. Secondary = PDF download.
+══════════════════════════════════════════════════════ */
 
+function PaperActions({ row, compact }: { row: Row; compact?: boolean }) {
+  const { paper: p, status, attempt } = row;
+
+  const primary =
+    status === "attempted"
+      ? { label: "Review", href: `/pyq/${p.id}?attemptId=${attempt?.id}`, icon: <Trophy size={12} /> }
+      : status === "paused"
+        ? { label: "Resume", href: `/pyq/${p.id}`, icon: <Play size={11} fill="currentColor" stroke="none" /> }
+        : { label: "Attempt", href: `/pyq/${p.id}`, icon: <Play size={11} fill="currentColor" stroke="none" /> };
+
+  return (
+    <div className={compact ? "flex items-center gap-2" : "flex items-center gap-2"}>
       <Link
-        href={`/pyq/${a.paperId}?attemptId=${a.id}`}
-        className="inline-flex items-center justify-center rounded-full text-[13px] font-medium border border-[var(--line)] hover:border-black transition-colors w-full"
-        style={{ color: "var(--ink-1)", height: 38, fontWeight: 480 }}
+        href={primary.href}
+        target={status === "attempted" ? undefined : "_blank"}
+        rel={status === "attempted" ? undefined : "noopener noreferrer"}
+        className={`inline-flex items-center justify-center gap-1.5 rounded-full text-[12px] font-semibold text-white transition-transform duration-200 hover:-translate-y-[1px] d-focus ${
+          compact ? "px-4 py-[8px]" : "flex-1 px-4 py-[9px]"
+        }`}
+        style={{
+          background: "var(--blue-ink)",
+          boxShadow: "0 6px 18px -10px rgba(13,40,126,.65)",
+        }}
       >
-        View Detailed Report
+        {primary.icon}
+        {primary.label}
       </Link>
+
+      {p.pdfUrl ? (
+        <a
+          href={p.pdfUrl}
+          target="_blank"
+          rel="noreferrer"
+          title="Download paper PDF"
+          aria-label="Download paper PDF"
+          className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full transition-all duration-200 hover:-translate-y-[1px] d-focus"
+          style={{
+            color: "var(--d-ink-3)",
+            background: "var(--d-inset)",
+            border: "1px solid var(--d-line-soft)",
+          }}
+        >
+          <Download size={14} />
+        </a>
+      ) : (
+        <span
+          title="PDF not available for this paper"
+          className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full opacity-40"
+          style={{
+            color: "var(--d-ink-4)",
+            background: "var(--d-inset)",
+            border: "1px solid var(--d-line-soft)",
+          }}
+        >
+          <Download size={14} />
+        </span>
+      )}
     </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   Skeleton
+══════════════════════════════════════════════════════ */
+
+function PaperSkeleton() {
+  return (
+    <Bezel className="h-full" innerClassName="h-full">
+      <div className="flex h-full flex-col p-4">
+        <div className="flex items-start justify-between gap-2">
+          <Skel className="h-2.5 w-16 rounded-full" />
+          <Skel className="h-4 w-20 rounded-full" />
+        </div>
+        <Skel className="mt-3.5 h-4 w-[90%] rounded-md" />
+        <Skel className="mt-2 h-4 w-[60%] rounded-md" />
+        <div className="mt-4 flex gap-3">
+          <Skel className="h-3 w-24 rounded-md" />
+          <Skel className="h-3 w-16 rounded-md" />
+        </div>
+        <div className="mt-auto flex items-center gap-2 pt-5">
+          <Skel className="h-[34px] flex-1 rounded-full" />
+          <Skel className="h-[34px] w-[34px] rounded-full" />
+        </div>
+      </div>
+    </Bezel>
   );
 }
