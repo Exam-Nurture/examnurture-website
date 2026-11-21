@@ -28,11 +28,13 @@ export interface Plan {
 
 export const checkoutReady = false;
 
-/* Tiers stack: 12th includes all 10th-level exams; Graduation includes
+/* A plan covers every exam at its level and every test series inside those
+   exams. Tiers stack: 12th includes all 10th-level exams; Graduation includes
    10th- and 12th-level exams too (decided 2026-11-22). */
 const PAID_FEATURES = [
-  "All mock tests and past papers",
-  "Detailed solutions",
+  "Every exam at this level",
+  "All test series and mock tests",
+  "All past papers with solutions",
   "Weak-topic plan",
 ];
 
