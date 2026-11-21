@@ -81,6 +81,9 @@ export default function MarketingHeader() {
   const router = useRouter();
 
   const [isScrolled,     setIsScrolled]     = useState(false);
+  /* v2: when a page opens with the deep indigo hero, the header sits on it
+     transparently (white text) so header and hero read as one surface. */
+  const [overHero,       setOverHero]       = useState(false);
   const [isHidden,       setIsHidden]       = useState(false);
   const [showUserMenu,   setShowUserMenu]   = useState(false);
   const [showSearch,     setShowSearch]     = useState(false);
@@ -124,6 +127,14 @@ export default function MarketingHeader() {
     modalDismissed.current = true;
     setShowAuthModal(false);
   };
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      const first = document.querySelector("main")?.querySelector("section");
+      setOverHero(!!first && first.classList.contains("en-hero-deep") && first.getBoundingClientRect().top < 120);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [pathname]);
 
   useEffect(() => {
     const handle = () => {
@@ -287,9 +298,13 @@ export default function MarketingHeader() {
       {/* ── Main Header — flat DocuSeal style ── */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-500 ${isHidden ? "-translate-y-full" : "translate-y-0"} ${
+          /* v2: no divider line; the header melts into the page/hero below.
+             Scrolled state only adds a very soft shadow so it still floats. */
           isScrolled
-            ? "bg-[rgba(251,251,251,0.92)] dark:bg-[rgba(18,21,28,0.92)] border-b border-[var(--line-soft)] backdrop-blur-2xl shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:shadow-[0_1px_0_rgba(255,255,255,0.04),0_2px_20px_rgba(0,0,0,0.5)]"
-            : "bg-[rgba(251,251,251,0.85)] dark:bg-[rgba(11,13,18,0.85)] border-b border-[var(--line-soft)] backdrop-blur-xl"
+            ? "bg-[rgba(255,255,255,0.86)] dark:bg-[rgba(14,17,32,0.86)] backdrop-blur-2xl shadow-[0_8px_24px_-12px_rgba(22,26,51,0.18)] dark:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.6)]"
+            : overHero
+              ? "en-header-on-hero bg-transparent"
+              : "bg-[var(--bg)] backdrop-blur-xl"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -367,7 +382,7 @@ export default function MarketingHeader() {
 
               {/* Get App — desktop only */}
               <a href={PLAYSTORE_URL} target="_blank" rel="noopener noreferrer"
-                className="hidden xl:flex items-center gap-1.5 px-3 py-2 bg-[var(--blue)] hover:bg-[var(--blue-ink)] text-white rounded-full font-semibold text-sm transition-colors"
+                className="en-hdr-cta hidden xl:flex items-center gap-1.5 px-3 py-2 bg-[var(--blue)] hover:bg-[var(--blue-ink)] text-white rounded-full font-semibold text-sm transition-colors"
               >
                 <Smartphone className="w-4 h-4" />
                 Get App

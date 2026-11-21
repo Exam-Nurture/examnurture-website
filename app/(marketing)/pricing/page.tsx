@@ -14,7 +14,7 @@ export default function PricingPage() {
     <div className="bg-[var(--bg)]">
       <section className="en-hero-deep">
         <HeroGeometry variant="compact" chartSide="left" />
-        <header className="relative mx-auto flex max-w-[680px] flex-col items-center gap-4 px-4 pb-16 pt-14 text-center sm:px-6 lg:pt-20">
+        <header className="relative mx-auto flex max-w-[680px] flex-col items-center gap-4 px-4 pb-24 pt-12 text-center sm:px-6 lg:pb-28 lg:pt-16">
           <p className="en-rise text-xs font-semibold uppercase tracking-[0.09em] text-[#C9CBFF]">Pricing</p>
           <h1 style={{ fontFamily: "var(--font-sora)", animationDelay: "60ms" }} className="en-rise text-4xl font-bold leading-tight tracking-[-0.02em] text-white sm:text-5xl">
             Start free. Pick your level.

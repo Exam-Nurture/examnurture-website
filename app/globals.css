@@ -709,17 +709,20 @@ body::after {
    wireframe). Use .en-card for any standalone object, .en-card-link when the
    whole card is clickable. .en-band-* paint full-width section backgrounds. */
 .en-card {
+  /* no visible outline: a whisper of a border plus soft shadow, so cards
+     float on the page instead of being boxed in */
   background: var(--card);
-  border: 1px solid var(--line-soft);
+  border: 1px solid color-mix(in srgb, var(--line-soft) 55%, transparent);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 2px rgba(22,26,51,.04), 0 6px 20px -8px rgba(22,26,51,.10);
 }
+.dark .en-card { box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -10px rgba(0,0,0,.6); }
 .en-card-link {
   transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
 }
 .en-card-link:hover {
-  box-shadow: var(--shadow-md);
-  border-color: var(--brand-line);
+  box-shadow: 0 2px 4px rgba(22,26,51,.04), 0 16px 36px -12px rgba(61,63,184,.22);
+  border-color: color-mix(in srgb, var(--brand-line) 60%, transparent);
   transform: translateY(-2px);
 }
 .en-band-hero {
@@ -746,15 +749,35 @@ body::after {
     radial-gradient(60% 80% at 5% 105%, rgba(31,33,120,.9) 0%, transparent 65%),
     linear-gradient(155deg, #1B1D63 0%, #2A2C99 52%, #3D3FB8 100%);
 }
-.en-hero-deep::after {
-  /* soft fade into the page below */
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 48px;
-  background: linear-gradient(180deg, transparent, rgba(255,255,255,.04));
-  pointer-events: none;
+/* Seamless edges (v2): no colour fades (white over indigo turns muddy grey).
+   Top: the hero slides up under the fixed header, which turns transparent
+   with white text (.en-header-on-hero), so the two are one surface.
+   Bottom: the band ends on a gentle convex curve into the page. */
+.en-hero-deep {
+  margin-top: -64px;
+  padding-top: 64px;
+  border-radius: 0 0 50% 50% / 0 0 56px 56px;
 }
+.en-hero-deep > .relative { z-index: 2; }
+
+/* Header over the hero: re-point its colour tokens to white-on-indigo.
+   Dropdown panels inside (.top-full) get the page tokens back via --x-*. */
+:root {
+  --x-ink-1: var(--ink-1); --x-ink-2: var(--ink-2); --x-ink-3: var(--ink-3); --x-ink-4: var(--ink-4);
+  --x-blue: var(--blue); --x-blue-soft: var(--blue-soft); --x-line: var(--line); --x-line-soft: var(--line-soft);
+  --x-card: var(--card); --x-bg: var(--bg);
+}
+.en-header-on-hero {
+  --ink-1: #FFFFFF; --ink-2: rgba(255,255,255,.86); --ink-3: rgba(255,255,255,.78); --ink-4: rgba(255,255,255,.72);
+  --blue: #C9CBFF; --blue-soft: rgba(255,255,255,.14); --line: rgba(255,255,255,.22); --line-soft: rgba(255,255,255,.18);
+  --card: rgba(255,255,255,.10); --bg: rgba(255,255,255,.08);
+}
+.en-header-on-hero .top-full {
+  --ink-1: var(--x-ink-1); --ink-2: var(--x-ink-2); --ink-3: var(--x-ink-3); --ink-4: var(--x-ink-4);
+  --blue: var(--x-blue); --blue-soft: var(--x-blue-soft); --line: var(--x-line); --line-soft: var(--x-line-soft);
+  --card: var(--x-card); --bg: var(--x-bg);
+}
+.en-header-on-hero .en-hdr-cta { background: #FFFFFF !important; color: #3D3FB8 !important; }
 
 /* Heading underline that draws in when its .reveal section becomes visible */
 .en-grow { display: block; height: 3px; width: 32px; border-radius: 3px; background: var(--brand); margin-top: 10px; transform-origin: left; }

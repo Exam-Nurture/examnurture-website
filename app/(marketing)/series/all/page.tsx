@@ -100,7 +100,7 @@ function Catalogue() {
       {/* ── Header ── */}
       <section className="en-hero-deep">
         <HeroGeometry variant="compact" />
-        <div className="relative mx-auto flex max-w-[1180px] flex-col gap-5 px-4 pb-14 pt-12 sm:px-6 lg:pt-16">
+        <div className="relative mx-auto flex max-w-[1180px] flex-col gap-5 px-4 pb-24 pt-12 sm:px-6 lg:pb-28 lg:pt-16">
           <p className="en-rise text-xs font-semibold uppercase tracking-[0.09em] text-[#C9CBFF]">Mock tests</p>
           <h1 style={{ ...display, animationDelay: "60ms" }} className="en-rise max-w-2xl text-4xl font-bold leading-tight tracking-[-0.02em] text-white sm:text-5xl">
             Practise in the real exam interface.
@@ -123,7 +123,7 @@ function Catalogue() {
 
       <div className="mx-auto max-w-[1180px] px-4 pb-20 sm:px-6">
         {/* ── Filters ── */}
-        <div className="flex flex-wrap items-center gap-3 border-b border-[var(--line-soft)] py-5">
+        <div className="flex flex-wrap items-center gap-3 py-2">
           <div role="group" aria-label="Price" className="inline-flex rounded-[12px] bg-[var(--bg-secondary)] p-1">
             {(["all", "free", "paid"] as Access[]).map((a) => (
               <button

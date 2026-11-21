@@ -108,7 +108,7 @@ function Hero() {
   return (
     <section className="en-hero-deep">
       <HeroGeometry />
-      <div className="relative mx-auto flex max-w-[760px] flex-col items-center gap-7 px-4 pb-20 pt-16 text-center sm:px-6 lg:pb-28 lg:pt-24">
+      <div className="relative mx-auto flex max-w-[760px] flex-col items-center gap-7 px-4 pb-28 pt-16 text-center sm:px-6 lg:pb-32 lg:pt-20">
         <h1 className="en-rise text-[2.6rem] font-bold leading-[1.05] tracking-[-0.025em] text-white sm:text-6xl lg:text-[4.2rem]" style={display}>
           Crack your exam with <span className="text-[#C9CBFF]">real papers.</span>
         </h1>
