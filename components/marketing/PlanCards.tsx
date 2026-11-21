@@ -1,32 +1,22 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
-import { PLANS } from "@/lib/plans";
+import { PLANS, checkoutReady } from "@/lib/plans";
 
-/** Free · Exam Pass · Pro. Used on the homepage and on /pricing. */
+/** Free · 10th · 12th · Graduation. Used on the homepage and on /pricing. */
 export default function PlanCards() {
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {PLANS.map((plan) => {
-        const main = plan.id === "pass";
-        const soon = plan.status === "coming-soon";
+        const paid = plan.id !== "free";
         return (
-          <article
-            key={plan.id}
-            className={`flex flex-col gap-5 rounded-[var(--radius-lg)] border bg-[var(--card)] p-6 ${
-              main ? "border-[var(--brand)] shadow-[inset_0_0_0_1px_var(--brand)]" : "border-[var(--line)]"
-            }`}
-          >
+          <article key={plan.id} className="en-card flex flex-col gap-5 p-7">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-[var(--ink-1)]" style={{ fontFamily: "var(--font-sora)" }}>
                 {plan.name}
               </h3>
-              {plan.badge && (
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    soon ? "bg-[var(--bg-secondary)] text-[var(--ink-2)]" : "bg-[var(--brand-soft)] text-[var(--brand)]"
-                  }`}
-                >
-                  {plan.badge}
+              {paid && !checkoutReady && (
+                <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--accent-ink)]">
+                  Launching soon
                 </span>
               )}
             </div>
@@ -36,7 +26,8 @@ export default function PlanCards() {
                 {plan.price}
                 {plan.unit && <span className="ml-1 text-sm font-medium text-[var(--ink-3)]">{plan.unit}</span>}
               </p>
-              <p className="mt-2 text-sm text-[var(--ink-3)]">{plan.audience}</p>
+              <p className="mt-2 text-sm font-medium text-[var(--ink-2)]">{plan.audience}</p>
+              {plan.examples && <p className="mt-1 text-xs leading-relaxed text-[var(--ink-3)]">{plan.examples}</p>}
             </div>
 
             <ul className="flex flex-col gap-2.5 text-sm text-[var(--ink-2)]">
@@ -52,17 +43,13 @@ export default function PlanCards() {
               {plan.cta ? (
                 <Link
                   href={plan.cta.href}
-                  className={`flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] px-4 text-sm font-semibold ${
-                    main
-                      ? "bg-[var(--brand)] text-[var(--brand-ink)] hover:bg-[var(--brand-hover)]"
-                      : "border border-[var(--line)] text-[var(--ink-1)] hover:bg-[var(--surface-hover)]"
-                  }`}
+                  className="flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-hover)]"
                 >
                   {plan.cta.label}
                 </Link>
               ) : (
-                <p className="flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] border border-dashed border-[var(--line)] text-sm text-[var(--ink-3)]">
-                  Not available yet
+                <p className="flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--bg-secondary)] text-sm font-medium text-[var(--ink-3)]">
+                  Subscriptions open soon
                 </p>
               )}
             </div>

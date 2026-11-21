@@ -1,16 +1,19 @@
 /**
  * Single source of truth for plan copy. Every page that talks about what is
- * free or paid (homepage, /pricing, upgrade prompts) must read from here, so
- * the site never says two different things.
+ * free or paid (homepage, /pricing, course pages) must read from here, so the
+ * site never says two different things.
  *
- * Decided 2026-11-22 (v2 plan):
- *  - Free, per exam: latest past paper, one full mock, the daily quiz.
- *  - Exam Pass is the main product: one price per exam, valid until exam day.
- *  - Pro (all exams) is the upsell. The backend has no PLAN content type yet,
- *    so Pro is shown as "Coming soon" with no buy button.
+ * Pricing model (decided 2026-11-22, replaces Exam Pass / Pro):
+ *  - Free: selected past papers and study material, daily quiz.
+ *  - Three monthly subscriptions by qualification level:
+ *      10th ₹399 · 12th ₹599 · Graduation ₹799 (per month)
+ *
+ * Backend status: orders support TEST_SERIES only; there is no subscription
+ * content type yet, so paid plans render as "Launching soon" (no checkout).
+ * Flip `checkoutReady` once the backend supports SUBSCRIPTION orders.
  */
 
-export type PlanId = "free" | "pass" | "pro";
+export type PlanId = "free" | "tenth" | "twelfth" | "graduation";
 
 export interface Plan {
   id: PlanId;
@@ -18,58 +21,71 @@ export interface Plan {
   price: string;
   unit?: string;
   audience: string;
+  examples?: string;
   features: string[];
   cta: { label: string; href: string } | null;
-  badge?: string;
-  status?: "available" | "coming-soon";
 }
+
+export const checkoutReady = false;
+
+const PAID_FEATURES = [
+  "All mock tests and past papers",
+  "Detailed solutions",
+  "Weak-topic plan",
+];
 
 export const PLANS: Plan[] = [
   {
     id: "free",
     name: "Free",
     price: "₹0",
-    audience: "Try any exam before you pay.",
-    features: [
-      "Latest past paper for every exam",
-      "One full mock test per exam",
-      "Daily quiz",
-      "Scores and solutions",
-    ],
+    audience: "Start without paying.",
+    features: ["Selected past papers", "Selected study material", "Daily quiz"],
     cta: { label: "Find your exam", href: "/exams" },
-    status: "available",
   },
   {
-    id: "pass",
-    name: "Exam Pass",
-    price: "Priced per exam",
-    audience: "Everything for the one exam you're serious about.",
-    features: [
-      "All past papers with solutions",
-      "All mock tests: full, sectional, topic",
-      "Weak-topic plan",
-      "Valid until exam day",
-    ],
-    cta: { label: "Choose your exam", href: "/exams" },
-    badge: "Most chosen",
-    status: "available",
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "₹1,999",
-    unit: "/ year",
-    audience: "For students taking several exams.",
-    features: [
-      "Every Exam Pass",
-      "Up to 5 exams on one dashboard",
-      "Form and exam-date alerts",
-    ],
+    id: "tenth",
+    name: "10th",
+    price: "₹399",
+    unit: "/ month",
+    audience: "Exams that need 10th pass.",
+    examples: "SSC MTS · SSC GD · Railway Group D · Police Constable",
+    features: PAID_FEATURES,
     cta: null,
-    badge: "Coming soon",
-    status: "coming-soon",
+  },
+  {
+    id: "twelfth",
+    name: "12th",
+    price: "₹599",
+    unit: "/ month",
+    audience: "Exams that need 12th pass.",
+    examples: "SSC CHSL · Railway NTPC (12th level) · JSSC Inter level",
+    features: PAID_FEATURES,
+    cta: null,
+  },
+  {
+    id: "graduation",
+    name: "Graduation",
+    price: "₹799",
+    unit: "/ month",
+    audience: "Exams that need a degree.",
+    examples: "JPSC · BPSC · SSC CGL · IBPS PO · SBI PO",
+    features: PAID_FEATURES,
+    cta: null,
   },
 ];
 
-/** Short list for compact places (homepage hero, upgrade prompts). */
-export const FREE_SUMMARY = "Latest past paper, one full mock and the daily quiz are free for every exam.";
+/**
+ * Best-effort plan for an exam, from its "educational qualification" text.
+ * Returns null when the text doesn't clearly say, so we never guess wrong.
+ */
+export function planForQualification(text?: string | null): Plan | null {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  const id: PlanId | null =
+    /graduat|bachelor|degree/.test(t) ? "graduation"
+    : /12th|intermediate|higher secondary|\+2|class xii/.test(t) ? "twelfth"
+    : /10th|matric|secondary|class x\b/.test(t) ? "tenth"
+    : null;
+  return id ? PLANS.find((p) => p.id === id) ?? null : null;
+}
