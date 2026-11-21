@@ -28,6 +28,8 @@ export interface Plan {
 
 export const checkoutReady = false;
 
+/* Tiers stack: 12th includes all 10th-level exams; Graduation includes
+   10th- and 12th-level exams too (decided 2026-11-22). */
 const PAID_FEATURES = [
   "All mock tests and past papers",
   "Detailed solutions",
@@ -60,7 +62,7 @@ export const PLANS: Plan[] = [
     unit: "/ month",
     audience: "Exams that need 12th pass.",
     examples: "SSC CHSL · Railway NTPC (12th level) · JSSC Inter level",
-    features: PAID_FEATURES,
+    features: ["Everything in 10th", ...PAID_FEATURES],
     cta: null,
   },
   {
@@ -70,7 +72,7 @@ export const PLANS: Plan[] = [
     unit: "/ month",
     audience: "Exams that need a degree.",
     examples: "JPSC · BPSC · SSC CGL · IBPS PO · SBI PO",
-    features: PAID_FEATURES,
+    features: ["Everything in 10th and 12th", ...PAID_FEATURES],
     cta: null,
   },
 ];

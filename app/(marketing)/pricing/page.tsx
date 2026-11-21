@@ -17,7 +17,7 @@ export default function PricingPage() {
           <h1 style={{ fontFamily: "var(--font-sora)", animationDelay: "60ms" }} className="en-rise text-4xl font-bold leading-tight tracking-[-0.02em] text-[var(--ink-1)] sm:text-5xl">
             Start free. Pick your level.
           </h1>
-          <p style={{ animationDelay: "120ms" }} className="en-rise text-lg text-[var(--ink-2)]">One monthly plan for your qualification. Many past papers stay free.</p>
+          <p style={{ animationDelay: "120ms" }} className="en-rise text-lg text-[var(--ink-2)]">One monthly plan for your level. Higher plans include every exam below them.</p>
         </header>
       </section>
 
