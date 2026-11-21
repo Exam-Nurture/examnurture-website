@@ -348,7 +348,7 @@ export default function GuidesPage() {
           </div>
           <div className="flex gap-2 shrink-0">
             <Link
-              href="/dashboard/plans"
+              href="/pricing"
               className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:brightness-110"
               style={{ background: "#EDE9FE", color: "#7C3AED" }}
             >

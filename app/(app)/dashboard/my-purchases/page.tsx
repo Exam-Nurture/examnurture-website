@@ -187,7 +187,7 @@ export default function MyPurchasesPage() {
       )}
 
       <div className="mt-8 text-center">
-        <Link href="/dashboard/plans" className="text-sm font-medium" style={{ color: "var(--blue)" }}>
+        <Link href="/pricing" className="text-sm font-medium" style={{ color: "var(--blue)" }}>
           Browse Plans →
         </Link>
       </div>

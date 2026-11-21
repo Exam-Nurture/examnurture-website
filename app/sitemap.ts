@@ -34,6 +34,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url("/series/all",  0.9, "daily"),
     url("/pyq/all",     0.9, "daily"),
     url("/blogs",        0.9, "daily"),
+    url("/pricing",     0.7, "monthly"),
+    url("/daily-quiz",  0.7, "daily"),
     url("/about",   0.5, "monthly"),
     url("/contact", 0.4, "monthly"),
     url("/privacy", 0.3, "yearly"),

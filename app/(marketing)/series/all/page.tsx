@@ -584,8 +584,7 @@ function HeroSection({ stats, loading, onRequireAuth }: {
               My Series <ArrowRight size={16} />
             </Link>
             <Link
-              href="/dashboard/plans"
-              onClick={(e) => onRequireAuth("/dashboard/plans", e)}
+              href="/pricing"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-[15px] transition-colors hover:bg-[var(--surface-hover)]"
               style={{ background: "var(--bg)", border: "1px solid var(--line)", color: "var(--ink-1)", fontWeight: 480, letterSpacing: "-0.10px" }}
             >

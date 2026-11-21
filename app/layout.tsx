@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Poppins, Sora, JetBrains_Mono } from "next/font/google";
+import { Inter, Anek_Latin, Anek_Devanagari, Noto_Sans_Devanagari, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -7,16 +7,32 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
-const poppins = Poppins({
+/* v2 type system: Inter for text, Anek for headings. Anek has matching Latin and
+   Devanagari cuts, so Hindi headings never look like a fallback. Noto Sans
+   Devanagari covers Hindi body text. --font-sora / --font-body are composed in
+   globals.css from these variables. */
+const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
-const sora = Sora({
-  variable: "--font-sora",
+const anekLatin = Anek_Latin({
+  variable: "--font-display-latin",
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  display: "swap",
+});
+
+const anekDevanagari = Anek_Devanagari({
+  variable: "--font-display-hindi",
+  subsets: ["devanagari"],
+  display: "swap",
+});
+
+const notoDevanagari = Noto_Sans_Devanagari({
+  variable: "--font-hindi",
+  subsets: ["devanagari"],
+  display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -73,12 +89,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${poppins.variable} ${sora.variable} ${jetbrainsMono.variable} h-full`}
-      style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}
+      className={`${inter.variable} ${anekLatin.variable} ${anekDevanagari.variable} ${notoDevanagari.variable} ${jetbrainsMono.variable} h-full`}
+      style={{ fontFamily: "var(--font-body)" }}
     >
       <head />
       <body className="min-h-full bg-[var(--bg)] text-[var(--ink-1)]" suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        {/* Light by default (calm for long reading); dark stays available via the toggle. */}
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <ScrollReveal />
             {children}

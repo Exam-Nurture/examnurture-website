@@ -589,8 +589,7 @@ function HeroSection({ stats, onRequireAuth }: {
               My PYQ Attempts <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/dashboard/plans"
-              onClick={(e) => onRequireAuth("/dashboard/plans", e)}
+              href="/pricing"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full border text-[15px] font-medium transition-colors hover:bg-[var(--surface-hover)]"
               style={{ background: "var(--bg)", borderColor: "var(--line)", color: "var(--ink-1)", fontWeight: 480, letterSpacing: "-0.10px" }}
             >
@@ -666,8 +665,7 @@ function PyqCard({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqP
         <div className="mt-auto pt-4 flex gap-2">
           {paper.isPremium ? (
             <Link
-              href="/dashboard/plans"
-              onClick={(e) => onRequireAuth?.("/dashboard/plans", e)}
+              href="/pricing"
               className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] font-medium transition-opacity hover:opacity-85"
               style={{ background: "var(--ink-1)", color: "var(--bg)", fontWeight: 480 }}
             >
@@ -731,7 +729,7 @@ function PyqRow({ paper, bookmarked, onBookmark, onRequireAuth }: { paper: PyqPa
           <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-current" : ""}`} />
         </button>
         {paper.isPremium ? (
-          <Link href="/dashboard/plans" onClick={(e) => onRequireAuth?.("/dashboard/plans", e)}
+          <Link href="/pricing"
             className="inline-flex h-9 items-center gap-1.5 rounded-xl px-4 text-xs font-semibold transition-opacity hover:opacity-85"
             style={{ background: "var(--ink-1)", color: "var(--bg)" }}>
             <Zap className="h-3 w-3" /> Unlock
