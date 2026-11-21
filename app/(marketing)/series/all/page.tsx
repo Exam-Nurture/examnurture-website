@@ -12,6 +12,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Check, Search, Timer } from "lucide-react";
 import { apiGetTestSeries } from "@/lib/api";
+import HeroGeometry from "@/components/marketing/HeroGeometry";
 
 interface SeriesItem {
   id: string;
@@ -97,14 +98,15 @@ function Catalogue() {
   return (
     <div className="bg-[var(--bg)]">
       {/* ── Header ── */}
-      <section className="en-band-hero">
-        <div className="mx-auto flex max-w-[1180px] flex-col gap-5 px-4 pb-10 pt-12 sm:px-6 lg:pt-16">
-          <p className="en-rise text-xs font-semibold uppercase tracking-[0.09em] text-[var(--brand)]">Mock tests</p>
-          <h1 style={{ ...display, animationDelay: "60ms" }} className="en-rise text-4xl font-bold leading-tight tracking-[-0.02em] text-[var(--ink-1)] sm:text-5xl">
+      <section className="en-hero-deep">
+        <HeroGeometry variant="compact" />
+        <div className="relative mx-auto flex max-w-[1180px] flex-col gap-5 px-4 pb-14 pt-12 sm:px-6 lg:pt-16">
+          <p className="en-rise text-xs font-semibold uppercase tracking-[0.09em] text-[#C9CBFF]">Mock tests</p>
+          <h1 style={{ ...display, animationDelay: "60ms" }} className="en-rise max-w-2xl text-4xl font-bold leading-tight tracking-[-0.02em] text-white sm:text-5xl">
             Practise in the real exam interface.
           </h1>
-          <p style={{ animationDelay: "120ms" }} className="en-rise max-w-xl text-lg text-[var(--ink-2)]">Full-length mocks with timer, palette and solutions. Start with a free series.</p>
-          <div style={{ animationDelay: "180ms" }} className="en-rise flex w-full max-w-[600px] items-center gap-2 rounded-[16px] border border-[var(--line-soft)] bg-[var(--card)] px-4 shadow-[var(--shadow-md)] focus-within:border-[var(--brand-line)]">
+          <p style={{ animationDelay: "120ms" }} className="en-rise max-w-xl text-lg text-white/80">Full-length mocks with timer, palette and solutions. Start with a free series.</p>
+          <div style={{ animationDelay: "180ms" }} className="en-rise flex w-full max-w-[600px] items-center gap-2 rounded-[16px] bg-[var(--card)] px-4 shadow-[0_20px_50px_-12px_rgba(10,12,60,.55)] ring-1 ring-white/20 focus-within:ring-4 focus-within:ring-white/30">
             <Search className="h-5 w-5 flex-none text-[var(--ink-3)]" aria-hidden="true" />
             <label htmlFor="series-search" className="sr-only">Search mock tests</label>
             <input
@@ -184,11 +186,11 @@ function Catalogue() {
             </div>
           ) : (
             <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {visible.map((s) => {
+              {visible.map((s, i) => {
                 const price = s.discountedPrice ?? s.price;
                 const struck = s.discountedPrice != null && s.discountedPrice < s.price;
                 return (
-                  <li key={s.id} className="reveal">
+                  <li key={s.id} className="reveal" style={{ transitionDelay: `${(i % 3) * 70}ms` }}>
                     <article className="en-card en-card-link relative flex h-full flex-col gap-4 p-6">
                       <div className="flex items-center justify-between gap-3">
                         <span className="grid h-10 min-w-10 place-items-center rounded-[10px] bg-[var(--brand-soft)] px-2 text-[11px] font-bold text-[var(--brand)]" style={display}>

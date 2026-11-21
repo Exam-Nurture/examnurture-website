@@ -86,9 +86,12 @@ const TRUST = ["Free to start", "Real exam interface", "English & हिंद�
 function SectionHead({ title, link }: { title: string; link?: { href: string; label: string } }) {
   return (
     <div className="mb-7 flex items-end justify-between gap-4">
-      <h2 className="text-2xl font-bold tracking-[-0.01em] text-[var(--ink-1)] sm:text-[1.85rem]" style={display}>
-        {title}
-      </h2>
+      <div>
+        <h2 className="text-2xl font-bold tracking-[-0.01em] text-[var(--ink-1)] sm:text-[1.85rem]" style={display}>
+          {title}
+        </h2>
+        <span className="en-grow" aria-hidden="true" />
+      </div>
       {link && (
         <Link href={link.href} className="inline-flex min-h-11 flex-none items-center gap-1 text-sm font-semibold text-[var(--brand)] hover:underline">
           {link.label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -103,13 +106,13 @@ function SectionHead({ title, link }: { title: string; link?: { href: string; la
 function Hero() {
   const { user } = useAuth();
   return (
-    <section className="en-band-hero relative overflow-hidden">
+    <section className="en-hero-deep">
       <HeroGeometry />
-      <div className="mx-auto flex max-w-[760px] flex-col items-center gap-7 px-4 pb-20 pt-16 text-center sm:px-6 lg:pb-24 lg:pt-24">
-        <h1 className="en-rise text-[2.6rem] font-bold leading-[1.05] tracking-[-0.025em] text-[var(--ink-1)] sm:text-6xl lg:text-[4.2rem]" style={display}>
-          Crack your exam with <span className="text-[var(--brand)]">real papers.</span>
+      <div className="relative mx-auto flex max-w-[760px] flex-col items-center gap-7 px-4 pb-20 pt-16 text-center sm:px-6 lg:pb-28 lg:pt-24">
+        <h1 className="en-rise text-[2.6rem] font-bold leading-[1.05] tracking-[-0.025em] text-white sm:text-6xl lg:text-[4.2rem]" style={display}>
+          Crack your exam with <span className="text-[#C9CBFF]">real papers.</span>
         </h1>
-        <p style={{ animationDelay: "80ms" }} className="en-rise max-w-[520px] text-lg leading-relaxed text-[var(--ink-2)]">
+        <p style={{ animationDelay: "80ms" }} className="en-rise max-w-[520px] text-lg leading-relaxed text-white/80">
           Past papers, mock tests and daily practice for JPSC, BPSC, SSC, Banking and Railway exams.
         </p>
 
@@ -118,7 +121,7 @@ function Hero() {
           action="/exams"
           role="search"
           style={{ animationDelay: "160ms" }}
-          className="en-rise flex w-full max-w-[600px] items-center gap-2 rounded-[18px] border border-[var(--line-soft)] bg-[var(--card)] p-2 pl-5 shadow-[var(--shadow-md)] focus-within:border-[var(--brand-line)]"
+          className="en-rise flex w-full max-w-[600px] items-center gap-2 rounded-[18px] bg-[var(--card)] p-2 pl-5 shadow-[0_20px_50px_-12px_rgba(10,12,60,.55)] ring-1 ring-white/20 focus-within:ring-4 focus-within:ring-white/30"
         >
           <Search className="h-5 w-5 flex-none text-[var(--ink-3)]" aria-hidden="true" />
           <label htmlFor="hero-exam-search" className="sr-only">Search your exam</label>
@@ -139,24 +142,24 @@ function Hero() {
             <Link
               key={name}
               href={`/exams?q=${encodeURIComponent(name)}`}
-              className="inline-flex min-h-9 items-center rounded-full bg-[var(--card)]/70 px-4 text-sm text-[var(--ink-2)] shadow-[var(--shadow-xs)] ring-1 ring-[var(--line-soft)] transition-colors hover:text-[var(--brand)] hover:ring-[var(--brand-line)]"
+              className="inline-flex min-h-9 items-center rounded-full bg-white/10 px-4 text-sm text-white/90 ring-1 ring-white/20 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/20 hover:text-white"
             >
               {name}
             </Link>
           ))}
         </div>
 
-        <ul style={{ animationDelay: "320ms" }} className="en-rise flex flex-wrap justify-center gap-x-6 gap-y-2 pt-1 text-sm text-[var(--ink-3)]">
+        <ul style={{ animationDelay: "320ms" }} className="en-rise flex flex-wrap justify-center gap-x-6 gap-y-2 pt-1 text-sm text-white/75">
           {TRUST.map((t) => (
             <li key={t} className="flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-[var(--green)]" aria-hidden="true" />
+              <Check className="h-4 w-4 text-[#8BE3B0]" aria-hidden="true" />
               {t.includes("हिंदी") ? <>English &amp; <span lang="hi">हिंदी</span></> : t}
             </li>
           ))}
         </ul>
 
         {user && (
-          <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-[var(--brand)] hover:underline">
+          <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-white hover:underline">
             Continue to your dashboard <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         )}
@@ -178,7 +181,7 @@ function ProofLine() {
   ].filter((i) => i.v > 0);
   if (items.length === 0) return null;
   return (
-    <dl className="mx-auto -mt-6 flex max-w-[1180px] flex-wrap justify-center gap-x-12 gap-y-3 px-4 pb-6 sm:px-6">
+    <dl className="mx-auto flex max-w-[1180px] flex-wrap justify-center gap-x-12 gap-y-3 border-b border-[var(--line-soft)] px-4 py-6 sm:px-6">
       {items.map((i) => (
         <div key={i.l} className="flex items-baseline gap-1.5">
           <dt className="sr-only">{i.l}</dt>
@@ -197,10 +200,10 @@ function Categories() {
     <section className="reveal mx-auto max-w-[1180px] px-4 py-16 sm:px-6">
       <SectionHead title="Browse by category" link={{ href: "/exams", label: "All exams" }} />
       <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {CATEGORIES.map(({ icon: Icon, name, hint, q }) => (
-          <li key={name}>
-            <Link href={`/exams?q=${encodeURIComponent(q)}`} className="en-card en-card-link flex h-full flex-col gap-4 p-5">
-              <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-[var(--brand-soft)] text-[var(--brand)]">
+        {CATEGORIES.map(({ icon: Icon, name, hint, q }, i) => (
+          <li key={name} className="reveal" style={{ transitionDelay: `${i * 70}ms` }}>
+            <Link href={`/exams?q=${encodeURIComponent(q)}`} className="group en-card en-card-link flex h-full flex-col gap-4 p-5">
+              <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-[var(--brand-soft)] text-[var(--brand)] transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110">
                 <Icon className="h-5 w-5" aria-hidden="true" />
               </span>
               <span className="flex flex-col gap-0.5">
@@ -225,8 +228,8 @@ function PopularExams() {
       <div className="reveal mx-auto max-w-[1180px] px-4 py-16 sm:px-6">
         <SectionHead title="Popular exams" link={{ href: "/exams", label: "All exams" }} />
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {exams.slice(0, 8).map((exam) => (
-            <li key={exam.name}>
+          {exams.slice(0, 8).map((exam, i) => (
+            <li key={exam.name} className="reveal" style={{ transitionDelay: `${(i % 4) * 70}ms` }}>
               <Link
                 href={exam.slug ? `/exams/${exam.slug}` : `/exams?q=${encodeURIComponent(exam.name)}`}
                 className="en-card en-card-link flex h-full flex-col gap-3 p-5"
@@ -259,10 +262,10 @@ function Features() {
       <div className="reveal mx-auto max-w-[1180px] px-4 py-16 sm:px-6">
         <SectionHead title="Everything for one exam, in one place" />
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map(({ icon: Icon, title, text, href }) => (
-            <li key={title}>
-              <Link href={href} className="en-card en-card-link flex h-full flex-col gap-4 p-6">
-                <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-[var(--brand)] text-[var(--brand-ink)]">
+          {FEATURES.map(({ icon: Icon, title, text, href }, i) => (
+            <li key={title} className="reveal" style={{ transitionDelay: `${i * 90}ms` }}>
+              <Link href={href} className="group en-card en-card-link flex h-full flex-col gap-4 p-6">
+                <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-[var(--brand)] text-[var(--brand-ink)] shadow-[0_8px_18px_-8px_var(--brand)] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-6">
                   <Icon className="h-5 w-5" aria-hidden="true" />
                 </span>
                 <span className="flex flex-col gap-1">

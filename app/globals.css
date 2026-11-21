@@ -723,17 +723,43 @@ body::after {
   transform: translateY(-2px);
 }
 .en-band-hero {
-  /* a soft indigo wash that settles into the page; no texture, no glow */
+  /* light header wash (course page): a clear indigo tint, not washed out */
   background:
-    radial-gradient(120% 90% at 85% 0%, rgba(61,63,184,.07) 0%, transparent 60%),
-    linear-gradient(180deg, var(--brand-soft) 0%, var(--bg) 100%);
+    radial-gradient(90% 120% at 90% 0%, rgba(61,63,184,.14) 0%, transparent 60%),
+    linear-gradient(180deg, #E3E4FA 0%, var(--bg) 100%);
 }
 .en-band-soft { background: var(--bg-secondary); }
 .dark .en-band-hero {
   background:
-    radial-gradient(120% 90% at 85% 0%, rgba(163,165,255,.08) 0%, transparent 60%),
-    linear-gradient(180deg, var(--brand-soft) 0%, var(--bg) 100%);
+    radial-gradient(90% 120% at 90% 0%, rgba(163,165,255,.12) 0%, transparent 60%),
+    linear-gradient(180deg, #1A1F45 0%, var(--bg) 100%);
 }
+
+/* Deep indigo hero (homepage, mock tests, pricing). Same in both themes.
+   Text on it uses white / white-alpha; the search sits on a white card. */
+.en-hero-deep {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(70% 90% at 88% 8%, rgba(124,118,255,.55) 0%, transparent 60%),
+    radial-gradient(60% 80% at 5% 105%, rgba(31,33,120,.9) 0%, transparent 65%),
+    linear-gradient(155deg, #1B1D63 0%, #2A2C99 52%, #3D3FB8 100%);
+}
+.en-hero-deep::after {
+  /* soft fade into the page below */
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 48px;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,.04));
+  pointer-events: none;
+}
+
+/* Heading underline that draws in when its .reveal section becomes visible */
+.en-grow { display: block; height: 3px; width: 32px; border-radius: 3px; background: var(--brand); margin-top: 10px; transform-origin: left; }
+.reveal .en-grow { transform: scaleX(0); transition: transform .9s cubic-bezier(.2,.7,.2,1) .25s; }
+.reveal.visible .en-grow { transform: scaleX(1); }
 
 /* ── v2 motion ────────────────────────────────────────────────
    Slow and quiet. Hero geometry loops 14–70 s; content rises once on load.
@@ -754,3 +780,29 @@ body::after {
 .en-float      { animation: en-float 12s ease-in-out infinite; }
 .en-float-slow { animation: en-float 18s ease-in-out infinite; }
 .en-rise { animation: en-rise .7s cubic-bezier(.2,.7,.2,1) both; }
+
+
+/* ── Exam motifs (hero geometry) ── */
+@keyframes en-bubble {          /* answer bubble fills, holds, clears */
+  0%, 8%   { opacity: 0; transform: scale(.4); }
+  14%, 82% { opacity: 1; transform: scale(1); }
+  92%,100% { opacity: 0; transform: scale(.4); }
+}
+@keyframes en-sweep {           /* timer arc sweeps round */
+  from { stroke-dashoffset: 377; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes en-bar {             /* score bars rise and settle */
+  0%   { transform: scaleY(.25); }
+  45%, 85% { transform: scaleY(1); }
+  100% { transform: scaleY(.25); }
+}
+@keyframes en-draw {            /* trend line draws in */
+  0%   { stroke-dashoffset: 260; }
+  45%, 85% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 260; }
+}
+.en-m-bubble { transform-box: fill-box; transform-origin: center; animation: en-bubble 10s ease-in-out infinite; }
+.en-m-sweep  { stroke-dasharray: 377; animation: en-sweep 16s linear infinite; }
+.en-m-bar    { transform-box: fill-box; transform-origin: bottom; animation: en-bar 9s cubic-bezier(.3,.7,.2,1) infinite; }
+.en-m-draw   { stroke-dasharray: 260; animation: en-draw 9s ease-in-out infinite; }

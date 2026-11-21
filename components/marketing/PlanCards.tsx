@@ -6,10 +6,11 @@ import { PLANS, checkoutReady } from "@/lib/plans";
 export default function PlanCards() {
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-      {PLANS.map((plan) => {
+      {PLANS.map((plan, i) => {
         const paid = plan.id !== "free";
         return (
-          <article key={plan.id} className="en-card flex flex-col gap-5 p-7">
+          <div key={plan.id} className="reveal flex" style={{ transitionDelay: `${i * 90}ms` }}>
+          <article className="en-card en-card-link flex w-full flex-col gap-5 p-7">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-[var(--ink-1)]" style={{ fontFamily: "var(--font-sora)" }}>
                 {plan.name}
@@ -54,6 +55,7 @@ export default function PlanCards() {
               )}
             </div>
           </article>
+          </div>
         );
       })}
     </div>
