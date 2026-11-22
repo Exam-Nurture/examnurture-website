@@ -1,635 +1,282 @@
 "use client";
 
-import { useState, useEffect, Suspense, useMemo } from "react";
+/**
+ * Past papers (v2, in-app).
+ *   Your attempts: soft rows from apiGetPYQAttempts, each with a Review link.
+ *   All papers: public-style cards with exam / year / Free / Paid filters.
+ * Uses the backend's real paper fields (totalQs, totalMarks, durationMin,
+ * price, hasSolutions, pdfUrl, year, shift, exam). The old page also read the
+ * wrong names in places. Attempt opens /dashboard/pyq/<id>, which forwards to
+ * the exam screen; Review opens that screen with ?attemptId=.
+ */
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { ArrowRight, Clock, BookOpen, Download, Play, CheckCircle2, SlidersHorizontal, X } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { Download, Lock } from "lucide-react";
+import AppPage from "@/components/app/AppPage";
 import { apiGetPYQPapers, apiGetPYQAttempts } from "@/lib/api";
 
-type FilterOpt = { id: string; label: string };
-
-function FilterSection({
-  title, options, selectedId, onChange,
-}: {
+interface Paper {
+  id: string;
   title: string;
-  options: FilterOpt[];
-  selectedId: string;
-  onChange: (id: string) => void;
-}) {
-  return (
-    <div>
-      <p
-        className="text-[10px] font-bold tracking-widest uppercase mb-2.5"
-        style={{ color: "var(--ink-4)" }}
-      >
-        {title}
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map((opt) => (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => onChange(opt.id)}
-            className="px-3 py-1 rounded-full text-[12px] font-medium transition-all duration-150"
-            style={{
-              background: selectedId === opt.id ? "var(--blue-soft)" : "var(--bg)",
-              color: selectedId === opt.id ? "var(--blue)" : "var(--ink-3)",
-              border: `1px solid ${selectedId === opt.id ? "var(--blue)" : "var(--line)"}`,
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+  year: number;
+  shift?: string | null;
+  totalQs: number;
+  totalMarks: number;
+  durationMin: number;
+  pdfUrl?: string | null;
+  hasSolutions: boolean;
+  price: number;
+  exam?: { id: string; name: string; shortName?: string } | null;
 }
 
-function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+interface Attempt {
+  id: string;
+  paperId: string;
+  score: number;
+  totalMarks: number;
+  completedAt?: string | null;
+  timeTakenSec?: number | null;
+  paper?: { title?: string; year?: number } | null;
+}
+
+type Access = "all" | "free" | "paid";
+const display = { fontFamily: "var(--font-sora)" } as const;
+
+function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
-      style={{ background: "var(--blue-soft)", color: "var(--blue)", border: "1px solid var(--blue)" }}
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className={`min-h-11 rounded-full px-4 text-sm transition-colors ${
+        on ? "bg-[var(--brand)] font-semibold text-[var(--brand-ink)]" : "bg-[var(--bg-secondary)] text-[var(--ink-2)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]"
+      }`}
     >
-      {label}
-      <button type="button" onClick={onRemove} className="hover:opacity-70 transition-opacity leading-none">
-        <X size={10} />
-      </button>
-    </span>
+      {children}
+    </button>
   );
 }
 
-/* ─────────────────────────────────────────────
-   Page inner (needs useSearchParams)
-───────────────────────────────────────────── */
-function PYQPageInner() {
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<"All" | "My Attempts">(
-    tabParam === "attempts" ? "My Attempts" : "All"
-  );
-
-  const [papersData, setPapersData] = useState<any>(null);
-  const [papersLoading, setPapersLoading] = useState(false);
-  const [attemptsData, setAttemptsData] = useState<any>(null);
-  const [attemptsLoading, setAttemptsLoading] = useState(false);
-
-  // Filter drawer state
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [filterStateId, setFilterStateId] = useState("__all__");
-  const [filterBoardId, setFilterBoardId] = useState("__all__");
-  const [filterExamId, setFilterExamId] = useState("__all__");
-  const [filterYear, setFilterYear] = useState("__all__");
-
-  useEffect(() => {
-    if (activeTab === "All") {
-      setPapersLoading(true);
-      apiGetPYQPapers({ limit: 100 })
-        .then(setPapersData)
-        .catch(console.error)
-        .finally(() => setPapersLoading(false));
-    } else {
-      setAttemptsLoading(true);
-      apiGetPYQAttempts()
-        .then(setAttemptsData)
-        .catch(console.error)
-        .finally(() => setAttemptsLoading(false));
-    }
-  }, [activeTab]);
-
-  const allPapers: any[] = papersData?.items || [];
-  const attempts = attemptsData || [];
-
-  // ── Hierarchy options ────────────────────────────────────────────────────
-
-  const stateOptions = useMemo<FilterOpt[]>(() => {
-    const map = new Map<string, string>();
-    allPapers.forEach((p) => {
-      const stId = String(p.exam?.board?.state?.id ?? "__national__");
-      const stName = p.exam?.board?.state?.name || "National";
-      map.set(stId, stName);
-    });
-    const sorted = Array.from(map.entries())
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) =>
-        a.label === "National" ? 1 : b.label === "National" ? -1 : a.label.localeCompare(b.label)
-      );
-    return [{ id: "__all__", label: "All" }, ...sorted];
-  }, [allPapers]);
-
-  const boardOptions = useMemo<FilterOpt[]>(() => {
-    const map = new Map<string, string>();
-    allPapers.forEach((p) => {
-      const stId = String(p.exam?.board?.state?.id ?? "__national__");
-      if (filterStateId !== "__all__" && stId !== filterStateId) return;
-      if (p.exam?.board?.id) map.set(p.exam.board.id, p.exam.board.shortName || p.exam.board.name);
-    });
-    const sorted = Array.from(map.entries())
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-    return [{ id: "__all__", label: "All" }, ...sorted];
-  }, [allPapers, filterStateId]);
-
-  const examOptions = useMemo<FilterOpt[]>(() => {
-    const map = new Map<string, string>();
-    allPapers.forEach((p) => {
-      const stId = String(p.exam?.board?.state?.id ?? "__national__");
-      if (filterStateId !== "__all__" && stId !== filterStateId) return;
-      if (filterBoardId !== "__all__" && p.exam?.board?.id !== filterBoardId) return;
-      if (p.exam?.id) map.set(p.exam.id, p.exam.shortName || p.exam.name);
-    });
-    const sorted = Array.from(map.entries())
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-    return [{ id: "__all__", label: "All" }, ...sorted];
-  }, [allPapers, filterStateId, filterBoardId]);
-
-  const yearOptions = useMemo<FilterOpt[]>(() => {
-    const years = new Set<number>();
-    allPapers.forEach((p) => { if (p.year) years.add(Number(p.year)); });
-    const sorted = Array.from(years).sort((a, b) => b - a);
-    return [
-      { id: "__all__", label: "All Years" },
-      ...sorted.map((y) => ({ id: String(y), label: String(y) })),
-    ];
-  }, [allPapers]);
-
-  // ── Cascade handlers ─────────────────────────────────────────────────────
-
-  function handleStateChange(stId: string) {
-    setFilterStateId(stId);
-    setFilterBoardId("__all__");
-    setFilterExamId("__all__");
-  }
-
-  function handleBoardChange(boardId: string) {
-    setFilterBoardId(boardId);
-    setFilterExamId("__all__");
-  }
-
-  function clearAllFilters() {
-    setFilterStateId("__all__");
-    setFilterBoardId("__all__");
-    setFilterExamId("__all__");
-    setFilterYear("__all__");
-  }
-
-  const activeFilterCount = [filterStateId, filterBoardId, filterExamId, filterYear].filter(
-    (f) => f !== "__all__"
-  ).length;
-
-  // ── Filtered papers ───────────────────────────────────────────────────────
-
-  const papers = useMemo(() => {
-    return allPapers.filter((p) => {
-      const stId = String(p.exam?.board?.state?.id ?? "__national__");
-      const stateOk = filterStateId === "__all__" || stId === filterStateId;
-      const boardOk = filterBoardId === "__all__" || p.exam?.board?.id === filterBoardId;
-      const examOk = filterExamId === "__all__" || p.exam?.id === filterExamId;
-      const yearOk = filterYear === "__all__" || String(p.year) === filterYear;
-      return stateOk && boardOk && examOk && yearOk;
-    });
-  }, [allPapers, filterStateId, filterBoardId, filterExamId, filterYear]);
-
-  const stateLabel = stateOptions.find((o) => o.id === filterStateId)?.label;
-  const boardLabel = boardOptions.find((o) => o.id === filterBoardId)?.label;
-  const examLabel = examOptions.find((o) => o.id === filterExamId)?.label;
-
+function Retry({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="fade-up" style={{ maxWidth: 1200 }}>
-
-      {/* Page header */}
-      <div className="flex items-start justify-between flex-wrap gap-4 mb-7">
-        <div>
-          <h1
-            className="text-[28px] leading-none"
-            style={{ fontWeight: 300, letterSpacing: "-0.96px", color: "var(--ink-1)" }}
-          >
-            My PYQ Papers
-          </h1>
-          <p className="text-[13px] mt-2" style={{ color: "var(--ink-4)" }}>
-            Your attempted papers with detailed solutions and analytics.
-          </p>
-        </div>
-        <Link
-          href="/pyq/all"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold border transition-all hover:bg-[var(--blue)] hover:text-white hover:border-[var(--blue)]"
-          style={{ color: "var(--ink-2)", borderColor: "var(--line)" }}
-        >
-          Browse All PYQs <ArrowRight size={14} />
-        </Link>
-      </div>
-
-      {/* Filter bar & Tabs */}
-      <div
-        className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5"
-        style={{ borderBottom: "1px solid var(--line-soft)" }}
-      >
-        {/* Main Tabs */}
-        <div
-          className="flex items-center gap-0.5 p-1 rounded-[10px]"
-          style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
-        >
-          {["All", "My Attempts"].map((t) => {
-            const isTabActive = activeTab === t;
-            return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setActiveTab(t as any)}
-                className="px-4 py-1.5 rounded-[7px] text-[13px] font-semibold transition-all duration-150"
-                style={{
-                  background: isTabActive ? "var(--card)" : "transparent",
-                  color: isTabActive ? "var(--ink-1)" : "var(--ink-4)",
-                  boxShadow: isTabActive ? "var(--shadow-xs)" : "none",
-                }}
-              >
-                {t}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Filter controls (All tab only) */}
-        {activeTab === "All" && (
-          <div className="flex items-center gap-2">
-            <span
-              className="text-[12px] pl-3"
-              style={{ color: "var(--ink-4)", borderLeft: "1px solid var(--line)" }}
-            >
-              {papers.length} {papers.length === 1 ? "paper" : "papers"}
-            </span>
-            <button
-              type="button"
-              onClick={() => setFilterOpen(true)}
-              className="relative flex items-center justify-center rounded-[10px] border transition-all duration-150"
-              style={{
-                width: 36, height: 36,
-                background: activeFilterCount > 0 ? "var(--blue-soft)" : "var(--card)",
-                borderColor: activeFilterCount > 0 ? "var(--blue)" : "var(--line)",
-                color: activeFilterCount > 0 ? "var(--blue)" : "var(--ink-3)",
-              }}
-              title="Filter by state, board, exam or year"
-            >
-              <SlidersHorizontal size={14} />
-              {activeFilterCount > 0 && (
-                <span
-                  className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white"
-                  style={{ background: "var(--blue)" }}
-                >
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Active filter chips */}
-      {activeFilterCount > 0 && activeTab === "All" && (
-        <div className="flex flex-wrap items-center gap-2 mb-5">
-          {filterStateId !== "__all__" && stateLabel && (
-            <FilterChip label={stateLabel} onRemove={() => handleStateChange("__all__")} />
-          )}
-          {filterBoardId !== "__all__" && boardLabel && (
-            <FilterChip label={boardLabel} onRemove={() => handleBoardChange("__all__")} />
-          )}
-          {filterExamId !== "__all__" && examLabel && (
-            <FilterChip label={examLabel} onRemove={() => setFilterExamId("__all__")} />
-          )}
-          {filterYear !== "__all__" && (
-            <FilterChip label={filterYear} onRemove={() => setFilterYear("__all__")} />
-          )}
-          <button
-            type="button"
-            onClick={clearAllFilters}
-            className="text-[11px] font-medium underline"
-            style={{ color: "var(--ink-4)" }}
-          >
-            Clear all
-          </button>
-        </div>
-      )}
-
-      {/* Content Area */}
-      {activeTab === "All" ? (
-        papersLoading ? (
-          <div className="py-20 text-center text-[14px]" style={{ color: "var(--ink-4)" }}>
-            Loading papers...
-          </div>
-        ) : papers.length === 0 ? (
-          <div className="text-center py-20 text-[14px]" style={{ color: "var(--ink-4)" }}>
-            No papers match the selected filters.
-            {activeFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={clearAllFilters}
-                className="block mx-auto mt-2 text-[12px] font-semibold underline"
-                style={{ color: "var(--blue)" }}
-              >
-                Clear filters
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 stagger">
-            {papers.map((p: any) => (
-              <PaperCard key={p.id} paper={p} />
-            ))}
-          </div>
-        )
-      ) : attemptsLoading ? (
-        <div className="py-20 text-center text-[14px]" style={{ color: "var(--ink-4)" }}>
-          Loading attempts...
-        </div>
-      ) : attempts.length === 0 ? (
-        <div className="text-center py-20 text-[14px]" style={{ color: "var(--ink-4)" }}>
-          You haven&apos;t attempted any PYQ papers yet.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 stagger">
-          {attempts.map((a: any) => (
-            <AttemptCard key={a.id} attempt={a} />
-          ))}
-        </div>
-      )}
-
-      {/* ── Filter Drawer ── */}
-      <AnimatePresence>
-        {filterOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex justify-end"
-          >
-            <div
-              className="absolute inset-0 bg-black/20 backdrop-blur-[2px]"
-              onClick={() => setFilterOpen(false)}
-            />
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative flex flex-col w-80 max-w-[85vw] h-full overflow-hidden"
-              style={{
-                background: "var(--card)",
-                borderLeft: "1px solid var(--line)",
-                boxShadow: "-8px 0 32px rgba(0,0,0,.12)",
-              }}
-            >
-              {/* Header */}
-              <div
-                className="flex items-center justify-between px-5 py-4 shrink-0"
-                style={{ borderBottom: "1px solid var(--line)" }}
-              >
-                <span className="text-[15px] font-semibold" style={{ color: "var(--ink-1)" }}>
-                  Filters
-                </span>
-                <div className="flex items-center gap-3">
-                  {activeFilterCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={clearAllFilters}
-                      className="text-[12px] font-medium"
-                      style={{ color: "var(--blue)" }}
-                    >
-                      Clear all
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setFilterOpen(false)}
-                    className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors hover:bg-[var(--bg)]"
-                    style={{ color: "var(--ink-3)" }}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-6">
-                {stateOptions.length > 2 && (
-                  <FilterSection
-                    title="State"
-                    options={stateOptions}
-                    selectedId={filterStateId}
-                    onChange={handleStateChange}
-                  />
-                )}
-                {boardOptions.length > 1 && (
-                  <FilterSection
-                    title="Board"
-                    options={boardOptions}
-                    selectedId={filterBoardId}
-                    onChange={handleBoardChange}
-                  />
-                )}
-                {examOptions.length > 1 && (
-                  <FilterSection
-                    title="Exam"
-                    options={examOptions}
-                    selectedId={filterExamId}
-                    onChange={setFilterExamId}
-                  />
-                )}
-                {yearOptions.length > 1 && (
-                  <FilterSection
-                    title="Year"
-                    options={yearOptions}
-                    selectedId={filterYear}
-                    onChange={setFilterYear}
-                  />
-                )}
-              </div>
-
-              {/* Footer */}
-              <div
-                className="px-5 py-4 shrink-0"
-                style={{ borderTop: "1px solid var(--line)" }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setFilterOpen(false)}
-                  className="w-full py-2.5 rounded-full text-[13px] font-semibold text-white transition-opacity hover:opacity-85"
-                  style={{ background: "var(--ink-1)" }}
-                >
-                  Show {papers.length} results
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="en-card flex flex-col items-center gap-3 px-6 py-10 text-center">
+      <p className="font-semibold text-[var(--ink-1)]">{message}</p>
+      <button type="button" onClick={onRetry} className="min-h-11 rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--brand-ink)] hover:bg-[var(--brand-hover)]">
+        Try again
+      </button>
     </div>
   );
+}
+
+function formatDate(iso?: string | null) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
 export default function PYQPage() {
-  return (
-    <Suspense fallback={<div className="fade-up" style={{ maxWidth: 1200 }} />}>
-      <PYQPageInner />
-    </Suspense>
+  const [papers, setPapers] = useState<Paper[] | null>(null);
+  const [papersFailed, setPapersFailed] = useState(false);
+  const [attempts, setAttempts] = useState<Attempt[] | null>(null);
+  const [attemptsFailed, setAttemptsFailed] = useState(false);
+  const [reload, setReload] = useState(0);
+
+  const [exam, setExam] = useState("all");
+  const [year, setYear] = useState("all");
+  const [access, setAccess] = useState<Access>("all");
+
+  useEffect(() => {
+    let alive = true;
+    (apiGetPYQPapers({ limit: 100 }) as Promise<{ items?: Paper[] }>)
+      .then((r) => {
+        if (!alive) return;
+        setPapers(r.items ?? []);
+        setPapersFailed(false);
+      })
+      .catch(() => alive && setPapersFailed(true));
+    (apiGetPYQAttempts() as Promise<unknown>)
+      .then((r) => {
+        if (!alive) return;
+        setAttempts(Array.isArray(r) ? (r as Attempt[]) : []);
+        setAttemptsFailed(false);
+      })
+      .catch(() => alive && setAttemptsFailed(true));
+    return () => {
+      alive = false;
+    };
+  }, [reload]);
+
+  const exams = useMemo(() => {
+    const m = new Map<string, string>();
+    (papers ?? []).forEach((p) => p.exam && m.set(p.exam.id, p.exam.shortName || p.exam.name));
+    return [...m.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [papers]);
+
+  const years = useMemo(() => [...new Set((papers ?? []).map((p) => p.year))].sort((a, b) => b - a), [papers]);
+
+  const visible = useMemo(
+    () =>
+      (papers ?? [])
+        .filter((p) => exam === "all" || p.exam?.id === exam)
+        .filter((p) => year === "all" || String(p.year) === year)
+        .filter((p) => (access === "free" ? p.price <= 0 : access === "paid" ? p.price > 0 : true))
+        .sort((a, b) => b.year - a.year || a.title.localeCompare(b.title)),
+    [papers, exam, year, access],
   );
-}
 
-/* ─────────────────────────────────────────────
-   Paper Card
-───────────────────────────────────────────── */
-function PaperCard({ paper: p }: { paper: any }) {
+  const filtered = exam !== "all" || year !== "all" || access !== "all";
+  function clear() {
+    setExam("all");
+    setYear("all");
+    setAccess("all");
+  }
+
   return (
-    <div
-      className="card card-lift flex flex-col"
-      style={{ padding: "22px 24px 20px", borderRadius: 16 }}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <span
-          className="text-[10px] font-semibold tracking-widest uppercase truncate max-w-[150px]"
-          style={{ color: "var(--ink-4)" }}
-        >
-          {p.exam?.name ?? "PYQ"}
-        </span>
-      </div>
-
-      <div
-        className="text-[17px] font-semibold leading-tight"
-        style={{ fontFamily: "var(--font-sora)", color: "var(--ink-1)" }}
-      >
-        {p.year} — {p.title}
-      </div>
-
-      <div className="text-[12px] mt-1 h-[18px]" style={{ color: "var(--ink-4)" }}>
-        {p.shift ? `Shift: ${p.shift}` : ""}
-      </div>
-
-      <div className="flex items-center gap-0 mt-4">
-        <span
-          className="inline-flex items-center gap-1.5 text-[12px]"
-          style={{ color: "var(--ink-3)" }}
-        >
-          <BookOpen size={12} strokeWidth={1.75} />
-          {p.totalQs} Questions
-        </span>
-        <span className="mx-2.5 text-[11px]" style={{ color: "var(--line)" }}>·</span>
-        <span
-          className="inline-flex items-center gap-1.5 text-[12px]"
-          style={{ color: "var(--ink-3)" }}
-        >
-          <Clock size={12} strokeWidth={1.75} />
-          {p.durationMin} min
-        </span>
-      </div>
-
-      <div className="mt-4" />
-      <div className="mt-auto mb-4" style={{ borderTop: "1px solid var(--line-soft)" }} />
-
-      <div className="flex items-center gap-2">
-        <Link
-          href={`/pyq/${p.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-full text-[13px] font-medium text-white bg-[var(--blue)] hover:bg-[var(--blue-ink)] transition-colors"
-          style={{ height: 38, fontWeight: 480 }}
-        >
-          <Play size={11} fill="white" stroke="none" />
-          Attempt
-        </Link>
-        {p.pdfUrl && (
-          <a
-            href={p.pdfUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center rounded-full transition-colors hover:border-black"
-            style={{ width: 38, height: 38, border: "1px solid var(--line)", color: "var(--ink-4)" }}
-            title="Download paper PDF"
-          >
-            <Download size={14} strokeWidth={1.75} />
-          </a>
+    <AppPage title="Past papers" subtitle="Attempt real papers, then review how you did.">
+      {/* Your attempts */}
+      <section aria-labelledby="attempts-title" className="reveal">
+        <h2 id="attempts-title" className="mb-4 text-lg font-semibold text-[var(--ink-1)]" style={display}>Your attempts</h2>
+        {attemptsFailed ? (
+          <Retry message="Couldn't load your attempts." onRetry={() => setReload((n) => n + 1)} />
+        ) : attempts === null ? (
+          <ul className="flex flex-col gap-3" aria-busy="true" aria-label="Loading attempts">
+            {[0, 1].map((i) => <li key={i} className="h-20 animate-pulse rounded-[var(--radius-lg)] bg-[var(--bg-secondary)]" />)}
+          </ul>
+        ) : attempts.length === 0 ? (
+          <div className="en-card px-6 py-8 text-center">
+            <p className="font-semibold text-[var(--ink-1)]">No attempts yet.</p>
+            <p className="mt-1 text-sm text-[var(--ink-3)]">Pick a paper below to begin.</p>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {attempts.map((a) => {
+              const pct = a.totalMarks > 0 ? Math.round((a.score / a.totalMarks) * 100) : null;
+              const title = [a.paper?.year, a.paper?.title].filter(Boolean).join(" · ") || "Past paper";
+              return (
+                <li key={a.id} className="en-card flex flex-wrap items-center gap-x-5 gap-y-3 p-4 sm:px-6">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-[var(--ink-1)]">{title}</p>
+                    <p className="mt-0.5 text-sm text-[var(--ink-3)]">
+                      {[formatDate(a.completedAt), a.timeTakenSec != null ? `${Math.floor(a.timeTakenSec / 60)} min ${a.timeTakenSec % 60} s` : ""].filter(Boolean).join(" · ")}
+                    </p>
+                  </div>
+                  {pct !== null && (
+                    <p className="text-right">
+                      <span className="block text-xl font-bold tabular-nums text-[var(--ink-1)]" style={display}>{pct}%</span>
+                      <span className="text-xs tabular-nums text-[var(--ink-3)]">{a.score} / {a.totalMarks}</span>
+                    </p>
+                  )}
+                  <Link
+                    href={`/pyq/${a.paperId}?attemptId=${a.id}`}
+                    aria-label={`Review ${title}`}
+                    className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--bg-secondary)] px-5 text-sm font-semibold text-[var(--ink-1)] transition-colors hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]"
+                  >
+                    Review
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         )}
-      </div>
-    </div>
-  );
-}
+      </section>
 
-/* ─────────────────────────────────────────────
-   Attempt Card
-───────────────────────────────────────────── */
-function AttemptCard({ attempt: a }: { attempt: any }) {
-  return (
-    <div
-      className="card flex flex-col"
-      style={{ padding: "22px 24px 20px", borderRadius: 16 }}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <span
-          className="text-[10px] font-semibold tracking-widest uppercase"
-          style={{ color: "var(--ink-4)" }}
-        >
-          Completed
-        </span>
-        <span
-          className="inline-flex items-center gap-1 text-[11px] font-medium leading-none"
-          style={{ color: "var(--green)" }}
-        >
-          <CheckCircle2 size={11} strokeWidth={2.5} />
-          Done
-        </span>
-      </div>
-
-      <div
-        className="text-[17px] font-semibold leading-tight"
-        style={{ fontFamily: "var(--font-sora)", color: "var(--ink-1)" }}
-      >
-        {a.paper?.year} — {a.paper?.title}
-      </div>
-
-      <div className="text-[12px] mt-1" style={{ color: "var(--ink-4)" }}>
-        {a.completedAt ? new Date(a.completedAt).toLocaleDateString() : "—"}
-      </div>
-
-      <div
-        className="mt-5 p-4 rounded-[10px] flex items-center justify-between"
-        style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
-      >
-        <div>
-          <div
-            className="text-[10px] font-medium uppercase tracking-wider mb-1"
-            style={{ color: "var(--ink-4)" }}
-          >
-            Score
-          </div>
-          <div className="text-[20px] font-bold font-mono" style={{ color: "var(--ink-1)" }}>
-            {a.score}{" "}
-            <span className="text-[13px] text-[var(--ink-4)]">/ {a.totalMarks}</span>
-          </div>
+      {/* All papers */}
+      <section aria-labelledby="papers-title" className="reveal">
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <h2 id="papers-title" className="text-lg font-semibold text-[var(--ink-1)]" style={display}>All papers</h2>
+          <p className="text-sm text-[var(--ink-3)]" aria-live="polite">
+            {papers ? `${visible.length} ${visible.length === 1 ? "paper" : "papers"}` : ""}
+            {filtered && (
+              <button type="button" onClick={clear} className="ml-3 min-h-11 font-semibold text-[var(--brand)] hover:underline">Clear</button>
+            )}
+          </p>
         </div>
-        <div className="text-right">
-          <div
-            className="text-[10px] font-medium uppercase tracking-wider mb-1"
-            style={{ color: "var(--ink-4)" }}
-          >
-            Time Taken
-          </div>
-          <div className="text-[14px] font-bold font-mono" style={{ color: "var(--ink-2)" }}>
-            {a.timeTakenSec != null
-              ? `${Math.floor(a.timeTakenSec / 60)}m ${a.timeTakenSec % 60}s`
-              : "—"}
-          </div>
-        </div>
-      </div>
 
-      <div className="mt-5 mb-4" style={{ borderTop: "1px solid var(--line-soft)" }} />
+        {papers && papers.length > 0 && (
+          <div className="mb-6 flex flex-col gap-3">
+            <div role="group" aria-label="Price" className="flex flex-wrap gap-2">
+              {(["all", "free", "paid"] as Access[]).map((a) => (
+                <Chip key={a} on={access === a} onClick={() => setAccess(a)}>{a === "all" ? "All" : a === "free" ? "Free" : "Paid"}</Chip>
+              ))}
+            </div>
+            {exams.length > 1 && (
+              <div role="group" aria-label="Exam" className="flex flex-wrap gap-2">
+                <Chip on={exam === "all"} onClick={() => setExam("all")}>All exams</Chip>
+                {exams.map((e) => <Chip key={e.id} on={exam === e.id} onClick={() => setExam(e.id)}>{e.name}</Chip>)}
+              </div>
+            )}
+            {years.length > 1 && (
+              <div role="group" aria-label="Year" className="flex flex-wrap gap-2">
+                <Chip on={year === "all"} onClick={() => setYear("all")}>All years</Chip>
+                {years.map((y) => <Chip key={y} on={year === String(y)} onClick={() => setYear(String(y))}>{y}</Chip>)}
+              </div>
+            )}
+          </div>
+        )}
 
-      <Link
-        href={`/pyq/${a.paperId}?attemptId=${a.id}`}
-        className="inline-flex items-center justify-center rounded-full text-[13px] font-medium border border-[var(--line)] hover:border-black transition-colors w-full"
-        style={{ color: "var(--ink-1)", height: 38, fontWeight: 480 }}
-      >
-        View Detailed Report
-      </Link>
-    </div>
+        {papersFailed ? (
+          <Retry message="Couldn't load past papers." onRetry={() => setReload((n) => n + 1)} />
+        ) : papers === null ? (
+          <ul className="grid gap-5 sm:grid-cols-2" aria-busy="true" aria-label="Loading papers">
+            {[0, 1, 2, 3].map((i) => <li key={i} className="h-44 animate-pulse rounded-[var(--radius-lg)] bg-[var(--bg-secondary)]" />)}
+          </ul>
+        ) : visible.length === 0 ? (
+          <div className="en-card px-6 py-10 text-center">
+            <p className="font-semibold text-[var(--ink-1)]">No papers match.</p>
+            <p className="mt-1 text-sm text-[var(--ink-3)]">Try another exam or year, or clear the filters.</p>
+          </div>
+        ) : (
+          <ul className="grid gap-5 sm:grid-cols-2">
+            {visible.map((p, i) => {
+              const free = p.price <= 0;
+              return (
+                <li key={p.id} className="reveal" style={{ transitionDelay: `${(i % 2) * 70}ms` }}>
+                  <article className="en-card flex h-full flex-col gap-4 p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="grid h-10 min-w-10 place-items-center rounded-[10px] bg-[var(--brand-soft)] px-2 text-[11px] font-bold tabular-nums text-[var(--brand)]" style={display}>
+                        {p.year}
+                      </span>
+                      {free ? (
+                        <span className="rounded-full bg-[var(--green-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--green)]">Free</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-secondary)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-2)]">
+                          <Lock className="h-3 w-3" aria-hidden="true" />In plans
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <h3 className="text-[1.05rem] font-semibold leading-snug text-[var(--ink-1)]" style={display}>{p.title}</h3>
+                      {p.exam && <p className="text-sm text-[var(--ink-3)]">{p.exam.name}</p>}
+                    </div>
+                    <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--ink-3)]">
+                      {p.shift && <span>{p.shift}</span>}
+                      {p.totalQs > 0 && <span>{p.totalQs} questions</span>}
+                      {p.durationMin > 0 && <span>{p.durationMin} min</span>}
+                      {p.hasSolutions && <span>Solutions</span>}
+                    </p>
+                    <div className="mt-auto flex items-center gap-2 pt-1">
+                      {free ? (
+                        <Link href={`/dashboard/pyq/${p.id}`} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-hover)]">
+                          Attempt
+                        </Link>
+                      ) : (
+                        <Link href="/pricing" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--bg-secondary)] px-5 text-sm font-semibold text-[var(--ink-1)] transition-colors hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">
+                          See plans
+                        </Link>
+                      )}
+                      {free && p.pdfUrl && p.pdfUrl !== "#" && (
+                        <a href={p.pdfUrl} target="_blank" rel="noopener noreferrer" aria-label={`Download ${p.title} PDF`} className="grid h-11 w-11 place-items-center rounded-[var(--radius-sm)] bg-[var(--bg-secondary)] text-[var(--ink-2)] transition-colors hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">
+                          <Download className="h-4 w-4" aria-hidden="true" />
+                        </a>
+                      )}
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+    </AppPage>
   );
 }

@@ -9,6 +9,8 @@
  * "Valid till 31 Dec 2025" and an assumed "English, Hindi" language row.
  * The old "Buy Now" button had no handler (the website has no checkout yet),
  * so the paid action now opens /pricing instead of doing nothing.
+ * Access follows the backend: in a paid series every test needs the viewer's
+ * entitlement (lib/series-access.ts).
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -16,6 +18,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Calendar, Clock, FileText, Lock, Play } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { withAccess } from "@/lib/series-access";
 import { useAuth } from "@/lib/auth-context";
 import AuthModal from "@/components/auth/AuthModal";
 import PageHero, { SectionTitle } from "@/components/marketing/PageHero";
@@ -56,6 +59,8 @@ export default function SeriesDetailPage() {
     if (!id) return;
     let alive = true;
     (apiFetch(`/test-series/${id}`) as Promise<SeriesDetail>)
+      // paid series: every test needs the viewer's entitlement (backend rule)
+      .then((data) => withAccess(data, !!user))
       .then((data) => {
         if (!alive) return;
         setSeries(data);
@@ -65,7 +70,7 @@ export default function SeriesDetailPage() {
     return () => {
       alive = false;
     };
-  }, [id]);
+  }, [id, user]);
 
   // "now" after mount so server and browser agree on what is upcoming
   useEffect(() => {
