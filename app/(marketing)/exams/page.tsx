@@ -1,41 +1,21 @@
 "use client";
 
+/**
+ * All exams (v2). Find your exam fast:
+ *   deep hero with search → state and board chips → exams grouped by state
+ *   and board as soft cards. Filters and search live in the URL.
+ * Data: boards with nested exams via useExamFilter (unchanged).
+ */
+
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, GraduationCap, ArrowRight, ChevronRight, X, RotateCcw, Filter } from "lucide-react";
-import { FilterSidebar, MobileFilterBar, ExamFilterPanel } from "@/components/layout/FilterSidebar";
+import { ArrowRight, FileText, Timer } from "lucide-react";
+import PageHero, { HeroSearch, SectionTitle } from "@/components/marketing/PageHero";
 import { useExamFilter, parseIds, serializeIds } from "@/hooks/useExamFilter";
 import type { ApiBoard, ApiBoardExam } from "@/lib/api";
 
-/* ── Emoji map ── */
-const STATE_EMOJI: Record<string, string> = {
-  "Central Government": "🏛",
-  "Jharkhand":          "🌿",
-  "Bihar":              "🏺",
-  "Uttar Pradesh":      "⚡",
-  "Rajasthan":          "🏜",
-  "Madhya Pradesh":     "🦁",
-  "Maharashtra":        "🌊",
-  "Karnataka":          "🌸",
-  "Tamil Nadu":         "🏯",
-  "Gujarat":            "🦚",
-  "West Bengal":        "🎭",
-  "Andhra Pradesh":     "🌾",
-  "Telangana":          "💎",
-  "Kerala":             "🌴",
-  "Punjab":             "🌾",
-  "Haryana":            "🌻",
-  "Himachal Pradesh":   "🏔",
-  "Uttarakhand":        "🏔",
-  "Odisha":             "🎪",
-  "Assam":              "🍵",
-  "Chhattisgarh":       "🌿",
-  "Goa":                "🏖",
-  "Delhi":              "🗼",
-};
-function emojiFor(name: string) { return STATE_EMOJI[name] ?? "📋"; }
+const display = { fontFamily: "var(--font-sora)" } as const;
 
 interface StateGroup {
   id: number | null;
@@ -46,380 +26,222 @@ interface StateGroup {
 function groupByState(boards: ApiBoard[]): StateGroup[] {
   const map = new Map<string, StateGroup>();
   for (const board of boards) {
-    const key  = board.state ? String(board.state.id) : "__none__";
-    const name = board.state?.name ?? "Other";
+    const key = board.state ? String(board.state.id) : "__none__";
+    const name = board.state?.name ?? "Central & all-India";
     if (!map.has(key)) map.set(key, { id: board.state?.id ?? null, name, boards: [] });
     map.get(key)!.boards.push(board);
   }
   return [...map.values()].sort((a, b) => {
-    if (a.id === null) return 1;
-    if (b.id === null) return -1;
+    if (a.id === null) return -1; // all-India first
+    if (b.id === null) return 1;
     return a.name.localeCompare(b.name);
   });
 }
 
-/* ─── Main inner component ────────────────────────────── */
+function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className={`inline-flex min-h-10 flex-none items-center gap-1.5 rounded-full px-4 text-sm transition-all ${
+        on
+          ? "bg-[var(--brand)] font-semibold text-[var(--brand-ink)] shadow-[0_6px_16px_-8px_var(--brand)]"
+          : "bg-[var(--bg-secondary)] text-[var(--ink-2)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
 
-function AllExamsPageInner() {
-  const router       = useRouter();
-  const pathname     = usePathname();
-  const searchParams = useSearchParams();
+function ExamCard({ exam, board, delay = 0 }: { exam: ApiBoardExam; board: ApiBoard; delay?: number }) {
+  return (
+    <li className="reveal" style={{ transitionDelay: `${delay}ms` }}>
+      <Link href={`/exams/${exam.id}`} className="group en-card en-card-link flex h-full flex-col gap-4 p-5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="grid h-10 min-w-10 place-items-center rounded-[10px] bg-[var(--brand-soft)] px-2 text-[11px] font-bold text-[var(--brand)] transition-transform duration-300 group-hover:scale-105" style={display}>
+            {(board.shortName || exam.shortName).slice(0, 5).toUpperCase()}
+          </span>
+          <ArrowRight className="h-4 w-4 -translate-x-1 text-[var(--brand)] opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" />
+        </div>
+        <span className="font-semibold leading-snug text-[var(--ink-1)]" style={display}>{exam.name}</span>
+        <span className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--ink-3)]">
+          {exam.hasTests && <span className="inline-flex items-center gap-1"><Timer className="h-3.5 w-3.5" aria-hidden="true" />Mock tests</span>}
+          {exam.hasPYQ && <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" aria-hidden="true" />Past papers</span>}
+          {!exam.hasTests && !exam.hasPYQ && <span>Details and dates</span>}
+        </span>
+      </Link>
+    </li>
+  );
+}
 
-  const [search, setSearch]                     = useState(searchParams.get("q") ?? "");
-  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+function AllExams() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
 
-  const examFilter = useExamFilter({
-    stateIds: parseIds(searchParams.get("stateIds"), Number),
-    boardIds:  parseIds(searchParams.get("boardIds"),  String),
-    examIds:   parseIds(searchParams.get("examIds"),   String),
+  const [search, setSearch] = useState(params.get("q") ?? "");
+  const f = useExamFilter({
+    stateIds: parseIds(params.get("stateIds"), Number),
+    boardIds: parseIds(params.get("boardIds"), String),
+    examIds: parseIds(params.get("examIds"), String),
   });
 
   // URL sync
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (search) params.set("q", search);
-    const sIds = serializeIds(examFilter.selectedStateIds);
-    const bIds = serializeIds(examFilter.selectedBoardIds);
-    const eIds = serializeIds(examFilter.selectedExamIds);
-    if (sIds) params.set("stateIds", sIds);
-    if (bIds) params.set("boardIds", bIds);
-    if (eIds) params.set("examIds",  eIds);
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [search, examFilter.selectedStateIds, examFilter.selectedBoardIds, examFilter.selectedExamIds, pathname, router]);
+    const t = setTimeout(() => {
+      const p = new URLSearchParams();
+      if (search.trim()) p.set("q", search.trim());
+      const s = serializeIds(f.selectedStateIds);
+      const b = serializeIds(f.selectedBoardIds);
+      if (s) p.set("stateIds", s);
+      if (b) p.set("boardIds", b);
+      const qs = p.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    }, 200);
+    return () => clearTimeout(t);
+  }, [search, f.selectedStateIds, f.selectedBoardIds, pathname, router]);
 
-  // Group boards from the hook (already fetched)
-  const stateGroups = useMemo(() => groupByState(examFilter.allBoards), [examFilter.allBoards]);
+  const groups = useMemo(() => groupByState(f.allBoards), [f.allBoards]);
+  const totalExams = useMemo(() => f.allBoards.reduce((n, b) => n + (b.exams?.length ?? 0), 0), [f.allBoards]);
 
-  // All exams flat (for search)
-  const allExams = useMemo(
-    () => examFilter.allBoards.flatMap(b => (b.exams ?? []).map(e => ({ ...e, board: b as ApiBoard }))),
-    [examFilter.allBoards]
+  const boardsForChips = useMemo(
+    () =>
+      groups
+        .filter((g) => f.selectedStateIds.length === 0 || (g.id !== null && f.selectedStateIds.includes(g.id)))
+        .flatMap((g) => g.boards)
+        .filter((b) => (b.exams?.length ?? 0) > 0),
+    [groups, f.selectedStateIds],
   );
 
-  // Search results
-  const searchResults = search.trim()
-    ? allExams.filter(e =>
-        e.name.toLowerCase().includes(search.toLowerCase()) ||
-        e.shortName.toLowerCase().includes(search.toLowerCase())
-      )
-    : null;
+  const needle = search.trim().toLowerCase();
+  const visible = useMemo(() => {
+    return groups
+      .filter((g) => f.selectedStateIds.length === 0 || (g.id !== null && f.selectedStateIds.includes(g.id)))
+      .map((g) => ({
+        ...g,
+        boards: g.boards
+          .filter((b) => f.selectedBoardIds.length === 0 || f.selectedBoardIds.includes(b.id))
+          .map((b) => ({
+            ...b,
+            exams: (b.exams ?? []).filter(
+              (e) => !needle || e.name.toLowerCase().includes(needle) || e.shortName.toLowerCase().includes(needle) || b.shortName.toLowerCase().includes(needle),
+            ),
+          }))
+          .filter((b) => b.exams.length > 0),
+      }))
+      .filter((g) => g.boards.length > 0);
+  }, [groups, f.selectedStateIds, f.selectedBoardIds, needle]);
 
-  // Hierarchical display filtered by sidebar selections
-  const visibleGroups = useMemo(() => {
-    const { selectedStateIds, selectedBoardIds, selectedExamIds } = examFilter;
-    const result: Array<StateGroup & { boards: Array<ApiBoard & { exams: ApiBoardExam[] }> }> = [];
-
-    for (const group of stateGroups) {
-      if (selectedStateIds.length > 0 && group.id != null && !selectedStateIds.includes(group.id)) continue;
-      const filteredBoards: Array<ApiBoard & { exams: ApiBoardExam[] }> = [];
-      for (const board of group.boards) {
-        if (selectedBoardIds.length > 0 && !selectedBoardIds.includes(board.id)) continue;
-        const exams = selectedExamIds.length > 0
-          ? (board.exams ?? []).filter(e => selectedExamIds.includes(e.id))
-          : (board.exams ?? []);
-        if (exams.length > 0) filteredBoards.push({ ...board, exams });
-      }
-      if (filteredBoards.length > 0) result.push({ ...group, boards: filteredBoards });
-    }
-    return result;
-  }, [stateGroups, examFilter.selectedStateIds, examFilter.selectedBoardIds, examFilter.selectedExamIds]);
-
-  const activeFilterCount = examFilter.examFilterCount;
-
-  function resetFilters() {
-    examFilter.resetExamFilter();
-    setSearch("");
-  }
+  const shown = visible.reduce((n, g) => n + g.boards.reduce((m, b) => m + b.exams.length, 0), 0);
+  const filtered = !!needle || f.selectedStateIds.length > 0 || f.selectedBoardIds.length > 0;
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: "var(--bg)" }}>
+    <div className="bg-[var(--bg)]">
+      <PageHero
+        eyebrow="Exams"
+        title="Find your exam."
+        subtitle={totalExams > 0 ? `${totalExams} exams by state and board. Open one for papers, mocks and dates.` : "Exams by state and board. Open one for papers, mocks and dates."}
+      >
+        <HeroSearch id="exam-search" label="Search exams" placeholder="Search by exam or board, e.g. JPSC, SSC CGL" value={search} onChange={setSearch} />
+      </PageHero>
 
-      {/* ── HERO ── */}
-      <section className="border-b pt-16 pb-20 relative overflow-hidden" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-full opacity-5 blur-[120px] pointer-events-none" style={{ background: "#0D287E" }} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative z-10 text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 tracking-tight" style={{ color: "var(--ink-1)" }}>
-            Find Your Target Exam
-          </h1>
-          <p className="text-lg max-w-2xl mx-auto mb-10 leading-relaxed" style={{ color: "var(--ink-2)" }}>
-            Explore our comprehensive catalogue of government and competitive exams. Get access to syllabus, important dates, mock tests, and previous year papers.
-          </p>
-          <div className="max-w-2xl mx-auto relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5" style={{ color: "var(--ink-4)" }} />
+      <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-4 sm:px-6">
+        {/* Filters */}
+        {groups.length > 0 && (
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]" role="group" aria-label="State">
+              <Chip on={f.selectedStateIds.length === 0} onClick={() => f.resetExamFilter()}>All states</Chip>
+              {groups.filter((g) => g.id !== null).map((g) => (
+                <Chip key={g.id} on={f.selectedStateIds.includes(g.id as number)} onClick={() => f.toggleState(g.id as number)}>
+                  {g.name}
+                </Chip>
+              ))}
             </div>
-            <input
-              type="text"
-              className="block w-full pl-12 pr-10 py-4 sm:text-lg border-2 rounded-2xl focus:outline-none transition-all"
-              style={{ background: "var(--bg)", borderColor: "var(--line-soft)", color: "var(--ink-1)" }}
-              placeholder="Search for an exam (e.g., SSC CGL, IBPS PO)…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                style={{ color: "var(--ink-4)" }}
-              >
-                <X size={18} />
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── MAIN CONTENT ── */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        {search.trim() && searchResults ? (
-          /* ── SEARCH RESULTS ── */
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold" style={{ color: "var(--ink-1)" }}>
-                <span className="font-black" style={{ color: "var(--blue)" }}>{searchResults.length}</span> results for &ldquo;{search}&rdquo;
-              </h2>
-              <button type="button" onClick={() => setSearch("")} className="text-sm font-semibold" style={{ color: "var(--ink-3)" }}>
-                ← Back to browse
-              </button>
-            </div>
-            {searchResults.length === 0 ? (
-              <div className="border rounded-3xl p-12 text-center" style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
-                <Search className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: "var(--ink-4)" }} />
-                <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink-1)" }}>No exams found</h3>
-                <p style={{ color: "var(--ink-3)" }}>Try different keywords or browse by state using the filters.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {searchResults.map((exam: ApiBoardExam & { board: ApiBoard }, idx: number) => (
-                  <motion.div key={exam.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
-                    <Link
-                      href={`/exams/${exam.id}`}
-                      className="block border rounded-3xl p-6 transition-all hover:-translate-y-0.5 group"
-                      style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}
-                    >
-                      <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded inline-block mb-3"
-                        style={{ background: `${exam.board.tint}18`, color: exam.board.tint || "#0D287E" }}>
-                        {exam.board.shortName}
-                      </span>
-                      <h3 className="text-xl font-bold mb-2" style={{ color: "var(--ink-1)" }}>{exam.name}</h3>
-                      <p className="text-sm mb-6" style={{ color: "var(--ink-3)" }}>
-                        {[exam.hasTests && "Tests available", exam.hasPYQ && "PYQs available"].filter(Boolean).join(" · ") || "Coming soon"}
-                      </p>
-                      <div className="flex items-center text-sm font-bold" style={{ color: "#0D287E" }}>
-                        View Details <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </Link>
-                  </motion.div>
+            {boardsForChips.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]" role="group" aria-label="Board">
+                {boardsForChips.map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    aria-pressed={f.selectedBoardIds.includes(b.id)}
+                    onClick={() => f.toggleBoard(b.id)}
+                    className={`min-h-9 flex-none rounded-full px-3.5 text-[13px] transition-colors ${
+                      f.selectedBoardIds.includes(b.id) ? "bg-[var(--brand-soft)] font-semibold text-[var(--brand)]" : "text-[var(--ink-3)] hover:text-[var(--ink-1)]"
+                    }`}
+                  >
+                    {b.shortName}
+                  </button>
                 ))}
               </div>
             )}
-          </div>
-
-        ) : (
-          /* ── BROWSE WITH SIDEBAR ── */
-          <div className="flex gap-6 items-start">
-
-            {/* Left sidebar */}
-            <FilterSidebar
-              searchQuery={search}
-              onSearchChange={setSearch}
-              activeFilterCount={activeFilterCount}
-              onReset={resetFilters}
-            >
-              <ExamFilterPanel
-                allCategories={examFilter.allCategories}
-                selectedCategoryIds={examFilter.selectedCategoryIds}
-                onToggleCategory={examFilter.toggleCategory}
-                allStates={examFilter.allStates}
-                selectedStateIds={examFilter.selectedStateIds}
-                onToggleState={examFilter.toggleState}
-                availableBoards={examFilter.availableBoards}
-                selectedBoardIds={examFilter.selectedBoardIds}
-                onToggleBoard={examFilter.toggleBoard}
-                availableExams={examFilter.availableExams}
-                selectedExamIds={examFilter.selectedExamIds}
-                onToggleExam={examFilter.toggleExam}
-                isLoading={examFilter.isLoading}
-                examsLoading={examFilter.examsLoading}
-              />
-            </FilterSidebar>
-
-            {/* Right content */}
-            <div className="flex-1 min-w-0">
-
-              {/* Mobile filter bar */}
-              <div className="lg:hidden mb-4">
-                <MobileFilterBar
-                  searchQuery={search}
-                  onSearchChange={setSearch}
-                  activeFilterCount={activeFilterCount}
-                  onOpenMobileFilter={() => setMobileFilterOpen(true)}
-                />
-              </div>
-
-              {examFilter.isLoading ? (
-                <SkeletonLoading />
-              ) : visibleGroups.length === 0 ? (
-                <EmptyState onReset={resetFilters} />
-              ) : (
-                <div className="space-y-16">
-                  {visibleGroups.map(group => (
-                    <div key={group.id ?? "__none__"} className="space-y-8">
-                      {group.id !== null && (
-                        <div className="flex items-center gap-4 border-b pb-4" style={{ borderColor: "var(--line-soft)" }}>
-                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: "var(--card)" }}>
-                            {emojiFor(group.name)}
-                          </div>
-                          <h2 className="text-2xl font-bold" style={{ color: "var(--ink-1)" }}>{group.name}</h2>
-                        </div>
-                      )}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {group.boards.map(board => (
-                          <div key={board.id} className="border rounded-3xl overflow-hidden flex flex-col"
-                            style={{ background: "var(--card)", borderColor: "var(--line-soft)" }}>
-                            <div className="p-5 border-b flex items-center gap-4"
-                              style={{ borderColor: "var(--line-soft)", background: `${board.tint}08` }}>
-                              <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-sm flex-shrink-0"
-                                style={{ backgroundColor: board.tint || "#0D287E" }}>
-                                {board.shortName.slice(0, 2)}
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-base leading-tight" style={{ color: "var(--ink-1)" }}>{board.name}</h3>
-                                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: board.tint || "#0D287E" }}>
-                                  {board.shortName}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="p-2 flex-1">
-                              {(board.exams ?? []).map(exam => (
-                                <Link key={exam.id} href={`/exams/${exam.id}`}
-                                  className="flex items-center justify-between p-4 rounded-2xl transition-all group hover:bg-[var(--bg)]">
-                                  <div>
-                                    <h4 className="font-bold" style={{ color: "var(--ink-1)" }}>{exam.name}</h4>
-                                    <p className="text-xs mt-0.5" style={{ color: "var(--ink-4)" }}>
-                                      {[exam.hasTests && "Tests", exam.hasPYQ && "PYQs"].filter(Boolean).join(" · ") || "Coming soon"}
-                                    </p>
-                                  </div>
-                                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-110 group-hover:bg-[#0D287E] group-hover:text-white"
-                                    style={{ background: "var(--bg)", color: "var(--ink-3)" }}>
-                                    <ChevronRight size={16} />
-                                  </div>
-                                </Link>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <p className="text-sm text-[var(--ink-3)]" aria-live="polite">
+              {shown} {shown === 1 ? "exam" : "exams"}
+              {filtered && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    f.resetExamFilter();
+                    setSearch("");
+                  }}
+                  className="ml-3 font-semibold text-[var(--brand)] hover:underline"
+                >
+                  Clear
+                </button>
               )}
-            </div>
+            </p>
           </div>
         )}
-      </div>
 
-      {/* ── Mobile filter drawer ── */}
-      <AnimatePresence>
-        {mobileFilterOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setMobileFilterOpen(false)}
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
-            />
-            <motion.div
-              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 z-50 flex h-[85vh] flex-col rounded-t-[24px] bg-[var(--bg)] lg:hidden"
-              style={{ borderTop: "1px solid var(--line-soft)" }}
-            >
-              <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "var(--line-soft)" }}>
-                <h3 className="font-bold text-[var(--ink-1)]">Filters</h3>
-                <button onClick={() => setMobileFilterOpen(false)} className="rounded-full p-2 bg-[var(--card)] border border-[var(--line-soft)] text-[var(--ink-2)]">
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto px-5 py-4 pb-20 [scrollbar-width:none]">
-                <ExamFilterPanel
-                  allCategories={examFilter.allCategories}
-                  selectedCategoryIds={examFilter.selectedCategoryIds}
-                  onToggleCategory={examFilter.toggleCategory}
-                  allStates={examFilter.allStates}
-                  selectedStateIds={examFilter.selectedStateIds}
-                  onToggleState={examFilter.toggleState}
-                  availableBoards={examFilter.availableBoards}
-                  selectedBoardIds={examFilter.selectedBoardIds}
-                  onToggleBoard={examFilter.toggleBoard}
-                  availableExams={examFilter.availableExams}
-                  selectedExamIds={examFilter.selectedExamIds}
-                  onToggleExam={examFilter.toggleExam}
-                  isLoading={examFilter.isLoading}
-                  examsLoading={examFilter.examsLoading}
-                />
-              </div>
-              <div className="flex gap-3 px-5 py-4" style={{ borderTop: "1px solid var(--line-soft)" }}>
-                <button type="button" onClick={() => { resetFilters(); setMobileFilterOpen(false); }}
-                  className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[12px] border text-[13px] font-semibold transition-colors hover:border-[var(--blue)]"
-                  style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
-                  <RotateCcw size={13} /> Clear all
-                </button>
-                <button type="button" onClick={() => setMobileFilterOpen(false)}
-                  className="flex h-11 flex-[1.4] items-center justify-center rounded-[12px] text-[13px] font-semibold text-white transition-opacity hover:opacity-85"
-                  style={{ background: "var(--blue)" }}>
-                  Apply
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-/* ─── Loading skeleton ── */
-function SkeletonLoading() {
-  return (
-    <div className="space-y-8">
-      <div className="flex gap-3">
-        {[100, 160, 120, 100, 140].map((w, i) => (
-          <div key={i} className="h-11 rounded-xl animate-pulse" style={{ width: w, background: "var(--card)" }} />
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="h-48 rounded-3xl animate-pulse" style={{ background: "var(--card)" }} />
-        ))}
+        {/* Results */}
+        <div className="pt-8">
+          {f.isLoading ? (
+            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
+              {Array.from({ length: 8 }).map((_, i) => <li key={i} className="h-36 animate-pulse rounded-[var(--radius-lg)] bg-[var(--bg-secondary)]" />)}
+            </ul>
+          ) : groups.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-20 text-center">
+              <p className="font-semibold text-[var(--ink-1)]">Couldn&apos;t load exams.</p>
+              <button onClick={() => window.location.reload()} className="min-h-11 rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--brand-ink)]">Try again</button>
+            </div>
+          ) : visible.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-20 text-center">
+              <p className="font-semibold text-[var(--ink-1)]">No exams match.</p>
+              <p className="text-sm text-[var(--ink-3)]">Try another name or clear the filters.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-14">
+              {visible.map((g) => (
+                <section key={g.name} className="reveal">
+                  <SectionTitle>{g.name}</SectionTitle>
+                  <div className="flex flex-col gap-8">
+                    {g.boards.map((b) => (
+                      <div key={b.id}>
+                        <h3 className="mb-3 flex items-baseline gap-2 text-sm text-[var(--ink-3)]">
+                          <span className="font-semibold text-[var(--ink-1)]">{b.shortName}</span>
+                          {b.name !== b.shortName && <span>{b.name}</span>}
+                        </h3>
+                        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                          {b.exams.map((e, i) => <ExamCard key={e.id} exam={e} board={b} delay={(i % 4) * 60} />)}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-/* ─── Empty state ── */
-function EmptyState({ onReset }: { onReset: () => void }) {
-  return (
-    <div className="border-2 border-dashed rounded-3xl p-16 text-center" style={{ borderColor: "var(--line-soft)" }}>
-      <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: "var(--ink-4)" }} />
-      <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink-1)" }}>No exams match your filters</h3>
-      <p className="mb-5" style={{ color: "var(--ink-3)" }}>Try removing some filters or selecting different states and boards.</p>
-      <button type="button" onClick={onReset}
-        className="inline-flex h-10 items-center gap-2 rounded-[12px] px-5 text-[13px] font-semibold text-white transition-opacity hover:opacity-85"
-        style={{ background: "var(--blue)" }}>
-        <RotateCcw size={14} /> Clear filters
-      </button>
-    </div>
-  );
-}
-
-/* ─── Page export ── */
 export default function AllExamsPage() {
   return (
-    <Suspense fallback={<SkeletonLoading />}>
-      <AllExamsPageInner />
+    <Suspense fallback={<div className="min-h-[60vh]" />}>
+      <AllExams />
     </Suspense>
   );
 }

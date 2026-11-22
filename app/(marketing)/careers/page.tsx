@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, GraduationCap, Headphones, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpen, GraduationCap, Headphones } from "lucide-react";
+import PageHero from "@/components/marketing/PageHero";
 
 const ROLES = [
   { title: "Exam Content Reviewer", team: "Academic", icon: BookOpen, detail: "Review mocks, PYQs, and explanations for accuracy." },
@@ -11,37 +12,39 @@ export const metadata = { title: "Careers - ExamNurture" };
 
 export default function CareersPage() {
   return (
-    <div className="bg-white">
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-        <div className="max-w-3xl">
-          <p className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 mb-4">
-            <Sparkles size={16} /> Careers
-          </p>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-950 mb-5" style={{ fontFamily: "var(--font-sora)" }}>
-            Build for serious exam aspirants.
-          </h1>
-          <p className="text-lg text-gray-600 leading-8">
-            Join a focused team creating practical learning tools for competitive exam preparation across India.
-          </p>
-        </div>
+    <>
+      <PageHero
+        eyebrow="Careers"
+        title="Build for serious aspirants."
+        subtitle="Join a small team making practical exam-prep tools."
+        align="center"
+      />
 
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
-          {ROLES.map(({ title, team, icon: Icon, detail }) => (
-            <article key={title} className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-5">
-                <Icon size={20} />
-              </div>
-              <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">{team}</p>
-              <h2 className="text-lg font-bold text-gray-950 mb-3">{title}</h2>
-              <p className="text-sm leading-7 text-gray-600">{detail}</p>
-            </article>
+      <section className="mx-auto max-w-[1180px] px-4 pb-20 pt-4 sm:px-6">
+        <ul className="grid gap-5 md:grid-cols-3">
+          {ROLES.map(({ title, team, icon: Icon, detail }, i) => (
+            <li key={title} className="reveal" style={{ transitionDelay: `${i * 70}ms` }}>
+              <article className="en-card h-full p-6">
+                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-[12px] bg-[var(--brand-soft)] text-[var(--brand)]">
+                  <Icon size={20} aria-hidden="true" />
+                </div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--ink-3)]">{team}</p>
+                <h2 className="mb-2 text-lg font-bold text-[var(--ink-1)]" style={{ fontFamily: "var(--font-sora)" }}>{title}</h2>
+                <p className="text-sm leading-relaxed text-[var(--ink-2)]">{detail}</p>
+              </article>
+            </li>
           ))}
-        </div>
+        </ul>
 
-        <Link href="/contact" className="mt-10 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-colors">
-          Contact hiring team <ArrowRight size={16} />
-        </Link>
+        <div className="mt-10 flex justify-center">
+          <Link
+            href="/contact"
+            className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--brand-ink)] hover:bg-[var(--brand-hover)]"
+          >
+            Contact hiring team <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
       </section>
-    </div>
+    </>
   );
 }

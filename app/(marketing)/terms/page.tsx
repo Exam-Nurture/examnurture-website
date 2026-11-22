@@ -1,3 +1,5 @@
+import PageHero from "@/components/marketing/PageHero";
+
 const SECTIONS = [
   {
     title: "Use of the platform",
@@ -17,23 +19,23 @@ export const metadata = { title: "Terms of Service - ExamNurture" };
 
 export default function TermsPage() {
   return (
-    <div className="bg-white">
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-        <p className="text-sm font-semibold text-blue-600 mb-3">ExamNurture Legal</p>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-950 mb-5" style={{ fontFamily: "var(--font-sora)" }}>
-          Terms of Service
-        </h1>
-        <p className="text-lg text-gray-600 leading-8 max-w-2xl">The working agreement for using ExamNurture responsibly.</p>
-        <div className="mt-10 grid gap-4">
-          {SECTIONS.map((section) => (
-            <article key={section.title} className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
-              <h2 className="text-base font-bold text-gray-950 mb-2">{section.title}</h2>
-              <p className="text-sm leading-7 text-gray-600">{section.body}</p>
-            </article>
+    <>
+      <PageHero eyebrow="Legal" title="Terms of Service" subtitle="The simple rules for using ExamNurture." align="center" />
+      <section className="mx-auto max-w-[760px] px-4 pb-20 pt-4 sm:px-6">
+        <ol className="space-y-5">
+          {SECTIONS.map((section, i) => (
+            <li key={section.title} className="reveal" style={{ transitionDelay: `${i * 70}ms` }}>
+              <article className="en-card p-6 sm:p-8">
+                <h2 className="mb-2 text-lg font-bold text-[var(--ink-1)]" style={{ fontFamily: "var(--font-sora)" }}>
+                  {section.title}
+                </h2>
+                <p className="leading-relaxed text-[var(--ink-2)]">{section.body}</p>
+              </article>
+            </li>
           ))}
-        </div>
-        <p className="mt-8 text-sm text-gray-500">Last updated: April 30, 2026</p>
+        </ol>
+        <p className="mt-8 text-center text-sm text-[var(--ink-3)]">Last updated: April 30, 2026</p>
       </section>
-    </div>
+    </>
   );
 }
