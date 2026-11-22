@@ -53,7 +53,7 @@ function renderLatex(text: string): string {
 }
 
 /* ─── RichText: HTML + KaTeX ─────────────────── */
-function RichText({ html, className = "" }: { html: string; className?: string }) {
+export function RichText({ html, className = "" }: { html: string; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

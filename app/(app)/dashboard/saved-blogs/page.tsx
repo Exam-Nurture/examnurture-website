@@ -1,484 +1,280 @@
 "use client";
 
-import { useEffect, useState } from "react";
+/**
+ * Saved articles (v2).
+ * Articles: ids live in localStorage ("library-bookmarks", written by the blog
+ * reader); we match them against the public blog list. Read after mount so the
+ * server render and first client render agree.
+ * Questions: bookmarks come from the API and can be removed with the same API.
+ */
+
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  Bookmark, BookOpen, ExternalLink, ArrowRight, BookMarked,
-  Check, Clock, Flame, TrendingUp, Zap, RotateCcw, RefreshCw,
-  Target, Hash,
-} from "lucide-react";
-import { apiGetBookmarks, apiGetBlogs, type PublicBlogPost } from "@/lib/api";
+import { ArrowRight, BookOpen, Bookmark, X } from "lucide-react";
+import AppPage from "@/components/app/AppPage";
+import { apiGetBookmarks, apiGetBlogs, apiRemoveBookmark, type PublicBlogPost } from "@/lib/api";
 
-/* ── Category config ── */
-const CATEGORIES = [
-  { key: "All",            label: "All Posts",       color: "#3B82F6" },
-  { key: "General",        label: "General",          color: "#64748B" },
-  { key: "Current Affairs",label: "Current Affairs",  color: "#10B981" },
-  { key: "Strategy",       label: "Strategy",         color: "#8B5CF6" },
-  { key: "Concept",        label: "Concepts",         color: "#0891B2" },
-  { key: "Formula",        label: "Formulas",         color: "#EC4899" },
-  { key: "Revision",       label: "Revision",         color: "#F59E0B" },
-  { key: "News",           label: "News",             color: "#F97316" },
-  { key: "Announcement",   label: "Announcements",    color: "#EF4444" },
-];
+const ARTICLE_KEY = "library-bookmarks";
+const display = { fontFamily: "var(--font-sora)" } as const;
 
-const CAT_GRADIENTS: Record<string, string> = {
-  "General":         "linear-gradient(135deg,#3B82F6,#6366F1)",
-  "Current Affairs": "linear-gradient(135deg,#10B981,#059669)",
-  "Strategy":        "linear-gradient(135deg,#8B5CF6,#6D28D9)",
-  "Concept":         "linear-gradient(135deg,#0891B2,#1E40AF)",
-  "Formula":         "linear-gradient(135deg,#EC4899,#8B5CF6)",
-  "Revision":        "linear-gradient(135deg,#F59E0B,#F97316)",
-  "News":            "linear-gradient(135deg,#F97316,#EF4444)",
-  "Announcement":    "linear-gradient(135deg,#EF4444,#BE185D)",
-};
-
-function getCatColor(cat: string) {
-  return CATEGORIES.find((c) => c.key === cat)?.color ?? "#64748B";
+interface BookmarkedQuestion {
+  id: string;
+  questionId?: string;
+  question?: {
+    id?: string;
+    text?: string;
+    options?: string[] | string;
+    correctIndex?: number;
+    subject?: string;
+  } | null;
 }
 
-const CAT_ICONS: Record<string, React.ReactNode> = {
-  "Concept":  <BookOpen   size={12} />,
-  "Formula":  <Zap        size={12} />,
-  "Revision": <RotateCcw  size={12} />,
-  "Strategy": <TrendingUp size={12} />,
-  "General":  <BookOpen   size={12} />,
-};
-
-const COVER_ICONS_SM: Record<string, React.ReactNode> = {
-  "Concept":  <BookOpen  size={20} strokeWidth={1.5} />,
-  "Formula":  <Zap       size={20} strokeWidth={1.5} />,
-  "Revision": <RefreshCw size={20} strokeWidth={1.5} />,
-  "Strategy": <Target    size={20} strokeWidth={1.5} />,
-  "General":  <BookOpen  size={20} strokeWidth={1.5} />,
-};
-
-function parseTags(raw: string): string[] {
-  try { return JSON.parse(raw); } catch { return []; }
+function formatDate(iso?: string) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-/* ─── Compact article card ─── */
-function ArticleCard({ article, isRead }: { article: PublicBlogPost; isRead?: boolean }) {
-  const gradient = CAT_GRADIENTS[article.category] ?? CAT_GRADIENTS["General"];
-  const catColor = getCatColor(article.category);
-  const tags = parseTags(article.tags);
+// Preview text must never render raw HTML (question content can be LLM-generated).
+const stripHtml = (s: string) => (s || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ");
 
+function parseOptions(raw: string[] | string | undefined): string[] {
+  try {
+    const v = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return Array.isArray(v) ? v.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function ArticleCard({ post, index, onRemove }: { post: PublicBlogPost; index: number; onRemove: () => void }) {
   return (
-    <Link
-      href={`/blog/${article.slug}`}
-      className="group flex items-start gap-3 p-3.5 rounded-2xl transition-all hover:border-[var(--blue)]"
-      style={{ background: "var(--card)", border: "1px solid var(--line-soft)" }}
-    >
-      {/* Mini cover */}
-      <div
-        className="relative w-14 h-14 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
-        style={{ background: gradient }}
-      >
-        {article.coverUrl ? (
-          <img src={article.coverUrl} alt={article.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="opacity-70 text-white">
-            {COVER_ICONS_SM[article.category] ?? <BookOpen size={20} strokeWidth={1.5} />}
-          </div>
-        )}
-        {isRead && (
-          <span
-            className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(255,255,255,0.3)", backdropFilter: "blur(4px)" }}
-          >
-            <Check size={9} className="text-white" />
-          </span>
-        )}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-1">
-          <span
-            className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-            style={{ background: `${catColor}20`, color: catColor }}
-          >
-            {CAT_ICONS[article.category] ?? <BookOpen size={12} />} {article.category}
-          </span>
-        </div>
-        <p
-          className="text-[13px] font-semibold leading-snug line-clamp-2 group-hover:text-[var(--blue)] transition-colors"
-          style={{ color: "var(--ink-1)" }}
-        >
-          {article.title}
-        </p>
-        <div className="flex items-center gap-2 mt-1.5 text-[11px]" style={{ color: "var(--ink-4)" }}>
-          <Clock size={10} /> {article.readTimeMin} min
-          {tags[0] && (
-            <>
-              <span>·</span>
-              <span>{tags[0]}</span>
-            </>
-          )}
-        </div>
-      </div>
-
-      <ArrowRight
-        size={14}
-        className="shrink-0 mt-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
-        style={{ color: "var(--blue)" }}
-      />
-    </Link>
-  );
-}
-
-/* ─── Section header ─── */
-function SectionHeader({
-  icon, title, count, badge,
-}: {
-  icon: React.ReactNode; title: string; count?: number; badge?: string;
-}) {
-  return (
-    <div className="flex items-center gap-2 mb-4">
-      <span style={{ color: "var(--ink-3)" }}>{icon}</span>
-      <h2 className="text-[15px] font-bold" style={{ color: "var(--ink-1)" }}>{title}</h2>
-      {count !== undefined && (
-        <span
-          className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-          style={{ background: "var(--bg)", color: "var(--ink-4)" }}
-        >
-          {count}
-        </span>
-      )}
-      {badge && (
-        <span
-          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-          style={{ background: "var(--amber-soft)", color: "var(--amber)" }}
-        >
-          {badge}
-        </span>
-      )}
-    </div>
-  );
-}
-
-/* ─── Empty state ─── */
-function EmptyState({
-  icon, title, sub, action,
-}: {
-  icon: React.ReactNode; title: string; sub: string; action?: React.ReactNode;
-}) {
-  return (
-    <div
-      className="flex flex-col items-center py-10 rounded-2xl border-2 border-dashed text-center px-4"
-      style={{ borderColor: "var(--line-soft)" }}
-    >
-      <span className="mb-3" style={{ color: "var(--ink-4)" }}>{icon}</span>
-      <p className="font-semibold text-sm" style={{ color: "var(--ink-3)" }}>{title}</p>
-      <p className="text-[12px] mt-1" style={{ color: "var(--ink-4)" }}>{sub}</p>
-      {action && <div className="mt-3">{action}</div>}
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────
-   Main page
-──────────────────────────────────────────── */
-export default function SavedBlogsPage() {
-  const [bookmarks,      setBookmarks]      = useState<any[]>([]);
-  const [loadingBM,      setLoadingBM]      = useState(true);
-  const [readSlugs,      setReadSlugs]      = useState<Set<string>>(new Set());
-  const [savedArticleIds, setSavedArticleIds] = useState<Set<string>>(new Set());
-  const [allArticles,    setAllArticles]    = useState<PublicBlogPost[]>([]);
-
-  useEffect(() => {
-    try {
-      const rd = localStorage.getItem("en_lib_read");
-      if (rd) setReadSlugs(new Set<string>(JSON.parse(rd)));
-      const bm = localStorage.getItem("library-bookmarks");
-      if (bm) setSavedArticleIds(new Set<string>(JSON.parse(bm)));
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => {
-    apiGetBookmarks()
-      .then((data: any) => setBookmarks(Array.isArray(data) ? data : []))
-      .finally(() => setLoadingBM(false));
-      
-    apiGetBlogs({ limit: 100 })
-      .then(res => setAllArticles(res.items))
-      .catch(() => {});
-  }, []);
-
-  /* Map localStorage data to article objects */
-  const readArticles  = allArticles.filter((a) => readSlugs.has(a.slug));
-  const savedArticles = allArticles.filter((a) => savedArticleIds.has(a.id));
-  const unreadSaved   = savedArticles.filter((a) => !readSlugs.has(a.slug));
-
-  /* Stats */
-  const totalReadTime = readArticles.reduce((acc, a) => acc + (a.readTimeMin || 0), 0);
-  const topicsCovered = [...new Set(readArticles.flatMap((a) => parseTags(a.tags)))];
-
-  return (
-    <div className="fade-up max-w-3xl">
-
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-7">
-        <div>
-          <h1
-            className="text-2xl font-extrabold"
-            style={{ fontFamily: "var(--font-sora)", color: "var(--ink-1)" }}
-          >
-            Saved Blogs
-          </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--ink-4)" }}>
-            Your reading progress, saves, and bookmarks
-          </p>
-        </div>
+    <li className="reveal" style={{ transitionDelay: `${(index % 3) * 70}ms` }}>
+      <div className="relative h-full">
         <Link
-          href="/blogs"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-[var(--bg)]"
-          style={{ color: "var(--blue)", borderColor: "var(--blue)", borderWidth: 1.5 }}
+          href={`/blogs/${post.slug}`}
+          className="en-card en-card-link flex h-full flex-col overflow-hidden rounded-[20px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
         >
-          <BookOpen className="w-4 h-4" />
-          Browse Blog
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
-      {/* ── Stats bar ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-        {[
-          {
-            icon: <Check size={16} className="text-white" />,
-            value: readArticles.length,
-            label: "Articles Read",
-            gradient: "linear-gradient(135deg,#065F46,#059669)",
-          },
-          {
-            icon: <Bookmark size={16} className="text-white" />,
-            value: savedArticles.length,
-            label: "Saved",
-            gradient: "linear-gradient(135deg,#1E40AF,#0891B2)",
-          },
-          {
-            icon: <Clock size={16} className="text-white" />,
-            value: `${totalReadTime}m`,
-            label: "Time Reading",
-            gradient: "linear-gradient(135deg,#6D28D9,#BE185D)",
-          },
-        ].map((stat, i) => (
-          <div
-            key={i}
-            className="flex flex-col gap-2 p-4 rounded-2xl"
-            style={{ background: "var(--card)", border: "1px solid var(--line-soft)" }}
-          >
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: stat.gradient }}
-            >
-              {stat.icon}
-            </div>
-            <div>
-              <p
-                className="text-[22px] font-extrabold leading-none"
-                style={{ fontFamily: "var(--font-sora)", color: "var(--ink-1)" }}
-              >
-                {stat.value}
-              </p>
-              <p className="text-[11px] mt-1 font-medium" style={{ color: "var(--ink-4)" }}>
-                {stat.label}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Topics covered ── */}
-      {topicsCovered.length > 0 && (
-        <div
-          className="mb-8 p-4 rounded-2xl"
-          style={{ background: "var(--card)", border: "1px solid var(--line-soft)" }}
-        >
-          <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--ink-4)" }}>
-            Topics Covered
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {topicsCovered.map((t) => (
-              <span
-                key={t}
-                className="flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full"
-                style={{ background: "var(--bg)", color: "var(--ink-3)", border: "1px solid var(--line-soft)" }}
-              >
-                <Hash size={9} /> {t}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Continue Reading (saved but not read) ── */}
-      {unreadSaved.length > 0 && (
-        <section className="mb-8">
-          <SectionHeader
-            icon={<BookOpen size={16} />}
-            title="Continue Reading"
-            count={unreadSaved.length}
-            badge="Saved"
-          />
-          <div className="flex flex-col gap-2">
-            {unreadSaved.slice(0, 5).map((a) => (
-              <ArticleCard key={a.id} article={a} isRead={false} />
-            ))}
-          </div>
-          {unreadSaved.length > 5 && (
-            <Link
-              href="/blogs"
-              className="mt-3 flex items-center gap-1 text-[12px] font-semibold transition-colors hover:text-[var(--blue)]"
-              style={{ color: "var(--ink-4)" }}
-            >
-              View all {unreadSaved.length} saved articles <ArrowRight size={13} />
-            </Link>
-          )}
-        </section>
-      )}
-
-      {/* ── Completed articles ── */}
-      <section className="mb-8">
-        <SectionHeader
-          icon={<Check size={16} />}
-          title="Completed"
-          count={readArticles.length}
-        />
-        {readArticles.length === 0 ? (
-          <EmptyState
-            icon={<BookOpen size={36} />}
-            title="Nothing completed yet"
-            sub="Articles are marked as read when you scroll past 80%"
-            action={
-              <Link
-                href="/blogs"
-                className="flex items-center gap-1.5 text-sm font-semibold transition-colors"
-                style={{ color: "var(--blue)" }}
-              >
-                Start reading <ArrowRight size={14} />
-              </Link>
-            }
-          />
-        ) : (
-          <div className="flex flex-col gap-2">
-            {readArticles.slice(0, 4).map((a) => (
-              <ArticleCard key={a.id} article={a} isRead={true} />
-            ))}
-            {readArticles.length > 4 && (
-              <Link
-                href="/blogs"
-                className="mt-1 flex items-center gap-1 text-[12px] font-semibold transition-colors hover:text-[var(--blue)]"
-                style={{ color: "var(--ink-4)" }}
-              >
-                View all {readArticles.length} completed <ArrowRight size={13} />
-              </Link>
+          <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden rounded-t-[20px] bg-[var(--brand-soft)]">
+            {post.coverUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={post.coverUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <BookOpen size={36} strokeWidth={1.5} className="text-[var(--brand)]" aria-hidden="true" />
+              </div>
             )}
           </div>
-        )}
-      </section>
-
-      {/* ── Bookmarked Questions ── */}
-      <section className="mb-8">
-        <SectionHeader
-          icon={<Bookmark size={16} style={{ color: "var(--amber)" }} />}
-          title="Bookmarked Questions"
-          count={loadingBM ? undefined : bookmarks.length}
-        />
-
-        {loadingBM ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 rounded-2xl animate-pulse" style={{ background: "var(--bg)" }} />
-            ))}
+          <div className="flex flex-1 flex-col gap-2 p-5">
+            <span className="text-xs font-semibold text-[var(--brand)]">{post.category}</span>
+            <h3 className="line-clamp-2 text-[17px] font-semibold leading-snug text-[var(--ink-1)]" style={display}>
+              {post.title}
+            </h3>
+            {post.excerpt && <p className="line-clamp-2 text-sm leading-relaxed text-[var(--ink-3)]">{post.excerpt}</p>}
+            <p className="mt-auto pt-2 text-xs text-[var(--ink-3)]">
+              {[formatDate(post.publishedAt), `${post.readTimeMin} min read`].filter(Boolean).join(" · ")}
+            </p>
           </div>
-        ) : bookmarks.length === 0 ? (
-          <EmptyState
-            icon={<BookMarked size={36} />}
-            title="No bookmarks yet"
-            sub="Bookmark questions during tests to review them here"
-          />
-        ) : (
-          <div className="flex flex-col gap-3">
-            {bookmarks.map((bm: any) => {
-              const q = bm.question;
-              if (!q) return null;
-              let opts: string[] = [];
-              try { opts = typeof q.options === "string" ? JSON.parse(q.options) : q.options; } catch { /* ignore */ }
-              // Strip HTML tags for safety — preview rendering should never trust raw HTML
-              // from question content (LLM-generated, could contain injected scripts).
-              const stripHtml = (s: string) => (s || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ");
-              const previewText = stripHtml(q.text);
-              return (
-                <div key={bm.id} className="card p-4">
-                  <p
-                    className="text-[13px] font-medium leading-relaxed mb-3"
-                    style={{ color: "var(--ink-1)" }}
-                  >
-                    {previewText.slice(0, 200)}{previewText.length > 200 ? "…" : ""}
-                  </p>
-                  <div className="flex flex-col gap-1.5">
-                    {opts.slice(0, 4).map((opt: string, i: number) => (
-                      <div
-                        key={i}
-                        className={`flex items-start gap-2 text-[12px] px-3 py-2 rounded-lg transition-colors ${
-                          i === q.correctIndex
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
-                            : ""
-                        }`}
-                        style={i !== q.correctIndex ? { color: "var(--ink-3)" } : {}}
-                      >
-                        <span className="font-bold shrink-0 w-4">{["A","B","C","D"][i]}.</span>
-                        <span>{stripHtml(opt)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {q.subject && (
-                    <div className="flex items-center gap-2 mt-3">
-                      <span
-                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide"
-                        style={{ background: "var(--bg)", color: "var(--ink-4)", border: "1px solid var(--line-soft)" }}
-                      >
-                        {q.subject}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* ── Discover more ── */}
-      <section
-        className="p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-4 border border-blue-200 dark:border-blue-900/50"
-        style={{ background: "var(--blue-soft)" }}
-      >
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: "var(--blue)", color: "#fff" }}
-        >
-          <Flame size={18} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-bold" style={{ color: "var(--ink-1)" }}>
-            Explore more posts
-          </p>
-          <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>
-            Concepts, formulas, revision notes, and strategies — all in one place.
-          </p>
-        </div>
-        <Link
-          href="/blogs"
-          className="shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold text-white transition-all hover:brightness-110 w-full sm:w-auto"
-          style={{ background: "var(--blue)" }}
-        >
-          Browse <ArrowRight size={13} />
         </Link>
-      </section>
-
-      <div className="h-8" />
-    </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Remove ${post.title} from saved`}
+          className="absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-full bg-[var(--card)] text-[var(--ink-2)] shadow-[var(--shadow-xs)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--ink-1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+    </li>
   );
 }
 
+function QuestionRow({ bm, onRemove, busy }: { bm: BookmarkedQuestion; onRemove: () => void; busy: boolean }) {
+  const q = bm.question;
+  if (!q) return null;
+  const text = stripHtml(q.text ?? "");
+  const opts = parseOptions(q.options).slice(0, 4);
+  return (
+    <li className="en-card flex flex-col gap-3 p-5">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-medium leading-relaxed text-[var(--ink-1)]">
+          {text.slice(0, 200)}
+          {text.length > 200 ? "…" : ""}
+        </p>
+        <button
+          type="button"
+          onClick={onRemove}
+          disabled={busy}
+          aria-label="Remove question from saved"
+          className="-mr-2 -mt-2 grid h-11 w-11 flex-none place-items-center rounded-full text-[var(--ink-3)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--ink-1)] disabled:opacity-50"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+      {opts.length > 0 && (
+        <ul className="flex flex-col gap-1.5">
+          {opts.map((opt, i) => {
+            const correct = i === q.correctIndex;
+            return (
+              <li
+                key={i}
+                className={`flex items-start gap-2 rounded-[10px] px-3 py-2 text-sm ${
+                  correct ? "bg-[var(--green-soft)] font-semibold text-[var(--green)]" : "bg-[var(--bg-secondary)] text-[var(--ink-2)]"
+                }`}
+              >
+                <span className="w-4 flex-none font-semibold">{["A", "B", "C", "D"][i]}.</span>
+                <span>
+                  {stripHtml(opt)}
+                  {correct && <span className="sr-only"> (correct answer)</span>}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {q.subject && <span className="self-start rounded-full bg-[var(--bg-secondary)] px-2.5 py-0.5 text-xs text-[var(--ink-3)]">{q.subject}</span>}
+    </li>
+  );
+}
+
+function Skeleton({ label }: { label: string }) {
+  return (
+    <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2" aria-busy="true" aria-label={label}>
+      {[0, 1].map((i) => (
+        <li key={i} className="h-56 animate-pulse rounded-[20px] bg-[var(--bg-secondary)]" />
+      ))}
+    </ul>
+  );
+}
+
+export default function SavedBlogsPage() {
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [articles, setArticles] = useState<PublicBlogPost[] | null>(null);
+  const [articlesFailed, setArticlesFailed] = useState(false);
+  const [bookmarks, setBookmarks] = useState<BookmarkedQuestion[] | null>(null);
+  const [bookmarksFailed, setBookmarksFailed] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+
+  // localStorage is read after mount to avoid a hydration mismatch.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      try {
+        const raw = window.localStorage.getItem(ARTICLE_KEY);
+        setSavedIds(new Set<string>(raw ? (JSON.parse(raw) as string[]) : []));
+      } catch {
+        /* storage unavailable or corrupt: treat as empty */
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    apiGetBlogs({ limit: 100 })
+      .then((r) => {
+        if (!alive) return;
+        setArticles(r.items ?? []);
+        setArticlesFailed(false);
+      })
+      .catch(() => alive && setArticlesFailed(true));
+    (apiGetBookmarks() as Promise<unknown>)
+      .then((d) => {
+        if (!alive) return;
+        setBookmarks(Array.isArray(d) ? (d as BookmarkedQuestion[]) : []);
+        setBookmarksFailed(false);
+      })
+      .catch(() => alive && setBookmarksFailed(true));
+    return () => {
+      alive = false;
+    };
+  }, [reload]);
+
+  const removeArticle = useCallback((id: string) => {
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      try {
+        window.localStorage.setItem(ARTICLE_KEY, JSON.stringify([...next]));
+      } catch {
+        /* keep in memory */
+      }
+      return next;
+    });
+  }, []);
+
+  async function removeQuestion(bm: BookmarkedQuestion) {
+    const qid = bm.questionId ?? bm.question?.id;
+    if (!qid) return;
+    setRemoving(bm.id);
+    try {
+      await apiRemoveBookmark(qid);
+      setBookmarks((prev) => (prev ?? []).filter((b) => b.id !== bm.id));
+    } catch {
+      setBookmarksFailed(true);
+    } finally {
+      setRemoving(null);
+    }
+  }
+
+  const saved = (articles ?? []).filter((a) => savedIds.has(a.id));
+  const questions = (bookmarks ?? []).filter((b) => b.question);
+
+  return (
+    <AppPage title="Saved articles" subtitle="Articles and questions you saved to come back to." back={{ href: "/dashboard/profile", label: "Me" }} width="normal">
+      <section aria-labelledby="saved-articles" className="reveal">
+        <h2 id="saved-articles" className="mb-4 text-lg font-semibold text-[var(--ink-1)]" style={display}>Articles</h2>
+        {articlesFailed ? (
+          <div className="en-card flex flex-col items-center gap-3 px-6 py-10 text-center">
+            <p className="font-semibold text-[var(--ink-1)]">Couldn&apos;t load articles.</p>
+            <button type="button" onClick={() => setReload((n) => n + 1)} className="min-h-11 rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--brand-ink)] hover:bg-[var(--brand-hover)]">
+              Try again
+            </button>
+          </div>
+        ) : articles === null ? (
+          <Skeleton label="Loading articles" />
+        ) : saved.length === 0 ? (
+          <div className="en-card flex flex-col items-center gap-3 px-6 py-12 text-center">
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-[var(--brand-soft)] text-[var(--brand)]">
+              <Bookmark className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <p className="font-semibold text-[var(--ink-1)]">Nothing saved yet.</p>
+            <Link href="/blogs" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-[var(--brand)] hover:underline">
+              Browse articles <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+        ) : (
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {saved.map((a, i) => (
+              <ArticleCard key={a.id} post={a} index={i} onRemove={() => removeArticle(a.id)} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section aria-labelledby="saved-questions" className="reveal">
+        <h2 id="saved-questions" className="mb-4 text-lg font-semibold text-[var(--ink-1)]" style={display}>Questions</h2>
+        {bookmarksFailed ? (
+          <div className="en-card flex flex-col items-center gap-3 px-6 py-10 text-center">
+            <p className="font-semibold text-[var(--ink-1)]">Couldn&apos;t update saved questions.</p>
+            <button type="button" onClick={() => setReload((n) => n + 1)} className="min-h-11 rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--brand-ink)] hover:bg-[var(--brand-hover)]">
+              Try again
+            </button>
+          </div>
+        ) : bookmarks === null ? (
+          <Skeleton label="Loading questions" />
+        ) : questions.length === 0 ? (
+          <div className="en-card px-6 py-10 text-center">
+            <p className="font-semibold text-[var(--ink-1)]">No saved questions.</p>
+            <p className="mt-1 text-sm text-[var(--ink-3)]">Bookmark a question during a test and it shows up here.</p>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-4">
+            {questions.map((b) => (
+              <QuestionRow key={b.id} bm={b} busy={removing === b.id} onRemove={() => removeQuestion(b)} />
+            ))}
+          </ul>
+        )}
+      </section>
+    </AppPage>
+  );
+}

@@ -1,233 +1,226 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+/**
+ * Series detail (in-app, v2): tests grouped Available now / Upcoming / Locked
+ * with a small summary card. Real data only. Old page removed: assumed
+ * "English, Hindi" language row, invented fallback description, and the
+ * checkout links (the website has no checkout yet; paid actions open /pricing).
+ */
+
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import {
-  ChevronLeft, Clock, FileText, Lock, Play,
-  AlertCircle, Info, Calendar, ShoppingCart, CheckCircle2
-} from "lucide-react";
+import { ArrowRight, Calendar, Clock, FileText, Lock, Play } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { withAccess } from "@/lib/series-access";
+import AppPage from "@/components/app/AppPage";
+
+interface TestItem {
+  id: string;
+  title: string;
+  durationSec: number;
+  totalMarks: number;
+  isLocked: boolean;
+  scheduledAt?: string | null;
+}
+
+interface SeriesDetail {
+  id: string;
+  title: string;
+  description?: string | null;
+  totalTests: number;
+  isPaid: boolean;
+  price?: number;
+  discountedPrice?: number | null;
+  exam?: { id: string; name: string; shortName?: string } | null;
+  tests?: TestItem[];
+}
+
+const display = { fontFamily: "var(--font-sora)" } as const;
+const rupees = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
+const BACK = { href: "/dashboard/series", label: "Mock tests" };
 
 export default function SeriesDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const [series, setSeries] = useState<any>(null);
-  const [hasAccess, setHasAccess] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [series, setSeries] = useState<SeriesDetail | null>(null);
+  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
+  const [reload, setReload] = useState(0);
+  const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
-
-    apiFetch(`/test-series/${id}`)
-      .then(async (s: any) => {
-        setSeries(s);
-        if (s.isPaid) {
-          try {
-            const { entitlements } = await apiFetch<any>("/orders/entitlements");
-            const granted = entitlements.some(
-              (e: any) => e.contentType === "TEST_SERIES" && e.contentId === id && e.status === "ACTIVE"
-            );
-            setHasAccess(granted);
-          } catch {
-            setHasAccess(false);
-          }
-        } else {
-          setHasAccess(true);
-        }
+    let alive = true;
+    (apiFetch(`/test-series/${id}`) as Promise<SeriesDetail>)
+      // paid series: every test needs the student's entitlement (backend rule)
+      .then((data) => withAccess(data, true))
+      .then((data) => {
+        if (!alive) return;
+        setSeries(data);
+        setStatus("ok");
       })
-      .catch(e => setError(e.message || "Failed to load series"))
-      .finally(() => setLoading(false));
-  }, [id]);
+      .catch(() => alive && setStatus("error"));
+    return () => {
+      alive = false;
+    };
+  }, [id, reload]);
 
-  if (loading) {
+  // "now" after mount so server and browser agree on what is upcoming
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setNow(Date.now()));
+    return () => cancelAnimationFrame(t);
+  }, []);
+
+  const groups = useMemo(() => {
+    const tests = series?.tests ?? [];
+    const upcoming = (t: TestItem) => !!t.scheduledAt && now !== null && new Date(t.scheduledAt).getTime() > now;
+    return {
+      available: tests.filter((t) => !t.isLocked && !upcoming(t)),
+      upcoming: tests.filter((t) => !t.isLocked && upcoming(t)),
+      locked: tests.filter((t) => t.isLocked),
+    };
+  }, [series, now]);
+
+  if (status === "loading") {
     return (
-      <div className="py-20 text-center">
-        <div className="w-8 h-8 rounded-full border-2 border-blue-600/20 border-t-blue-600 animate-spin mx-auto mb-4" />
-        <p className="text-sm text-[var(--ink-4)]">Loading series details…</p>
-      </div>
+      <AppPage title={<span className="inline-block h-9 w-64 animate-pulse rounded-lg bg-[var(--bg-secondary)] align-middle" />} back={BACK}>
+        <div className="flex flex-col gap-3" aria-busy="true" aria-label="Loading series">
+          {[1, 2, 3, 4].map((i) => <div key={i} className="h-20 animate-pulse rounded-[var(--radius-lg)] bg-[var(--bg-secondary)]" />)}
+        </div>
+      </AppPage>
     );
   }
 
-  if (error || !series) {
+  if (status === "error" || !series) {
     return (
-      <div className="py-20 text-center max-w-sm mx-auto">
-        <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-4" />
-        <p className="text-red-500 font-bold mb-4">{error || "Series not found"}</p>
-        <button onClick={() => router.back()} className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold">
-          Go Back
-        </button>
-      </div>
+      <AppPage title="Series not found" back={BACK} width="narrow">
+        <div className="flex flex-col items-start gap-3" role="alert">
+          <p className="text-sm text-[var(--ink-3)]">It may have been removed, or the connection failed.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setStatus("loading");
+              setReload((n) => n + 1);
+            }}
+            className="min-h-11 rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--brand-ink)] hover:bg-[var(--brand-hover)]"
+          >
+            Try again
+          </button>
+        </div>
+      </AppPage>
     );
   }
 
-  const checkoutHref = `/dashboard/checkout/${encodeURIComponent(`TEST_SERIES:${id}`)}?title=${encodeURIComponent(series.title)}`;
+  const total = series.tests?.length ?? series.totalTests ?? 0;
+  const price = series.discountedPrice ?? series.price ?? 0;
+  const struck = series.discountedPrice != null && series.price != null && series.discountedPrice < series.price;
+  const hasLocked = groups.locked.length > 0;
 
   return (
-    <div className="flex flex-col gap-8 fade-up max-w-4xl">
-
-      {/* Breadcrumb / Back */}
-      <button
-        onClick={() => router.back()}
-        className="flex items-center gap-1.5 text-sm font-semibold transition-colors hover:text-blue-600 w-fit"
-        style={{ color: "var(--ink-3)" }}
-      >
-        <ChevronLeft size={16} /> Back to Test Series
-      </button>
-
-      {/* Hero Header */}
-      <div className="flex flex-col md:flex-row gap-6 items-start">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-blue-50 text-blue-600">
-              {series.exam?.shortName}
-            </span>
-            {series.isPaid ? (
-              hasAccess ? (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-50 text-emerald-600 flex items-center gap-1">
-                  <CheckCircle2 size={10} /> Purchased
-                </span>
-              ) : (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-amber-50 text-amber-600">
-                  Premium
-                </span>
-              )
-            ) : (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-50 text-emerald-600">
-                Free Series
-              </span>
-            )}
-          </div>
-          <h1 className="text-3xl font-extrabold mb-3" style={{ fontFamily: "var(--font-sora)", color: "var(--ink-1)" }}>
-            {series.title}
-          </h1>
-          <p className="text-sm leading-relaxed" style={{ color: "var(--ink-3)" }}>
-            {series.description || "Comprehensive mock test series designed by experts to help you excel in your exams."}
-          </p>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="w-full md:w-64 p-5 rounded-2xl border bg-gray-50/50" style={{ borderColor: "var(--line-soft)" }}>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[var(--ink-4)]">Total Tests</span>
-              <span className="text-sm font-bold text-[var(--ink-1)]">{series.totalTests}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[var(--ink-4)]">Price</span>
-              <span className="text-sm font-bold text-[var(--ink-1)]">
-                {series.isPaid ? `₹${series.discountedPrice || series.price}` : "Free"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[var(--ink-4)]">Language</span>
-              <span className="text-sm font-bold text-[var(--ink-1)]">English, Hindi</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Purchase Banner — shown for paid series without access */}
-      {series.isPaid && !hasAccess && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-2xl border-2"
-          style={{ background: "#FFF7ED", borderColor: "#FDBA74" }}>
-          <div className="flex-1">
-            <p className="text-sm font-bold" style={{ color: "#92400E" }}>
-              This is a premium test series — ₹{series.discountedPrice || series.price}
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: "#B45309" }}>
-              Purchase once for lifetime access to all {series.tests?.length || 0} tests.
-            </p>
-          </div>
-          <Link
-            href={checkoutHref}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shrink-0 transition-all hover:brightness-110 active:scale-[0.98]"
-            style={{ background: "var(--blue)" }}
-          >
-            <ShoppingCart size={14} /> Buy Now
-          </Link>
-        </div>
-      )}
-
-      {/* Tests List */}
-      <section>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold" style={{ color: "var(--ink-1)" }}>
-            Included Tests
-          </h2>
-          <div className="text-xs font-medium text-[var(--ink-4)]">
-            {series.tests?.length || 0} tests available
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {series.tests?.map((test: any) => (
-            <div
-              key={test.id}
-              className="card group flex items-center justify-between p-4 transition-all hover:border-blue-200"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100 group-hover:bg-blue-50 transition-colors">
-                  <FileText className="w-5 h-5 text-gray-400 group-hover:text-blue-500" />
+    <AppPage
+      title={series.title}
+      subtitle={series.description || `${total} ${total === 1 ? "test" : "tests"} in the real exam interface.`}
+      back={BACK}
+      width="wide"
+    >
+      <div className="grid gap-10 lg:grid-cols-[1fr_300px]">
+        <div className="flex min-w-0 flex-col gap-10">
+          {total === 0 && (
+            <p className="rounded-[var(--radius-lg)] bg-[var(--bg-secondary)] px-6 py-10 text-center text-sm text-[var(--ink-3)]">Tests will be added soon.</p>
+          )}
+          {(
+            [
+              ["Available now", groups.available],
+              ["Upcoming", groups.upcoming],
+              ["Locked", groups.locked],
+            ] as const
+          ).map(([label, list]) =>
+            list.length === 0 ? null : (
+              <section key={label} className="reveal" aria-labelledby={`g-${label.replace(/\s/g, "")}`}>
+                <div className="mb-4 flex items-baseline justify-between">
+                  <h2 id={`g-${label.replace(/\s/g, "")}`} className="text-lg font-semibold text-[var(--ink-1)]" style={display}>{label}</h2>
+                  <span className="text-sm text-[var(--ink-3)]">{list.length}</span>
                 </div>
-                <div>
-                  <h3 className="text-[15px] font-bold mb-1" style={{ color: "var(--ink-1)" }}>
-                    {test.title}
-                  </h3>
-                  <div className="flex items-center gap-3 text-[11px]" style={{ color: "var(--ink-4)" }}>
-                    <span className="flex items-center gap-1">
-                      <Clock size={11} /> {Math.floor(test.durationSec / 60)} mins
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Info size={11} /> {test.totalMarks} Marks
-                    </span>
-                    {test.scheduledAt && (
-                      <span className="flex items-center gap-1 text-blue-600">
-                        <Calendar size={11} /> {new Date(test.scheduledAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {test.isLocked || !hasAccess ? (
-                  test.isLocked ? (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-[11px] font-bold text-gray-400 border border-gray-200">
-                      <Lock size={12} /> LOCKED
-                    </div>
-                  ) : (
-                    <Link
-                      href={checkoutHref}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold border-2 transition-all hover:brightness-110"
-                      style={{ borderColor: "#FDBA74", color: "#92400E", background: "#FFF7ED" }}
-                    >
-                      <ShoppingCart size={12} /> Buy to Unlock
-                    </Link>
-                  )
-                ) : (
-                  <Link
-                    href={`/exam/${test.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-[13px] font-bold shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
-                  >
-                    <Play size={12} fill="white" stroke="none" /> Start Test
-                  </Link>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {(!series.tests || series.tests.length === 0) && (
-            <div className="py-12 text-center border-2 border-dashed rounded-3xl" style={{ borderColor: "var(--line-soft)" }}>
-              <p className="text-sm text-[var(--ink-4)]">No tests have been added to this series yet.</p>
-            </div>
+                <ul className="flex flex-col gap-3">
+                  {list.map((t, i) => {
+                    const mins = Math.round(t.durationSec / 60);
+                    const isUpcoming = label === "Upcoming";
+                    const n = (series.tests?.indexOf(t) ?? i) + 1;
+                    return (
+                      <li key={t.id} className="reveal" style={{ transitionDelay: `${Math.min(i, 6) * 50}ms` }}>
+                        <div className="en-card flex items-center gap-4 p-4 sm:p-5">
+                          <span className={`grid h-10 w-10 flex-none place-items-center rounded-[12px] text-sm font-bold ${t.isLocked ? "bg-[var(--bg-secondary)] text-[var(--ink-3)]" : isUpcoming ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]" : "bg-[var(--brand-soft)] text-[var(--brand)]"}`} style={display}>
+                            {t.isLocked ? <Lock className="h-4 w-4" aria-hidden="true" /> : n}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold text-[var(--ink-1)]">{t.title}</p>
+                            <p className="mt-0.5 flex flex-wrap gap-x-4 text-xs text-[var(--ink-3)]">
+                              {mins > 0 && <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" aria-hidden="true" />{mins} min</span>}
+                              {t.totalMarks > 0 && <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" aria-hidden="true" />{t.totalMarks} marks</span>}
+                              {t.scheduledAt && now !== null && (
+                                <span className="inline-flex items-center gap-1">
+                                  <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+                                  {new Date(t.scheduledAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          {t.isLocked ? (
+                            <Link href="/pricing" className="inline-flex min-h-11 flex-none items-center rounded-[var(--radius-sm)] bg-[var(--bg-secondary)] px-4 text-xs font-semibold text-[var(--ink-2)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)]">Unlock</Link>
+                          ) : isUpcoming ? (
+                            <span className="flex-none rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent-ink)]">Upcoming</span>
+                          ) : (
+                            <Link href={`/exam/${t.id}`} className="inline-flex min-h-11 flex-none items-center gap-1.5 rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--brand-ink)] hover:bg-[var(--brand-hover)]">
+                              <Play className="h-3 w-3 fill-current" aria-hidden="true" /> Start
+                            </Link>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ),
           )}
         </div>
-      </section>
-    </div>
+
+        <aside className="flex flex-col gap-5 lg:sticky lg:top-8 lg:self-start">
+          <dl className="en-card flex flex-col gap-3 p-6 text-sm">
+            {series.exam && (
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-[var(--ink-3)]">Exam</dt>
+                <dd className="text-right font-semibold text-[var(--ink-1)]">{series.exam.name}</dd>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-[var(--ink-3)]">Tests</dt>
+              <dd className="font-semibold tabular-nums text-[var(--ink-1)]">{total}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-[var(--ink-3)]">Open now</dt>
+              <dd className="font-semibold tabular-nums text-[var(--ink-1)]">{groups.available.length}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-[var(--ink-3)]">Access</dt>
+              <dd className="font-semibold text-[var(--ink-1)]">
+                {!series.isPaid ? (
+                  <span className="text-[var(--green)]">Free</span>
+                ) : (
+                  <span className="tabular-nums">
+                    {struck && <s className="mr-1.5 font-normal text-[var(--ink-3)]">{rupees(series.price!)}</s>}
+                    {rupees(price)}
+                  </span>
+                )}
+              </dd>
+            </div>
+          </dl>
+
+          {series.isPaid && hasLocked && (
+            <Link href="/pricing" className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-hover)]">
+              See plans <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          )}
+        </aside>
+      </div>
+    </AppPage>
   );
 }

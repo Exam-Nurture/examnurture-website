@@ -7,7 +7,7 @@ import {
   LogIn, LayoutDashboard, LogOut, Smartphone, ChevronDown,
   Search, Library, X, Zap, Newspaper, BookMarked,
   User, FileText, CreditCard,
-  GraduationCap, Mail, BarChart3,
+  GraduationCap, BarChart3,
   Home,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +30,24 @@ const learnNav = [
   { name: "Nurture Library", href: "/blogs",             icon: Library,    desc: "Full study library & notes"         },
   { name: "Books & Magazine",href: "/blogs?tab=books",   icon: BookMarked, desc: "Recommended books & magazines"      },
 ];
+
+/* ── Desktop nav link (module level so React keeps a stable component identity) ── */
+function NavLink({ href, pathname, children }: { href: string; pathname: string; children: React.ReactNode }) {
+  const active = pathname === href || pathname.startsWith(href + "/");
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
+        active
+          ? "text-[var(--blue)] bg-[var(--blue-soft)]"
+          : "text-[var(--ink-2)] hover:text-[var(--blue)] hover:bg-[var(--blue-soft)]"
+      }`}
+    >
+      {children}
+    </Link>
+  );
+}
 
 /* ── Inner component that safely reads searchParams ── */
 function SearchParamsReader({ onNext }: { onNext: (next: string | null) => void }) {
@@ -63,6 +81,9 @@ export default function MarketingHeader() {
   const router = useRouter();
 
   const [isScrolled,     setIsScrolled]     = useState(false);
+  /* v2: when a page opens with the deep indigo hero, the header sits on it
+     transparently (white text) so header and hero read as one surface. */
+  const [overHero,       setOverHero]       = useState(false);
   const [isHidden,       setIsHidden]       = useState(false);
   const [showUserMenu,   setShowUserMenu]   = useState(false);
   const [showSearch,     setShowSearch]     = useState(false);
@@ -108,6 +129,14 @@ export default function MarketingHeader() {
   };
 
   useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      const first = document.querySelector("main")?.querySelector("section");
+      setOverHero(!!first && first.classList.contains("en-hero-deep") && first.getBoundingClientRect().top < 120);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [pathname]);
+
+  useEffect(() => {
     const handle = () => {
       const y = window.scrollY;
       setIsScrolled(y > 10);
@@ -148,7 +177,7 @@ export default function MarketingHeader() {
   const handleLogout = async () => { await logout(); router.push("/"); };
 
   const isExamsActive = pathname === "/exams" || pathname.startsWith("/exams/");
-  const isLibraryActive = pathname.startsWith("/blogs");
+  const isPyqActive = pathname.startsWith("/pyq");
 
   const toggleMobileTab = (tab: typeof mobileTab) =>
     setMobileTab(prev => prev === tab ? null : tab);
@@ -217,22 +246,6 @@ export default function MarketingHeader() {
   }
 
   /* ── Simple nav link (desktop) ── */
-  function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-    const active = pathname === href || pathname.startsWith(href + "/");
-    return (
-      <Link
-        href={href}
-        className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
-          active
-            ? "text-[var(--blue)] bg-[var(--blue-soft)]"
-            : "text-[var(--ink-2)] hover:text-[var(--blue)] hover:bg-[var(--blue-soft)]"
-        }`}
-      >
-        {children}
-      </Link>
-    );
-  }
-
   /* ── Mobile panel grid of nav items ── */
   function MobileNavGrid({
     items, accent = "blue",
@@ -285,9 +298,13 @@ export default function MarketingHeader() {
       {/* ── Main Header — flat DocuSeal style ── */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-500 ${isHidden ? "-translate-y-full" : "translate-y-0"} ${
+          /* v2: no divider line; the header melts into the page/hero below.
+             Scrolled state only adds a very soft shadow so it still floats. */
           isScrolled
-            ? "bg-[rgba(251,251,251,0.92)] dark:bg-[rgba(18,21,28,0.92)] border-b border-[var(--line-soft)] backdrop-blur-2xl shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:shadow-[0_1px_0_rgba(255,255,255,0.04),0_2px_20px_rgba(0,0,0,0.5)]"
-            : "bg-[rgba(251,251,251,0.85)] dark:bg-[rgba(11,13,18,0.85)] border-b border-[var(--line-soft)] backdrop-blur-xl"
+            ? "bg-[rgba(255,255,255,0.86)] dark:bg-[rgba(14,17,32,0.86)] backdrop-blur-2xl shadow-[0_8px_24px_-12px_rgba(22,26,51,0.18)] dark:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.6)]"
+            : overHero
+              ? "en-header-on-hero bg-transparent"
+              : "bg-[var(--bg)] backdrop-blur-xl"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -302,15 +319,13 @@ export default function MarketingHeader() {
             <div className="hidden lg:flex flex-1 justify-center">
               <div className="flex items-center gap-0.5">
 
-                <NavLink href="/">Home</NavLink>
-                <NavLink href="/about">About</NavLink>
-                <NavLink href="/series/all">Test Series</NavLink>
-
-                <NavLink href="/exams">Exams</NavLink>
-
-                <NavLink href="/pyq/all">Previous Year Papers</NavLink>
-                <NavLink href="/blogs">Blogs</NavLink>
-                <NavLink href="/contact">Contact</NavLink>
+                {/* v2: student tasks only. Home = logo; About, Blogs, Contact live in the footer.
+                    Test series and past papers fold into exam course pages in phase 2. */}
+                <NavLink pathname={pathname} href="/exams">Exams</NavLink>
+                <NavLink pathname={pathname} href="/series/all">Mock tests</NavLink>
+                <NavLink pathname={pathname} href="/pyq/all">Past papers</NavLink>
+                <NavLink pathname={pathname} href="/daily-quiz">Daily quiz</NavLink>
+                <NavLink pathname={pathname} href="/pricing">Pricing</NavLink>
 
               </div>
             </div>
@@ -367,7 +382,7 @@ export default function MarketingHeader() {
 
               {/* Get App — desktop only */}
               <a href={PLAYSTORE_URL} target="_blank" rel="noopener noreferrer"
-                className="hidden xl:flex items-center gap-1.5 px-3 py-2 bg-[var(--blue)] hover:bg-[var(--blue-ink)] text-white rounded-full font-semibold text-sm transition-colors"
+                className="en-hdr-cta hidden xl:flex items-center gap-1.5 px-3 py-2 bg-[var(--blue)] hover:bg-[var(--blue-ink)] text-white rounded-full font-semibold text-sm transition-colors"
               >
                 <Smartphone className="w-4 h-4" />
                 Get App
@@ -409,7 +424,7 @@ export default function MarketingHeader() {
                         {[
                           { icon: LayoutDashboard, label: "Dashboard",    href: "/dashboard"           },
                           { icon: FileText,        label: "My Tests",     href: "/dashboard/series"    },
-                          { icon: CreditCard,      label: "Upgrade Plan", href: "/dashboard/plans"     },
+                          { icon: CreditCard,      label: "Pricing", href: "/pricing"     },
                           { icon: User,            label: "Profile",      href: "/dashboard/profile"   },
                         ].map(({ icon: Icon, label, href }) => (
                           <Link key={href} href={href} onClick={() => setShowUserMenu(false)}
@@ -608,36 +623,38 @@ export default function MarketingHeader() {
             }`}>Exams</span>
           </button>
 
-          {/* Blog */}
+          {/* Past papers (v2: student tasks in the bar; Blogs and Contact are in the footer) */}
           <Link
-            href="/blogs"
+            href="/pyq/all"
             onClick={() => setMobileTab(null)}
+            aria-current={isPyqActive ? "page" : undefined}
             className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all"
           >
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-              isLibraryActive ? "bg-[var(--blue)] text-white shadow-md shadow-[var(--blue)]/30" : "text-[var(--ink-4)]"
+              isPyqActive ? "bg-[var(--blue)] text-white shadow-md shadow-[var(--blue)]/30" : "text-[var(--ink-4)]"
             }`}>
-              <Library className="w-4 h-4" />
+              <FileText className="w-4 h-4" />
             </div>
             <span className={`text-[10px] font-semibold ${
-              isLibraryActive ? "text-[var(--blue)]" : "text-[var(--ink-4)]"
-            }`}>Blogs</span>
+              isPyqActive ? "text-[var(--blue)]" : "text-[var(--ink-4)]"
+            }`}>Papers</span>
           </Link>
 
-          {/* Contact */}
+          {/* Pricing */}
           <Link
-            href="/contact"
+            href="/pricing"
             onClick={() => setMobileTab(null)}
+            aria-current={pathname === "/pricing" ? "page" : undefined}
             className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all"
           >
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-              pathname === "/contact" ? "bg-[var(--blue)] text-white shadow-md shadow-[var(--blue)]/30" : "text-[var(--ink-4)]"
+              pathname === "/pricing" ? "bg-[var(--blue)] text-white shadow-md shadow-[var(--blue)]/30" : "text-[var(--ink-4)]"
             }`}>
-              <Mail className="w-4 h-4" />
+              <CreditCard className="w-4 h-4" />
             </div>
             <span className={`text-[10px] font-semibold ${
-              pathname === "/contact" ? "text-[var(--blue)]" : "text-[var(--ink-4)]"
-            }`}>Contact</span>
+              pathname === "/pricing" ? "text-[var(--blue)]" : "text-[var(--ink-4)]"
+            }`}>Pricing</span>
           </Link>
 
           {/* Account */}

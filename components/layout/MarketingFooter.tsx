@@ -4,10 +4,12 @@ const PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=com.examnur
 
 const footerLinks = {
   explore: [
-    { name: "All Exams",          href: "/exams"      },
-    { name: "All Test Series",    href: "/series/all" },
-    { name: "All PYQ Papers",     href: "/pyq/all"    },
-    { name: "Nurture Library",    href: "/blogs"    },
+    { name: "All exams",          href: "/exams"      },
+    { name: "Mock tests",         href: "/series/all" },
+    { name: "Past papers",        href: "/pyq/all"    },
+    { name: "Daily quiz",         href: "/daily-quiz" },
+    { name: "Pricing",            href: "/pricing"    },
+    { name: "Blog",               href: "/blogs"      },
   ],
   account: [
     { name: "Dashboard",          href: "/dashboard"            },
@@ -106,7 +108,7 @@ export default function MarketingFooter() {
             </Link>
 
             <p className="text-sm text-[var(--ink-3)] leading-relaxed max-w-[300px] mb-7">
-              India's most comprehensive competitive exam preparation platform. Crack JPSC, Banking, SSC, Railway and more with AI-powered practice.
+              Past papers, mock tests and daily practice for JPSC, JSSC, BPSC, SSC, Banking and Railway exams.
             </p>
 
             {/* Download the App */}
@@ -236,7 +238,7 @@ export default function MarketingFooter() {
             &copy; {currentYear} ExamNurture. All rights reserved.
           </p>
           <p className="text-sm text-[var(--ink-3)]">
-            Built for India's competitive exam aspirants 🇮🇳
+            Made for India&apos;s exam aspirants.
           </p>
         </div>
       </div>
